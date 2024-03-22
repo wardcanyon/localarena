@@ -1,5 +1,15 @@
 <?php
-$game_name = 'thecrew';
+
+define("DEV_MODE",1);
+
+define("APP_BASE_PATH",'/src/');
+define("APP_GAMEMODULE_PATH",'/src/');
+
+require_once '/src/lbga_config.inc.php';
+require (LBGA_GAME_NAME . '/' . LBGA_GAME_NAME . '.view.php');
+
+$game_name = LBGA_GAME_NAME;
+
 ?>
 
 <!DOCTYPE html>
@@ -19,18 +29,6 @@ $game_name = 'thecrew';
 
 </head>
 <body class="claro">
-     <?php
-
-
-     define("DEV_MODE",1);
-
-     define("APP_BASE_PATH",'/src/');
-     define("APP_GAMEMODULE_PATH",'/src/');
-
-     include($game_name . '/' . $game_name . '.view.php');
-
-    ?>
-
      <?php
 
         $view = new ("view_{$game_name}_{$game_name}")();

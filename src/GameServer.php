@@ -6,16 +6,15 @@ use Ratchet\ConnectionInterface;
 
 use Ratchet\MessageComponentInterface;
 
-$game_name = 'thecrew';
-
 define("APP_BASE_PATH",'/src/');
 define("APP_GAMEMODULE_PATH",'/src/');
 
 set_include_path(get_include_path() . PATH_SEPARATOR . APP_GAMEMODULE_PATH);
 
+require_once '/src/lbga_config.inc.php';
 require '/src/vendor/autoload.php';
 
-include($game_name . '/' . $game_name . '.game.php');
+require (LBGA_GAME_NAME . '/' . LBGA_GAME_NAME . '.game.php');
 
 class GameServer implements MessageComponentInterface {
 
@@ -32,7 +31,7 @@ class GameServer implements MessageComponentInterface {
     public function onMessage(ConnectionInterface $from, $msg) {
 
         $currentPlayerId = str_replace("/","", $from->httpRequest->getUri()->getPath());
-        $game = new ("$game_name")();
+        $game = new (LBGA_GAME_NAME)();
         $game->doAction( $this, json_decode($msg, true));
     }
 

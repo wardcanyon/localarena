@@ -66,7 +66,8 @@ services:
     healthcheck:
       # XXX: get this from db-password file somehow?
       test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-u", "root", "-pexample-pass"]
-      timeout: 20s
+      interval: 1s
+      timeout: 5s
       retries: 10
   phpmyadmin:
     image: phpmyadmin

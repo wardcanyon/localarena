@@ -15,12 +15,6 @@
 # php@sha256:99cede493dfd88720b610eb8077c8688d3cca50003d76d1d539b0efc8cca72b4.
 FROM php:8.2-apache
 
-# Copy app files from the app directory.
-COPY ./src /src
-RUN ln -s /src /var/www/html
-RUN chown -R www-data: /src
-RUN chmod -R 755 /src
-
 # Your PHP application may require additional PHP extensions to be installed
 # manually. For detailed instructions for installing extensions can be found, see
 # https://github.com/docker-library/docs/tree/master/php#how-to-install-more-php-extensions
@@ -51,6 +45,18 @@ RUN docker-php-ext-install mysqli && docker-php-ext-enable mysqli
 # Use the default production configuration for PHP runtime arguments, see
 # https://github.com/docker-library/docs/tree/master/php#configuration
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
+
+ENV APACHE_DOCUMENT_ROOT /src
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
+RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+
+# Copy app files from the app directory.
+#
+# TODO: Especially for development purposes, we probably want to mount
+# this as a volume instead.
+COPY ./src /src
+RUN chown -R www-data: /src
+RUN chmod -R 755 /src
 
 # Switch to a non-privileged user (defined in the base image) that the app will run under.
 # See https://docs.docker.com/go/dockerfile-user-best-practices/

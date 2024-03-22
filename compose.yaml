@@ -13,6 +13,34 @@ services:
       context: .
     ports:
       - 9000:80
+  db:
+    # N.B.: The official images are not available for arm64, but the
+    # mariadb and percona images are.
+    image: "mysql:5.7.44"
+    platform: "linux/x86_64"
+    restart: always
+    user: root
+    secrets:
+      - db-password
+    volumes:
+      - db-data:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD_FILE=/run/secrets/db-password
+      - MYSQL_DATABASE=example
+      # - MARIADB_ROOT_PASSWORD_FILE=/run/secrets/db-password
+      # - MARIADB_DATABASE=example
+    expose:
+      - 3306
+    healthcheck:
+      test:  ["CMD", "/usr/local/bin/healthcheck.sh", "--su-mysql", "--connect",  "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+volumes:
+  db-data:
+secrets:
+  db-password:
+    file: db/password.txt
 
 # The commented out section below is an example of how to define a PostgreSQL
 # database that your application can use. `depends_on` tells Docker Compose to
@@ -46,4 +74,3 @@ services:
 # secrets:
 #   db-password:
 #     file: db/password.txt
-

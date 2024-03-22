@@ -325,10 +325,13 @@ class Table {
 
     function initTable()
     {
-        if ($result = $this->conn->query("SHOW TABLES LIKE 'player'")) {
+        $result = $this->conn->query("SHOW TABLES LIKE 'player'");
+        if ($result->num_rows > 0) {
+            echo "*** player table exists\n";
         }
         else
         {
+            echo "*** Initializing database...\n";
             $this->loadFile(APP_BASE_PATH."/module/table/empty_database.sql");
             $this->loadFile(APP_BASE_PATH."/".$this->getGameName( )."/dbmodel.sql");
             $this->setGameStateInitialValue('activePlayerId', 0);

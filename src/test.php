@@ -7,8 +7,13 @@ set_include_path(get_include_path() . PATH_SEPARATOR . APP_GAMEMODULE_PATH);
 
      include('emppty/emppty.game.php');
 
-     $game = new emppty();
-     $game->actColor( 'blue');
+echo "*** Constructing game class...\n";
+$game = new emppty();
+echo "*** Initializing table...\n";
+$game->initTable();
+echo "*** Ready!\n";
+
+$game->actColor( 'blue');
 
 
     ?>

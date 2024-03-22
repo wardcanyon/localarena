@@ -52,14 +52,17 @@ services:
       test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-u", "root", "-pexample-pass"]
       timeout: 20s
       retries: 10
-  # phpmyadmin:
-  #   image: phpmyadmin
-  #   ports:
-  #     - 8080:80
-  #   depends_on:
-  #     - db
-  #   environment:
-  #     - PMA_HOST=db
+  phpmyadmin:
+    image: phpmyadmin
+    ports:
+      - 8080:80
+    depends_on:
+      - db
+    environment:
+      - PMA_HOST=db
+      - PMA_USER=root
+      # XXX: get this from the db-password file somehow?
+      - PMA_PASSWORD=example-pass
 volumes:
   db-data:
 secrets:

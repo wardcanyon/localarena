@@ -1,0 +1,419 @@
+/**
+ *------
+ * BGA framework: Â© Gregory Isabelli <gisabelli@boardgamearena.com> & Emmanuel Colin <ecolin@boardgamearena.com>
+ * thecrew implementation : Â© <Your name here> <Your email address here>
+ *
+ * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
+ * See http://en.boardgamearena.com/#!doc/Studio for more information.
+ * -----
+ *
+ * thecrew.js
+ *
+ * thecrew user interface script
+ * 
+ * In this file, you are describing the logic of your user interface, in Javascript language.
+ *
+ */
+
+define([
+    "dojo","dojo/_base/declare",
+    "ebg/core/gamegui",
+    "ebg/counter",
+    "ebg/stock",
+],
+function (dojo, declare) {
+    return declare("bgagame.thecrew", ebg.core.gamegui, {
+        constructor: function(){
+            console.log('thecrew constructor');
+              
+            // Here, you can init the global variables of your user interface
+            // Example:
+            this.captain_id = null;
+            this.players = null;
+            this.colors = null;
+
+            this.card_width = 100;
+            this.card_height = 157;
+            
+            // Number of turns 
+            this.turn_counter = null;
+            this.trick_counters = {};
+        },
+        
+        /*
+            setup:
+            
+            This method must set up the game user interface according to current game situation specified
+            in parameters.
+            
+            The method is called each time the game interface is displayed to a player, ie:
+            _ when the game starts
+            _ when a player refreshes the game page (F5)
+            
+            "gamedatas" argument contains all datas retrieved by your "getAllDatas" PHP method.
+        */
+        
+        setup: function( gamedatas )
+        {
+            console.log( "Starting game setup" );
+
+            this.players = gamedatas.players;
+            this.colors = gamedatas.colors;
+            
+            console.log(this.colors);
+            
+            // Number of turns
+            this.turn_counter = new ebg.counter();
+            this.turn_counter.create('turn_counter');
+            this.turn_counter.setValue(gamedatas.turn_count);
+            
+            // Setting up player boards
+            for( var player_id in gamedatas.players )
+            {
+                var player = gamedatas.players[player_id];
+                         
+                // TODO: Setting up players boards if needed
+            }
+            
+
+            this.player_hand = new ebg.stock();
+            this.player_hand.create(this, $('myhand'), this.card_width, this.card_height);
+            this.player_hand.image_items_per_row = 11;
+            this.player_hand.setSelectionMode(1); 
+            this.player_hand.setSelectionAppearance('class');            
+            this.player_hand.centerItems = true;
+            this.player_hand.onItemCreate = dojo.hitch(this, 'onCreateNewCard');
+            
+            var position = 0;
+            for(var color=1;color<=5;color++) {
+                for(var value=1;value<=(color==5 ? 4 : 9);value++) {
+                    // Build card type id
+                    var card_id = this.getCardUniqueId(color, value);
+
+                    var position_in_sprite = (color-1)*11+value-1;
+                    if(color==5)
+                    {
+                    	position_in_sprite = 9 + (value-1)*11;
+                    }
+                    else if(color==6)
+                    {
+                    	position_in_sprite = 21;
+                    }
+                    this.player_hand.addItemType(card_id, position, g_gamethemeurl + 'img/cards.png', position_in_sprite);
+                    position++;
+                }
+            }
+            
+         // Cards in player's hand
+            for(var i in this.gamedatas.hand) {
+                var card = this.gamedatas.hand[i];
+                var color = card.type;
+                var value = card.type_arg;
+                this.player_hand.addToStockWithId(this.getCardUniqueId(color, value), card.id);
+            }
+            
+            // Setup game notifications to handle (see "setupNotifications" method below)
+            this.setupNotifications();
+
+            console.log( "Ending game setup" );
+        },
+       
+
+        ///////////////////////////////////////////////////
+        //// Game & client states
+        
+        // onEnteringState: this method is called each time we are entering into a new game state.
+        //                  You can use this method to perform some user interface changes at this moment.
+        //
+        onEnteringState: function( stateName, args )
+        {
+            console.log( 'Entering state: '+stateName );
+            
+            switch( stateName )
+            {
+            
+            /* Example:
+            
+            case 'myGameState':
+            
+                // Show some HTML block at this game state
+                dojo.style( 'my_html_block_id', 'display', 'block' );
+                
+                break;
+           */
+           
+           
+            case 'dummmy':
+                break;
+            }
+        },
+
+        // onLeavingState: this method is called each time we are leaving a game state.
+        //                 You can use this method to perform some user interface changes at this moment.
+        //
+        onLeavingState: function( stateName )
+        {
+            console.log( 'Leaving state: '+stateName );
+            
+            switch( stateName )
+            {
+            
+            /* Example:
+            
+            case 'myGameState':
+            
+                // Hide the HTML block we are displaying only during this game state
+                dojo.style( 'my_html_block_id', 'display', 'none' );
+                
+                break;
+           */
+           
+           
+            case 'dummmy':
+                break;
+            }               
+        }, 
+
+        // onUpdateActionButtons: in this method you can manage "action buttons" that are displayed in the
+        //                        action status bar (ie: the HTML links in the status bar).
+        //        
+        onUpdateActionButtons: function( stateName, args )
+        {
+            console.log( 'onUpdateActionButtons: '+stateName );
+                      
+            if( this.isCurrentPlayerActive() )
+            {            
+                switch( stateName )
+                {
+/*               
+                 Example:
+ 
+                 case 'myGameState':
+                    
+                    // Add 3 action buttons in the action status bar:
+                    
+                    this.addActionButton( 'button_1_id', _('Button 1 label'), 'onMyMethodToCall1' ); 
+                    this.addActionButton( 'button_2_id', _('Button 2 label'), 'onMyMethodToCall2' ); 
+                    this.addActionButton( 'button_3_id', _('Button 3 label'), 'onMyMethodToCall3' ); 
+                    break;
+*/
+                }
+            }
+        },        
+
+        ///////////////////////////////////////////////////
+        //// Utility methods
+        
+        // Get card unique identifier based on its color and value
+        getCardUniqueId: function(color, value) {
+            this.last_color = color;
+            this.last_value = value;
+            return (color-1)*10+(value-1);
+        },
+
+     // Enable to declare an optional parameter and its value
+        setDefault: function(variable, default_value) {
+            return variable === undefined ? default_value : variable;
+        },
+        
+        // Gets the image of the symbol from the sprite
+        symbol: function(name) {
+            return dojo.string.substitute("<span class='logicon ${name}'></span>", {'name' : name});
+        },
+        
+        /*
+         * Tooltip management
+         */
+        shapeTooltip: function(help_HTML, action_HTML) {
+            var help_string_passed = help_HTML != "";
+            var action_string_passed = action_HTML != "";
+            var HTML = "<table class='tooltip'>${content}</table>";
+            if (help_string_passed) {
+                help_string = this.format_string_recursive("<tr><td>${text}</td></tr>", { 'text': help_HTML});
+            }
+            if (action_string_passed) {
+                action_string = this.format_string_recursive("<tr><td>${text}</td></tr>", {'text': action_HTML});
+            }
+            
+            if (help_string_passed && action_string_passed) {
+                content = this.format_string_recursive('${help}${action}', {'help': help_string, 'action': action_string});
+                HTML = this.format_string_recursive(HTML, {'content': content});
+            }
+            else if (help_string_passed) {
+                HTML = this.format_string_recursive(HTML, {'content': help_string});
+            }
+            else { // action_string_passed
+                HTML = this.format_string_recursive(HTML, {'content': action_string});
+            }
+            return HTML;
+        },
+        
+        addCustomTooltip: function(nodeId, help_HTML, action_HTML, delay) {
+            // Default values
+            action_HTML = this.setDefault(action_HTML, '');
+            delay = this.setDefault(delay, undefined);
+            ///////
+            this.addTooltipHtml(nodeId, this.shapeTooltip(help_HTML, action_HTML), delay);
+        },
+        
+        addCustomTooltipToClass: function(cssClass, help_HTML, action_HTML, delay) {
+            // Default values
+            action_HTML = this.setDefault(action_HTML, '');
+            delay = this.setDefault(delay, undefined);
+            ///////
+            this.addTooltipHtmlToClass(cssClass, this.shapeTooltip(help_HTML, action_HTML), delay);
+        },
+        
+        onCreateNewCard: function(card_div, card_type_id, card_HTML_id) {
+            this.createCardTooltip(card_HTML_id, this.last_color, this.last_value)
+        },
+        
+        createCardTooltip : function(card_HTML_id, color, value) {
+           
+            
+            if (color == 6) {
+                var msg = this.format_string_recursive(_("${value_symbol}${color_symbol} : ${color_name} ${value_name}."), {'value_name' :  value, 'color_name' : color, 'value_symbol' : value, 'color_symbol' : color});
+            }
+            else {
+                var msg = this.format_string_recursive(_("${value_symbol}${color_symbol} : ${value_name} ${color_name}."), {'value_name' :  value, 'color_name' : color, 'value_symbol' : value, 'color_symbol' : color});
+            }            
+            
+            this.addCustomTooltip(card_HTML_id, dojo.string.substitute('<span class="card_description">${msg}</span>', {'msg':msg}));
+        },
+
+        ///////////////////////////////////////////////////
+        //// Player's action
+        
+        /*
+        
+            Here, you are defining methods to handle player's action (ex: results of mouse click on 
+            game objects).
+            
+            Most of the time, these methods:
+            _ check the action is possible at this game state.
+            _ make a call to the game server
+        
+        */
+        
+        /* Example:
+        
+        onMyMethodToCall1: function( evt )
+        {
+            console.log( 'onMyMethodToCall1' );
+            
+            // Preventing default browser reaction
+            dojo.stopEvent( evt );
+
+            // Check that this action is possible (see "possibleactions" in states.inc.php)
+            if( ! this.checkAction( 'myAction' ) )
+            {   return; }
+
+            this.ajaxcall( "/thecrew/thecrew/myAction.html", { 
+                                                                    lock: true, 
+                                                                    myArgument1: arg1, 
+                                                                    myArgument2: arg2,
+                                                                    ...
+                                                                 }, 
+                         this, function( result ) {
+                            
+                            // What to do after the server call if it succeeded
+                            // (most of the time: nothing)
+                            
+                         }, function( is_error) {
+
+                            // What to do after the server call in anyway (success or failure)
+                            // (most of the time: nothing)
+
+                         } );        
+        },        
+        
+        */
+
+        
+        ///////////////////////////////////////////////////
+        //// Reaction to cometD notifications
+
+        /*
+            setupNotifications:
+            
+            In this method, you associate each of your game notifications with your local method to handle it.
+            
+            Note: game notification names correspond to "notifyAllPlayers" and "notifyPlayer" calls in
+                  your thecrew.game.php file.
+        
+        */
+        setupNotifications: function()
+        {
+            console.log( 'notifications subscriptions setup' );
+
+            dojo.subscribe('cleanUp', this, "notif_cleanUp");
+            dojo.subscribe('newHand', this, "notif_newHand");
+
+        },  
+        
+        
+        notif_cleanUp: function(notif) {
+            // Cleaning-up
+            this.neutralizePlayerPanels();
+            this.player_hand.removeAll(); // Remove cards in hand if any
+  
+            this.captain_id = null;
+            
+            dojo.place('icon_captain', 'captain_icon_spot_' + notif.args.captain_id);
+            dojo.place('icon_captain_in_panel', 'captain_icon_spot_in_panel_' + notif.args.captain_id);
+        },
+        
+        notif_newHand: function(notif) {
+        	
+            for (var i in notif.args.hand) {
+                var card = notif.args.hand[i];
+                var color = card.type;
+                var value = card.type_arg;
+                
+                this.player_hand.addToStockWithId(this.getCardUniqueId(color, value), card.id);
+            }
+        },
+        
+        notif_updatePlayerScore: function(notif) {
+            // Update the score
+            this.scoreCtrl[notif.args.player_id].incValue(notif.args.points);
+        },
+        
+        notif_newTurn : function(notif) {
+            this.turn_counter.incValue(1);
+        },
+        
+        /* This enable to inject translatable styled things to logs or action bar */
+        /* @Override */
+        format_string_recursive : function(log, args) {
+            try {
+                if (log && args && !args.processed) {
+                	
+                	
+                    args.processed = true;                  
+                    
+                    // Representation of the value of a card
+                    if (args.value_symbol !== undefined) {
+                        args.value_symbol = dojo.string.substitute("<strong class='${actual_color}'>${value_symbol}</strong>", {'actual_color' : this.colors[args.color_symbol].color, 'value_symbol' : args.value_symbol});
+                    }
+                    
+                    // Representation of the color of a card
+                    if (args.color_symbol !== undefined) {
+                        args.color_symbol = dojo.string.substitute("<span class='logicon ${actual_color}' title='${actual_color_name}'></span>", {'actual_color' : this.colors[args.color_symbol].color, 'actual_color_name' : this.colors[args.color_symbol].name});
+                    }
+                    
+                    if (args.color_name !== undefined) {
+                         args.color_name = _(this.colors[args.color_name].name);
+                    }
+                    
+                    if (args.color_nameof !== undefined) {
+                         args.color_nameof = _(this.colors[args.color_nameof].nameof);
+                    }
+                }
+            } catch (e) {
+                console.error(log,args,"Exception thrown", e.stack);
+            }
+            return this.inherited(arguments);
+        },
+   });             
+});

@@ -1,0 +1,674 @@
+/**
+ *------
+ * BGA framework: Â© Gregory Isabelli <gisabelli@boardgamearena.com> & Emmanuel Colin <ecolin@boardgamearena.com>
+ * thecrew implementation : Â© <Your name here> <Your email address here>
+ *
+ * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
+ * See http://en.boardgamearena.com/#!doc/Studio for more information.
+ * -----
+ *
+ * thecrew.js
+ *
+ * thecrew user interface script
+ * 
+ * In this file, you are describing the logic of your user interface, in Javascript language.
+ *
+ */
+
+define([
+    "dojo","dojo/_base/declare",
+    "ebg/core/gamegui",
+    "ebg/counter",
+    "ebg/stock",
+],
+function (dojo, declare) {
+    return declare("bgagame.thecrew", ebg.core.gamegui, {
+        constructor: function(){
+            console.log('thecrew constructor');
+              
+            // Here, you can init the global variables of your user interface
+            // Example:
+            this.commander_id = null;
+            this.players = null;
+            this.colors = null;
+
+            this.card_width = 100;
+            this.card_height = 157;
+            
+            // Number of turns 
+            this.mission_counter = null;
+            this.attempts_counter = null;
+            this.total_attempts_counter = null;
+            this.trick_counters = {};
+            this.cards_counters = {};
+            
+            this.task_markers = {
+                	'1' :  _('This task must be fulfilled first.'),
+                	'2' :  _('This task must be fulfilled second.'),
+                	'3' :  _('This task must be fulfilled third.'),
+                	'4' :  _('This task must be fulfilled fourth.'),
+                	'5' :  _('This task must be fulfilled fifth.'),
+                	'o' :  _('This task must be fulfilled last.'),
+                	'i1' :  _('This task must be fulfilled before &rsaquo;&rsaquo;.'),
+                	'i2' :  _('This task must be fulfilled after &rsaquo;.'),
+                	'i3' :  _('This task must be fulfilled after &rsaquo;&rsaquo;.'),
+                	'i4' :  _('This task must be fulfilled after &rsaquo;&rsaquo;&rsaquo;.'),
+            };
+            
+            this.missions = {1 : _('Congratulations! You have been chosen from a vast array of applicants to participate in the most important, and dangerous adventure that mankind has ever faced: the search for Planet Nine. You barely arrive at the training facility before you have already begun your first training phase: team building.'),
+            		2 : _('It is apparent that you are a perfectly matched crew. Above all, is your mental connection — this so-called drift compatibility bodes well for an ongoing successful collaboration. It’s time for training phases two and three: control technology and weightlessness..'),
+            		3 : _('The training phases each build on the lessons learned in the previous phase. This combined energy supply and emergency prioritization course will require a high degree of logical thinking to understand and make the appropriate connections. Your education in mathematics will certainly come in handy for this.'),
+            };
+        },
+        
+        /*
+            setup:
+            
+            This method must set up the game user interface according to current game situation specified
+            in parameters.
+            
+            The method is called each time the game interface is displayed to a player, ie:
+            _ when the game starts
+            _ when a player refreshes the game page (F5)
+            
+            "gamedatas" argument contains all datas retrieved by your "getAllDatas" PHP method.
+        */
+        
+        setup: function( gamedatas )
+        {
+            console.log( "Starting game setup" );
+            console.log( gamedatas.players );
+
+            this.players = gamedatas.players;
+            this.colors = gamedatas.colors;
+            
+            // Number of turns
+            this.mission_counter = new ebg.counter();
+            this.mission_counter.create('mission_counter');
+            this.mission_counter.setValue(gamedatas.mission);
+            this.attempts_counter = new ebg.counter();
+            this.attempts_counter.create('try_counter');
+            this.attempts_counter.setValue(gamedatas.mission_attempts);
+            this.total_attempts_counter = new ebg.counter();
+            this.total_attempts_counter.create('total_try_counter');
+            this.total_attempts_counter.setValue(gamedatas.total_attempts);
+            $('mission_description').innerHTML = this.missions[gamedatas.mission];
+            
+            // Setting up player boards
+            for( var player_id in gamedatas.players )
+            {
+                var player = gamedatas.players[player_id];
+                var cardontable =  player['cardontable'];
+                if(cardontable  !== undefined)
+                {
+                	dojo.place( this.format_block('jstpl_cardontable', cardontable), $('playertablecard_'+this.players[player_id]['relative']));
+                    this.createCardTooltip('card_' + cardontable['id'], cardontable['type'], cardontable['type_arg']);
+                }
+                
+                var cardontable =  player['comm'];
+                if(cardontable  !== undefined)
+                {
+                	dojo.place( this.format_block('jstpl_cardontable', cardontable), $('comcard_'+player_id));
+                    this.createCardTooltip('card_' + cardontable['id'], cardontable['type'], cardontable['type_arg']);
+                }
+                
+                dojo.place(this.format_block('jstpl_player', {player_id:player_id}), 'player_board_' + player_id);
+                
+                this.trick_counters[player_id] = new ebg.counter();
+                this.trick_counters[player_id].create('trick_counter_' + player_id);
+                this.trick_counters[player_id].setValue(player['player_trick_number']);                
+
+                this.cards_counters[player_id] = new ebg.counter();
+                this.cards_counters[player_id].create('cardsinhands_counter_' + player_id);
+                this.cards_counters[player_id].setValue(player['cards_number']);
+
+                this.addCustomTooltip('tricks_' + player_id, _('Number of tricks won.'))
+                this.addCustomTooltip('cardsinhand_' + player_id, _('Number of cards in hand.'))
+                
+                var commander_desc = _('The commander is always the player with the four rocket. <br/>The duties of the commander are: <br/>1. start the selection of the tasks <br/>2. start the first trick <br/>3. implement the special rules of individual missions');
+                this.addTooltipHtml( 'commander_in_panel_' + player_id, this.format_block('jstpl_tooltip_common', {title: _('Commander token'), description:  commander_desc}));
+                this.addTooltipHtml( 'commander_icon_spot_' + player_id, this.format_block('jstpl_tooltip_common', {title: _('Commander token'), description: commander_desc }));   
+            
+                this.addTooltipHtml( 'radio_' + player_id, this.format_block('jstpl_tooltip_common', {title: _('Radio communication token'), description:  _('Click to place the communication token on a color card from your hand :<br/>- At the top, if it is your highest card of this color.<br/>- In the middle, if it is your only card of this color.<br/>- At the bottom, if it is your lowest card of this color.')}));
+             
+            }
+
+            this.player_hand = new ebg.stock();
+            this.player_hand.create(this, $('myhand'), this.card_width, this.card_height);
+            this.player_hand.image_items_per_row = 11;
+            this.player_hand.setSelectionMode(0); 
+            this.player_hand.setSelectionAppearance('class');            
+            this.player_hand.centerItems = true;
+            this.player_hand.onItemCreate = dojo.hitch(this, 'onCreateNewCard');
+            
+            var position = 0;
+            for(var color=1;color<=5;color++) {
+                for(var value=1;value<=(color==5 ? 4 : 9);value++) {
+                    // Build card type id
+                    var card_id = this.getCardUniqueId(color, value);
+
+                    var position_in_sprite = (color-1)*11+value-1;
+                    if(color==5)
+                    {
+                    	position_in_sprite = 9 + (value-1)*11;
+                    }
+                    else if(color==6)
+                    {
+                    	position_in_sprite = 21;
+                    }
+                    this.player_hand.addItemType(card_id, position, g_gamethemeurl + 'img/cards.png', position_in_sprite);
+                    position++;
+                }
+            }
+
+            var card_id = this.getCardUniqueId(6, 0);
+            this.player_hand.addItemType(card_id, position, g_gamethemeurl + 'img/cards.png', 22);
+            position++;
+            
+
+    		dojo.query(".commander").addClass("hidden");
+    		dojo.query("#commander_icon_spot_"+gamedatas.commander_id).removeClass("hidden");
+    		dojo.query(".commander_in_panel").addClass("hidden");
+    		dojo.query("#commander_in_panel_"+gamedatas.commander_id).removeClass("hidden");
+
+            
+         // Cards in player's hand
+            for(var i in this.gamedatas.hand) {
+                var card = this.gamedatas.hand[i];
+                var color = card.type;
+                var value = card.type_arg;
+                this.player_hand.addToStockWithId(this.getCardUniqueId(color, value), card.id);
+    			dojo.query("#myhand_item_"+card.id).connect('onclick', this, 'onPlayCard'); 
+            }
+            
+            for( var task_id in this.gamedatas.tasks )
+            {
+                var task = this.gamedatas.tasks[task_id];
+            	dojo.place( this.format_block('jstpl_task', task), $('tasks_'+task['player_id']));
+                this.createTaskTooltip(task);
+            }            
+            
+            // Setup game notifications to handle (see "setupNotifications" method below)
+            this.setupNotifications();
+
+            console.log( "Ending game setup" );
+        },
+       
+
+        ///////////////////////////////////////////////////
+        //// Game & client states
+        
+        // onEnteringState: this method is called each time we are entering into a new game state.
+        //                  You can use this method to perform some user interface changes at this moment.
+        //
+        onEnteringState: function( stateName, args )
+        {
+            console.log( 'Entering state: '+stateName );
+    		dojo.query("#playertable_central").removeClass("hidden");
+    		dojo.query("#tasks").addClass("hidden");
+            
+            switch( stateName )
+            {
+            
+            /* Example:
+            
+            case 'myGameState':
+            
+                // Show some HTML block at this game state
+                dojo.style( 'my_html_block_id', 'display', 'block' );
+                
+                break;
+           */
+            
+            case 'pickTask':
+        		dojo.query("#playertable_central").addClass("hidden");
+        		dojo.query("#tasks").removeClass("hidden");
+        		dojo.empty("tasklists");
+        		for( var task_id in args.args.tasks )
+                {
+                    var task = args.args.tasks[task_id];
+                	dojo.place( this.format_block('jstpl_task', task), $('tasklists'));
+                    this.createTaskTooltip(task);
+                }
+        		if(this.isCurrentPlayerActive())
+        		{
+        			dojo.query("#tasklists .taskontable").addClass("selectable");
+        			dojo.query("#tasklists .taskontable").connect('onclick', this, 'onChooseTask'); 
+        		}
+
+            	break;
+            	
+            case 'playerTurn':
+        		if(this.isCurrentPlayerActive())
+        		{
+	            	for( var card_id in args.args.cards )
+	                {
+	        			dojo.query("#myhand_item_"+args.args.cards[card_id]).addClass("selectable");
+	                }
+        		}
+            	break;
+           
+           
+            case 'dummmy':
+                break;
+            }
+        },
+
+        // onLeavingState: this method is called each time we are leaving a game state.
+        //                 You can use this method to perform some user interface changes at this moment.
+        //
+        onLeavingState: function( stateName )
+        {
+            console.log( 'Leaving state: '+stateName );
+
+    		console.log('remove selectable');
+        	//dojo.query(".selectable").removeClass("selectable");
+            
+            switch( stateName )
+            {
+            
+            /* Example:
+            
+            case 'myGameState':
+            
+                // Hide the HTML block we are displaying only during this game state
+                dojo.style( 'my_html_block_id', 'display', 'none' );
+                
+                break;
+           */
+           
+           
+            case 'dummmy':
+                break;
+            }               
+        }, 
+
+        // onUpdateActionButtons: in this method you can manage "action buttons" that are displayed in the
+        //                        action status bar (ie: the HTML links in the status bar).
+        //        
+        onUpdateActionButtons: function( stateName, args )
+        {
+            console.log( 'onUpdateActionButtons: '+stateName );
+                      
+            if( this.isCurrentPlayerActive() )
+            {            
+                switch( stateName )
+                {
+/*               
+                 Example:
+ 
+                 case 'myGameState':
+                    
+                    // Add 3 action buttons in the action status bar:
+                    
+                    this.addActionButton( 'button_1_id', _('Button 1 label'), 'onMyMethodToCall1' ); 
+                    this.addActionButton( 'button_2_id', _('Button 2 label'), 'onMyMethodToCall2' ); 
+                    this.addActionButton( 'button_3_id', _('Button 3 label'), 'onMyMethodToCall3' ); 
+                    break;
+*/
+                }
+            }
+        },    
+        
+
+        onPlayCard:function(event)
+        {
+            dojo.stopEvent( event );  
+            if(this.isCurrentPlayerActive())
+            {
+            	if(event.currentTarget.classList.contains('selectable')  && this.checkAction( "actPlayCard" ) ) { 
+            		
+            		var id = event.currentTarget.id.split('_')[2];            		
+
+                    dojo.query(".selectable").removeClass("selectable"); 
+            		
+            		this.ajaxcall('/thecrew/thecrew/actPlayCard.html', {
+	 	                   lock:true,
+	 	                  cardId:id
+	 	                },this, function( result ) {
+	 	                }, function( is_error ) { } );
+            	}
+            }
+        },
+        
+        onChooseTask:function(event)
+        {
+            dojo.stopEvent( event );  
+            if(this.isCurrentPlayerActive())
+            {
+            	if(event.currentTarget.classList.contains('selectable')  && this.checkAction( "actChooseTask" ) ) { 
+            		
+            		var id = event.currentTarget.id.split('_')[1];            		
+
+                    dojo.query(".selectable").removeClass("selectable"); 
+            		
+            		this.ajaxcall('/thecrew/thecrew/actChooseTask.html', {
+	 	                   lock:true,
+	 	                  taskId:id
+	 	                },this, function( result ) {
+	 	                }, function( is_error ) { } );
+            	}
+            }
+        },
+
+        
+        // Get card unique identifier based on its color and value
+        getCardUniqueId: function(color, value) {
+            this.last_color = color;
+            this.last_value = value;
+            return (color-1)*10+(value-1);
+        },
+
+     // Enable to declare an optional parameter and its value
+        setDefault: function(variable, default_value) {
+            return variable === undefined ? default_value : variable;
+        },
+        
+        // Gets the image of the symbol from the sprite
+        symbol: function(name) {
+            return dojo.string.substitute("<span class='logicon ${name}'></span>", {'name' : name});
+        },
+        
+        /*
+         * Tooltip management
+         */
+        shapeTooltip: function(help_HTML, action_HTML) {
+            var help_string_passed = help_HTML != "";
+            var action_string_passed = action_HTML != "";
+            var HTML = "<table class='tooltip'>${content}</table>";
+            if (help_string_passed) {
+                help_string = this.format_string_recursive("<tr><td>${text}</td></tr>", { 'text': help_HTML});
+            }
+            if (action_string_passed) {
+                action_string = this.format_string_recursive("<tr><td>${text}</td></tr>", {'text': action_HTML});
+            }
+            
+            if (help_string_passed && action_string_passed) {
+                content = this.format_string_recursive('${help}${action}', {'help': help_string, 'action': action_string});
+                HTML = this.format_string_recursive(HTML, {'content': content});
+            }
+            else if (help_string_passed) {
+                HTML = this.format_string_recursive(HTML, {'content': help_string});
+            }
+            else { // action_string_passed
+                HTML = this.format_string_recursive(HTML, {'content': action_string});
+            }
+            return HTML;
+        },
+        
+        addCustomTooltip: function(nodeId, help_HTML, action_HTML, delay) {
+            // Default values
+            action_HTML = this.setDefault(action_HTML, '');
+            delay = this.setDefault(delay, undefined);
+            ///////
+            this.addTooltipHtml(nodeId, this.shapeTooltip(help_HTML, action_HTML), delay);
+        },
+        
+        addCustomTooltipToClass: function(cssClass, help_HTML, action_HTML, delay) {
+            // Default values
+            action_HTML = this.setDefault(action_HTML, '');
+            delay = this.setDefault(delay, undefined);
+            ///////
+            this.addTooltipHtmlToClass(cssClass, this.shapeTooltip(help_HTML, action_HTML), delay);
+        },
+        
+        onCreateNewCard: function(card_div, card_type_id, card_HTML_id) {
+            this.createCardTooltip(card_HTML_id, this.last_color, this.last_value)
+        },
+
+        createCardTooltip : function(card_HTML_id, color, value) {            
+            if(color == 6)
+            {
+            	msg = _("Reminder card");
+                 this.addTooltipHtml( card_HTML_id, this.format_block('jstpl_tooltip_common', {title: _('Reminder card'), description: _('In hand, its purpose is to remind you that your communicated card is still on the table.') }));
+                   
+            }
+            else
+            {
+            	var msg = this.format_string_recursive(_("${value_symbol}${color_symbol} : ${value_name} ${color_name}."), {'value_name' :  value, 'color_name' : color, 'value_symbol' : value, 'color_symbol' : color});
+            	this.addCustomTooltip(card_HTML_id, dojo.string.substitute('<span class="card_description">${msg}</span>', {'msg':msg}));
+            }
+         },
+        createTaskTooltip : function(task) { 
+        	var card_HTML_id = 'task_' + task['task_id'];
+        	var color = task['card_type'];
+        	var value = task['card_type_arg'];
+            var token = task['token'];
+        	var msg = this.format_string_recursive(_("<b>Task</b><br/> ${value_symbol}${color_symbol} : ${value_name} ${color_name}."), {'value_name' :  value, 'color_name' : color, 'value_symbol' : value, 'color_symbol' : color});
+            if(token != null)
+            {
+            	msg = msg + '<br/>'+this.task_markers[token];
+            }
+            
+            this.addCustomTooltip(card_HTML_id, dojo.string.substitute('<span class="card_description">${msg}</span>', {'msg':msg}));
+        },
+
+        ///////////////////////////////////////////////////
+        //// Player's action
+        
+        /*
+        
+            Here, you are defining methods to handle player's action (ex: results of mouse click on 
+            game objects).
+            
+            Most of the time, these methods:
+            _ check the action is possible at this game state.
+            _ make a call to the game server
+        
+        */
+        
+        /* Example:
+        
+        onMyMethodToCall1: function( evt )
+        {
+            console.log( 'onMyMethodToCall1' );
+            
+            // Preventing default browser reaction
+            dojo.stopEvent( evt );
+
+            // Check that this action is possible (see "possibleactions" in states.inc.php)
+            if( ! this.checkAction( 'myAction' ) )
+            {   return; }
+
+            this.ajaxcall( "/thecrew/thecrew/myAction.html", { 
+                                                                    lock: true, 
+                                                                    myArgument1: arg1, 
+                                                                    myArgument2: arg2,
+                                                                    ...
+                                                                 }, 
+                         this, function( result ) {
+                            
+                            // What to do after the server call if it succeeded
+                            // (most of the time: nothing)
+                            
+                         }, function( is_error) {
+
+                            // What to do after the server call in anyway (success or failure)
+                            // (most of the time: nothing)
+
+                         } );        
+        },        
+        
+        */
+
+        
+        ///////////////////////////////////////////////////
+        //// Reaction to cometD notifications
+
+        /*
+            setupNotifications:
+            
+            In this method, you associate each of your game notifications with your local method to handle it.
+            
+            Note: game notification names correspond to "notifyAllPlayers" and "notifyPlayer" calls in
+                  your thecrew.game.php file.
+        
+        */
+        setupNotifications: function()
+        {
+            console.log( 'notifications subscriptions setup' );
+
+            dojo.subscribe('cleanUp', this, "notif_cleanUp");
+            dojo.subscribe('newHand', this, "notif_newHand");
+            dojo.subscribe('takeTask', this, "notif_takeTask");
+            dojo.subscribe('playCard', this, "notif_playCard");
+            dojo.subscribe('trickWin', this, "notif_trickWin");
+            dojo.subscribe('giveAllCardsToPlayer', this, "notif_giveAllCardsToPlayer");
+                
+            this.notifqueue.setSynchronous('trickWin', 1000); // Reasonable time for players to see the cards played before they are gathered
+            this.notifqueue.setSynchronous('giveAllCardsToPlayer', 2000); // The time needed for cards to move and disappear
+     
+        },  
+        
+        notif_giveAllCardsToPlayer: function(notif) {
+            // Move all cards on table to given table, then destroy them
+            var winner_id = notif.args.player_id;
+            this.trick_counters[winner_id].incValue(1); // Increase the trick counter by one
+            for(var card_id in notif.args.cards) {
+            	var card = notif.args.cards[card_id];
+                var b_winning_card = (winner_id == card['location_arg']);
+                dojo.style('card_' + card['id'], 'z-index', 11+b_winning_card); // Ensure that the winning card stays on top                               
+                
+                var anim = this.slideToObject('card_' + card['id'], 'playertablecard_' + this.players[winner_id]['relative'], 1000); // Program the anim: 1. Slide the cart (1 second)
+                if (b_winning_card) {
+                    self = this;
+                    dojo.connect(anim, 'onEnd', function(node) {self.fadeOutAndDestroy(node, 1000);}); // 2. Delete it (1 second for the top card)
+                }
+                else {
+                    dojo.connect(anim, 'onEnd', function(node) {dojo.destroy(node);}); // 2. Delete it (immediately for card under the top card)
+                }
+                anim.play(); // Launch the anim (total 2 seconds => match the setSynchronous value)
+            }
+        },
+        
+        notif_trickWin: function(notif) {
+            // We do nothing here (just wait in order players can view the cards played before they are gathered
+        },
+        
+        notif_playCard: function(notif) {
+            // Play a card on the table
+            this.playCardOnTable(notif.args.card);
+            this.cards_counters[notif.args.card.location_arg].incValue(-1);
+        },
+
+        notif_takeTask: function(notif) {
+            var task = notif.args.task;
+            this.attachToNewParent( 'task_'+task['task_id'], 'tasks_'+task['player_id'] );
+            
+            dojo.animateProperty({
+	       	    node: 'task_'+task['task_id'], 
+	       	    duration: 1000,
+	            easing: dojo.fx.easing.expoInOut,
+	       	    properties: {
+	               left: 0,
+	               top: 0,
+	       	    }
+	       	    
+	       	  }).play();
+            
+        },
+        
+        notif_cleanUp: function(notif) {
+            // Cleaning-up
+            this.neutralizePlayerPanels();
+            this.player_hand.removeAll(); // Remove cards in hand if any
+  
+            this.commander_id = null;
+            
+            dojo.place('icon_commander', 'commander_icon_spot_' + notif.args.commander_id);
+
+    		dojo.query(".commander_in_panel").addClass("hidden");
+    		dojo.query("#commander_in_panel_"+notif.args.commander_id).removeClass("hidden");
+        },
+        
+        notif_newHand: function(notif) {
+        	
+            for (var i in notif.args.hand) {
+                var card = notif.args.hand[i];
+                var color = card.type;
+                var value = card.type_arg;
+                
+                this.player_hand.addToStockWithId(this.getCardUniqueId(color, value), card.id);
+    			dojo.query("#myhand_item_"+card.id).connect('onclick', this, 'onPlayCard'); 
+            }
+        },
+        
+        notif_updatePlayerScore: function(notif) {
+            // Update the score
+            this.scoreCtrl[notif.args.player_id].incValue(notif.args.points);
+        },
+        
+        notif_newTurn : function(notif) {
+            this.turn_counter.incValue(1);
+        },
+        
+        playCardOnTable: function(card) {
+
+        	var player_id = card['location_arg'];
+        	var card_id = card['id'];
+        	console.log(card);
+        	dojo.place( this.format_block('jstpl_cardontable', card), $('playertablecard_'+this.players[player_id]['relative']));
+                            
+            if (player_id != this.player_id) {
+                // Some opponent played a card
+                // Move card from player panel
+                this.placeOnObject('card_' + card['id'], 'playertable_' + player_id);
+            }
+            else {
+                // You played a card. If it exists in your hand, move card from there and remove the corresponding item
+                if($('myhand_item_' + card_id)) {
+                    this.placeOnObject('card_' + card_id, 'myhand_item_' + card_id);
+                    this.player_hand.removeFromStockById(card_id);
+                }
+            }
+
+            dojo.animateProperty({
+	       	    node: 'card_'+card_id, 
+	       	    duration: 1000,
+	            easing: dojo.fx.easing.expoInOut,
+	       	    properties: {
+	               left: 0,
+	               top: 0,
+	       	    }
+	       	    
+	       	  }).play();
+            
+            
+            // Add tooltip
+            this.createCardTooltip('card_' + card_id, card['type'], card['type_arg']);
+        },
+        
+        /* This enable to inject translatable styled things to logs or action bar */
+        /* @Override */
+        format_string_recursive : function(log, args) {
+            try {
+                if (log && args && !args.processed) {
+                	
+                	
+                    args.processed = true;                  
+                    
+                    // Representation of the value of a card
+                    if (args.value_symbol !== undefined) {
+                        args.value_symbol = dojo.string.substitute("<strong class='${actual_color}'>${value_symbol}</strong>", {'actual_color' : this.colors[args.color_symbol].color, 'value_symbol' : args.value_symbol});
+                    }
+                    
+                    // Representation of the color of a card
+                    if (args.color_symbol !== undefined) {
+                        args.color_symbol = dojo.string.substitute("<span class='logicon ${actual_color}' title='${actual_color_name}'></span>", {'actual_color' : this.colors[args.color_symbol].color, 'actual_color_name' : this.colors[args.color_symbol].name});
+                    }
+                    
+                    if (args.color_name !== undefined) {
+                         args.color_name = _(this.colors[args.color_name].name);
+                    }
+                    
+                    if (args.color_nameof !== undefined) {
+                         args.color_nameof = _(this.colors[args.color_nameof].nameof);
+                    }
+                }
+            } catch (e) {
+                console.error(log,args,"Exception thrown", e.stack);
+            }
+            return this.inherited(arguments);
+        },
+   });             
+});

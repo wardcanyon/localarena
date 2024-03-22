@@ -1,0 +1,117 @@
+body, div, dl, dt, dd, ul, ol, li, h1, h2, h3, h4, h5, h6, pre, code, form, fieldset, legend, input, textarea, p, blockquote, th, td, span {
+    margin: 0;
+    padding: 0;
+}
+body {
+    font-family: "Roboto", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1;
+}
+
+#bg_game_overall {
+	display: table;
+  width: 100%;
+}
+
+#bg_game_central {
+  display: table-cell;
+}
+
+#bg_game_sidebar
+{
+    display: table-cell;
+	width: 200px;
+}
+
+.bg_game_player {	
+	width: 200px;
+	border: 1px solid;
+  	border-radius: 5px;
+  	margin-bottom: 5px;
+	background-color: white; 
+    padding: 5px;
+}
+
+.bg_game_message {
+	margin-bottom: 2px;
+    border: 1px solid #777777;
+    border-radius: .25rem;
+    padding: 5px;
+}
+
+.log_title {
+	font-weight: bold;
+	margin-top: 20px;
+}
+
+.avatar {
+  vertical-align: middle;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+}
+
+.bg_game_blink {
+  animation: blinker 1s linear infinite;
+}
+
+.bg_game_message { 
+	cursor: pointer; 
+	background-color: white; 
+}
+
+#bg_game_bottom {	
+	border: 1px solid;
+  	border-radius: 5px;
+  	padding: 10px;
+	background-color: white; 
+}
+
+#bg_game_bottom .tab-pane {
+	margin: 10px;
+}
+
+.whiteblock {
+	margin-top: 10px; 
+	margin-bottom: 10px; 
+	padding: 10px; 
+	background-image: url("./transparent.png");
+}
+
+.stockitem {
+	position: absolute; 
+}
+
+.stockitem_selectable {	
+  	cursor: pointer;
+}
+
+.stockitem_selected {
+	border: 2px solid red ! important;
+}
+
+.tooltip-container {	
+    font-size: 14px;
+}
+
+.tooltip-message {
+    display: block;
+    vertical-align: top;
+    width: 240px;
+    margin-right: 5px;
+}
+.bg_game_hidden
+{
+    opacity: 0;	
+}
+
+.tooltip-title {
+    font-weight: bold;
+    font-size: 110%;
+}
+
+@keyframes blinker {
+  50% {
+    opacity: 0;
+  }
+}

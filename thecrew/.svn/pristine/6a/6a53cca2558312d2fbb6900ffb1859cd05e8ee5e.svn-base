@@ -1,0 +1,14 @@
+<?php
+
+class THCCheck5 extends THCCheck
+{
+    function __construct($cards )
+    {
+        parent::__construct($cards);
+    }
+    
+    public function check()
+    {
+        
+    }
+}

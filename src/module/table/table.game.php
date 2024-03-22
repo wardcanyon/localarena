@@ -327,7 +327,7 @@ class Table {
     {
         $result = $this->conn->query("SHOW TABLES LIKE 'player'");
         if ($result->num_rows > 0) {
-            echo "*** player table exists\n";
+            echo "*** Skipping database initialization...\n";
         }
         else
         {

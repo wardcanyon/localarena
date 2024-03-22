@@ -6,6 +6,8 @@ use Ratchet\ConnectionInterface;
 
 use Ratchet\MessageComponentInterface;
 
+$game_name = 'thecrew';
+
 define("APP_BASE_PATH",'/src/');
 define("APP_GAMEMODULE_PATH",'/src/');
 
@@ -13,7 +15,7 @@ set_include_path(get_include_path() . PATH_SEPARATOR . APP_GAMEMODULE_PATH);
 
 require '/src/vendor/autoload.php';
 
-include('thecrew/thecrew.game.php');
+include($game_name . '/' . $game_name . '.game.php');
 
 class GameServer implements MessageComponentInterface {
 
@@ -30,7 +32,7 @@ class GameServer implements MessageComponentInterface {
     public function onMessage(ConnectionInterface $from, $msg) {
 
         $currentPlayerId = str_replace("/","", $from->httpRequest->getUri()->getPath());
-        $game = new thecrew();
+        $game = new ("$game_name")();
         $game->doAction( $this, json_decode($msg, true));
     }
 

@@ -1,3 +1,7 @@
+<?php
+$game_name = 'thecrew';
+?>
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -11,7 +15,7 @@
     <link rel="stylesheet" href="./dijit/themes/claro/claro.css"/>
     <link href="./fa/css/all.css" rel="stylesheet">
     <link rel="stylesheet" href="./site.css"/>
-    <link rel="stylesheet" href="./thecrew/thecrew.css"/>
+    <link rel="stylesheet" href="./<?= "$game_name" ?>/<?= "$game_name" ?>.css"/>
 
 </head>
 <body class="claro">
@@ -23,13 +27,13 @@
      define("APP_BASE_PATH",'/src/');
      define("APP_GAMEMODULE_PATH",'/src/');
 
-     include('thecrew/thecrew.view.php');
+     include($game_name . '/' . $game_name . '.view.php');
 
     ?>
 
      <?php
 
-        $view = new view_thecrew_thecrew();
+        $view = new ("view_{$game_name}_{$game_name}")();
         $currentPlayer = 2317679;
 
         if(DEV_MODE)
@@ -76,7 +80,7 @@
             },
             {
                 name: "bgagame",
-                location: "/game/thecrew/"
+                location: "/game/<?= "$game_name" ?>/"
             }]
         };
 
@@ -103,18 +107,18 @@
 		return dojo.byId(val);
 	};
 
-	g_gamethemeurl = "http://localhost/game/thecrew/";
+     g_gamethemeurl = "http://localhost/game/<?= "$game_name" ?>/";
 
     </script>
     <script src="dojo/dojo.js"></script>
 
     <script>
-    require(["dojo", "dojo/_base/unload","bgagame/thecrew", "dojo/domReady!"], function( dojo, baseUnload ) {
+     require(["dojo", "dojo/_base/unload","bgagame/<?= "$game_name" ?>", "dojo/domReady!"], function( dojo, baseUnload ) {
 
-        gameui = new bgagame.thecrew();
+         gameui = new bgagame.<?= "$game_name" ?>();
         gameui.player_id = <?= $view->game->currentPlayer?>;
         gameui.current_player_name="Mistergos1";
-		gameui.completesetup( "thecrew", <?= $view->getFullDatasAsJson()?>);
+	 gameui.completesetup( "<?= "$game_name" ?>", <?= $view->getFullDatasAsJson()?>);
 		gameui.logAll(<?= json_encode($view->game->getLogs())?>);
 
 		<?php

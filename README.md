@@ -33,24 +33,23 @@ $ docker volume rm local_db-data
 
 ### TODOs
 
-- "GameServer.php" looks like it might be code for the WebSocket-based
-  notification system.  That probably needs to be run as a service.
-
-  ```
-  ebg/core/gamegui.js:30:        	this.socket = new WebSocket("ws://localhost:3000/"+this.player_id);
-  ```
-
 - Bind-mount /src into the `server` container so that we don't need to
   rebuild it and restart services every time something is edited.
 
-- 404: "/css/csslayer.css"
+- 404: "/css/csslayer.css".  This appears to have been part of the BGA
+  theme, but it looks like an empty file today on BGA (2024-03).
 
-- "thecrew.js" script error: `http://localhost:9000/:248`
+  From running a snippet I found quickly online, the following CSS classes appear to be undefined:
 
-  And when I check "load saved game state", for example, I see this in the console (also as a script error thrown from "thecrew.js"):
-
-  ```
-  http://localhost:9000/?loadDatabase=1&testplayer0:248
-  ```
-
-- Ah, game JS is not being loaded: "https://localhost/game/thecrew/thecrew.js"
+  0: "dj_ff124"
+  1: "dj_contentbox"
+  2: "finalbutton"
+  3: "bgabutton"
+  4: "bgabutton_blue"
+  5: "bgabutton_gray"
+  6: "socketButton"
+  7: "bg_game_thinking"
+  8: "id="
+  9: "bg_game_score"
+  10: "bg_game_debug_user"
+  11: "dijitTooltipContents"

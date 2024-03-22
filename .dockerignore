@@ -31,5 +31,6 @@
 **/secrets.dev.yaml
 **/values.dev.yaml
 **/vendor
+!src/vendor
 LICENSE
 README.md

@@ -40,6 +40,7 @@ FROM php:8.2-apache
 #    && pecl install xdebug-3.2.1 \
 #    && docker-php-ext-enable redis xdebug
 
+# Install PHP mysqli extension
 RUN docker-php-ext-install mysqli && docker-php-ext-enable mysqli
 
 # Use the default production configuration for PHP runtime arguments, see

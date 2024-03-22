@@ -6,15 +6,17 @@ use Ratchet\ConnectionInterface;
 
 use Ratchet\MessageComponentInterface;
 
-require dirname(__DIR__) . '/game/vendor/autoload.php';
-
 define("APP_BASE_PATH",'/src/');
 define("APP_GAMEMODULE_PATH",'/src/');
+
+set_include_path(get_include_path() . PATH_SEPARATOR . APP_GAMEMODULE_PATH);
+
+require '/src/vendor/autoload.php';
 
 include('thecrew/thecrew.game.php');
 
 class GameServer implements MessageComponentInterface {
-bl
+
     public function __construct() {
         $this->clients = array();
     }

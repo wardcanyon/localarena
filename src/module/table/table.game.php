@@ -18,10 +18,11 @@ class Table {
         include($this->getGameName().'/states.inc.php');
         include_once($this->getGameName().'/'.$this->getGameName().'.action.php');
 
-        $this->servername = "localhost";
-        $this->username = "root";
-        $this->password = "";
-        $this->dbname = $this->getGameName();
+        # These are provided by Docker Compose; see "compose.yaml".
+        $this->servername = getenv('DB_HOST');
+        $this->username = getenv('DB_USER');
+        $this->dbname = getenv('DB_NAME');
+        $this->password = trim(file_get_contents(getenv('DB_PASSWORD_FILE_PATH')));
 
         $this->currentPlayer = 0;
         $this->replayFrom = 0;

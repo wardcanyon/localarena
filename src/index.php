@@ -10,28 +10,28 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous"/>
     <link rel="stylesheet" href="./dijit/themes/claro/claro.css"/>
     <link href="./fa/css/all.css" rel="stylesheet">
-    <link rel="stylesheet" href="./site.css"/>    
+    <link rel="stylesheet" href="./site.css"/>
     <link rel="stylesheet" href="./thecrew/thecrew.css"/>
 
 </head>
 <body class="claro">
-     <?php 
-     
-     
+     <?php
+
+
      define("DEV_MODE",1);
-     
-     define("APP_BASE_PATH",'D:/wamp64\www\game/');
-     define("APP_GAMEMODULE_PATH",'D:/wamp64\www\game/');        
-        
+
+     define("APP_BASE_PATH",'/src');
+     define("APP_GAMEMODULE_PATH",'/src');
+
      include('thecrew/thecrew.view.php');
-        
+
     ?>
-                
-     <?php 
-     
-        $view = new view_thecrew_thecrew(); 
+
+     <?php
+
+        $view = new view_thecrew_thecrew();
         $currentPlayer = 2317679;
-        
+
         if(DEV_MODE)
         {
             if(isset($_GET['testplayer']))
@@ -44,14 +44,14 @@
             }
         }
         $view->game->currentPlayer = $currentPlayer;
-        
+
         if(isset($_GET['replayFrom']))
         {
             $view->game->replayFrom = $_GET['replayFrom'];
         }
         $view->display();
     ?>
-    
+
     <!-- load Dojo -->
     <script>
     var dojoConfig = {
@@ -61,7 +61,7 @@
             {
                 name: "jquery",
                 location: "http://localhost/game/",
-                main: "jquery-3.5.1.min"                    
+                main: "jquery-3.5.1.min"
             },
             {
                 name: "ebg",
@@ -70,7 +70,7 @@
             {
                 name: "socketio",
                 location: "http://localhost:3000/socket.io/",
-                main: "socket.io"      
+                main: "socket.io"
             },
             {
                 name: "bgagame",
@@ -90,7 +90,7 @@
 	{
 		return val;
 	};
-	
+
     function __(val)
 	{
 		return val;
@@ -102,10 +102,10 @@
 	};
 
 	g_gamethemeurl = "http://localhost/game/thecrew/";
-	
+
     </script>
-    <script src="dojo/dojo.js"></script>    
-    
+    <script src="dojo/dojo.js"></script>
+
     <script>
     require(["dojo", "dojo/_base/unload","bgagame/thecrew", "dojo/domReady!"], function( dojo, baseUnload ) {
 
@@ -115,7 +115,7 @@
 		gameui.completesetup( "thecrew", <?= $view->getFullDatasAsJson()?>);
 		gameui.logAll(<?= json_encode($view->game->getLogs())?>);
 
-		<?php 
+		<?php
 		  if($view->game->replayFrom>0)
 		  {
 		      echo "gameui.replay = true;";
@@ -127,7 +127,7 @@
 		      echo "gameui.notifqueue.processNotif();";
 		  }
 		?>
-                  
+
         });
     </script>
 </body>

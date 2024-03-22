@@ -1,4 +1,4 @@
-<?php 
+ <?php
 
 
 require_once( APP_GAMEMODULE_PATH.'module/table/feException.php' );
@@ -8,46 +8,46 @@ require_once( APP_GAMEMODULE_PATH.'module/table/deck.php' );
 require_once( APP_GAMEMODULE_PATH.'view/common/util.php' );
 
 class Table {
-    
+
     static $connstat = null;
-    
+
     function __construct( )
     {
         include($this->getGameName().'/material.inc.php');
         include($this->getGameName().'/stats.inc.php');
         include($this->getGameName().'/states.inc.php');
         include_once($this->getGameName().'/'.$this->getGameName().'.action.php');
-        
+
         $this->servername = "localhost";
         $this->username = "root";
         $this->password = "";
         $this->dbname = $this->getGameName();
-        
+
         $this->currentPlayer = 0;
         $this->replayFrom = 0;
-        
+
         // Create connection
         $this->conn = new mysqli($this->servername, $this->username, $this->password, $this->dbname);
         self::$connstat = $this->conn;
-        
+
         // Check connection
         if ( $this->conn->connect_error) {
             die("Connection failed: " .  $this->conn->connect_error);
         }
-        
+
         /* Activation du reporting */
         $driver = new mysqli_driver();
         $driver->report_mode = MYSQLI_REPORT_ALL  ^ MYSQLI_REPORT_INDEX;
-        
+
         $this->gameStateLabels = array(
             "currentState" => 1,
             "activePlayerId" => 2,
             "moveId" => 3,
-        );   
+        );
         $this->gamestate = new GameState($this, $machinestates);
     }
-    
-    
+
+
     function getNew($path)
     {
         $vpath = explode(".",$path);
@@ -56,29 +56,29 @@ class Table {
         $obj->game = $this;
         return $obj;
     }
-    
+
     protected function getGameName( )
     {
         return "noname";
     }
-    
+
     protected function setupNewGame( $players, $options = array() )
     {
-        
+
     }
-    
+
     protected function getAllDatas()
     {
-        
-    }   
-    
+
+    }
+
     function getReplay()
     {
        $sql = "select * from gamelog where gamelog_move_id >= ".$this->replayFrom." and (gamelog_player IS NULL or gamelog_player = ".$this->getCurrentPlayerId().") order by gamelog_id";
         $logs = $this->getObjectListFromDB($sql);
         return $logs;
     }
-    
+
     function getLogs()
     {
         $sql = "select * from gamelog where (gamelog_player IS NULL or gamelog_player = ".$this->getCurrentPlayerId().")";
@@ -90,7 +90,7 @@ class Table {
         $logs = $this->getObjectListFromDB($sql);
         return $logs;
     }
-    
+
     function getMediumDatas()
     {
         $ret = array();
@@ -106,53 +106,53 @@ class Table {
         }
         return $ret;
     }
-    
+
     function getFullDatas()
     {
         $ret = $this->getMediumDatas();
-        
+
         if($this->replayFrom>0)
         {
             $data = $this->getUniqueValueFromDB("select replay_gamedatas from replay where replay_move_id = ".$this->replayFrom." and replay_player_id=".$this->getCurrentPlayerId());
             $ret['alldatas'] = json_decode($data);
         }
         else
-        {            
+        {
             $ret['alldatas'] = $this->getAllDatas();
         }
-        
+
         $ret['states'] = $this->gamestate->machinestates;
         return $ret;
     }
-    
+
     public function __destruct()
     {
-        $this->conn->close(); 
+        $this->conn->close();
     }
-    
-    
+
+
     private function loadPlayersUIInfos()
     {
         $sql = "SELECT player_id, player_name, player_color, player_no, player_is_multiactive FROM player order by player_no";
         return $this->getCollectionFromDB($sql);
     }
-    
-    
+
+
     public function loadPlayersBasicInfos()
     {
-        $sql = "SELECT player_id, player_name, player_color, player_no FROM player order by player_no";        
+        $sql = "SELECT player_id, player_name, player_color, player_no FROM player order by player_no";
         return $this->getCollectionFromDB($sql);
     }
-    
+
     function getPlayerRelativePositions()
     {
         $result = array();
-        
+
         $players = self::loadPlayersBasicInfos();
         $nextPlayer = self::createNextPlayerTable(array_keys($players));
-        
+
         $current_player = self::getCurrentPlayerId();
-        
+
         if(!isset($nextPlayer[$current_player])) {
             // Spectator mode: take any player for south
             $player_id = $nextPlayer[0];
@@ -162,16 +162,16 @@ class Table {
             $player_id = $current_player;
         }
         $result[$player_id] = 0;
-        
+
         for($i=1; $i<count($players); $i++) {
             $player_id = $nextPlayer[$player_id];
             $result[$player_id] = $i;
         }
         return $result;
     }
-    
+
     function createNextPlayerTable($players)
-    {        
+    {
         $sql = "SELECT player_no, player_id FROM player order by player_no";
         $players = $this->getCollectionFromDB($sql);
         $nexts = array();
@@ -186,9 +186,9 @@ class Table {
         }
         return $nexts;
     }
-    
+
     function getNextPlayerTable()
-    {        
+    {
         $sql = "SELECT player_no, player_id FROM player order by player_no";
         $players = $this->getCollectionFromDB($sql);
         $nexts = array();
@@ -198,13 +198,13 @@ class Table {
             if($next > count($players))
             {
                 $next = 1;
-            }            
+            }
             $nexts[$player['player_id']] = intval($players[$next]['player_id']);
         }
-        $nexts[0] = intval(array_shift($players)['player_id']);        
+        $nexts[0] = intval(array_shift($players)['player_id']);
         return $nexts;
     }
-    
+
     function getPrevPlayerTable()
     {
         $sql = "SELECT player_no, player_id FROM player order by player_no";
@@ -222,33 +222,33 @@ class Table {
         $nexts[0] = intval(end($players)['player_id']);
         return $nexts;
     }
-    
+
     function getPlayerAfter($player_id)
     {
         return $this->getNextPlayerTable()[$player_id];
     }
-    
+
     function getPlayerBefore($player_id)
     {
         return $this->getPrevPlayerTable()[$player_id];
     }
-    
+
     function getCurrentPlayerId()
     {
         return $this->currentPlayer;
     }
-    
+
     function getActivePlayerId()
     {
         return $this->getGameStateValue('activePlayerId');
     }
-    
+
     function getPlayersNumber()
-    {        
+    {
         $sql = "SELECT count(*) FROM player";
         return $this->getUniqueValueFromDB($sql);
     }
-    
+
     function getActivePlayerName()
     {
         $sql = "SELECT player_name FROM player where player_id=".$this->getActivePlayerId();
@@ -264,18 +264,18 @@ class Table {
         $sql = "SELECT player_color FROM player where player_id=".$this->getCurrentPlayerId();
         return $this->getUniqueValueFromDB($sql);
     }
-    
+
     function isCurrentPlayerZombie()
-    {        
+    {
         $sql = "SELECT player_zombie FROM player where player_id=".$this->getCurrentPlayerId();
         return $this->getUniqueValueFromDB($sql);
     }
-    
+
     function getCurrentStateId()
     {
         return $this->getGameStateValue('currentState');
     }
-    
+
     function loadFile($filename)
     {
         // Temporary variable, used to store current query
@@ -287,7 +287,7 @@ class Table {
             // Skip it if it's a comment
             if (substr($line, 0, 2) == '--' || $line == '')
                 continue;
-                
+
                 // Add this line to the current segment
                 $templine .= $line;
                 // If it has a semicolon at the end, it's the end of the query
@@ -299,7 +299,7 @@ class Table {
                 }
         }
     }
-    
+
     function stGameSetup()
     {
         $players = array();
@@ -309,7 +309,7 @@ class Table {
         $this->setupNewGame($players);
         $this->gamestate->nextState("");
     }
-        
+
     function enterState()
     {
         $data = $this->getMediumDatas();
@@ -321,7 +321,7 @@ class Table {
             $ret['action'] = $this->$mname();
         }
     }
-    
+
     function initTable()
     {
         if ($result = $this->conn->query("SHOW TABLES LIKE 'player'")) {
@@ -335,13 +335,13 @@ class Table {
             $this->setGameStateInitialValue('currentState', 1);
             $this->enterState();
             $this->saveState();
-        }  
+        }
     }
-    
+
     /*
      * DATABASE
      */
-    
+
     protected function getCollectionFromDB($sql, $bSingleValue = false, $low_priority_select = false)
     {
         $ret = array();
@@ -351,17 +351,17 @@ class Table {
                 var_dump($this->conn->error);
             }
             $fetch = mysqli_fetch_all ($data, MYSQLI_ASSOC);
-            
+
             foreach($fetch as $row)
             {
                 $key = array_key_first ($row );
                 $ret[$row[$key]] = $row;
             }
-            
+
             if($bSingleValue && count($ret))
             {
                 throw feException('too many results');
-            }        
+            }
         }
         catch (mysqli_sql_exception $e) {
             var_dump($sql);
@@ -369,7 +369,7 @@ class Table {
         }
         return $ret;
     }
-    
+
     function getNonEmptyCollectionFromDB($sql)
     {
         $ret = array();
@@ -379,13 +379,13 @@ class Table {
                 var_dump($this->conn->error);
             }
             $fetch = mysqli_fetch_all ($data, MYSQLI_ASSOC);
-            
+
             foreach($fetch as $row)
             {
                 $key = array_key_first ($row );
                 $ret[$row[$key]] = $row;
             }
-            
+
             if(count($ret) == 0)
             {
                 throw feException('empty results');
@@ -397,7 +397,7 @@ class Table {
         }
         return $ret;
     }
-    
+
     function getObjectFromDB($sql, $low_priority_select = false)
     {
         $ret = array();
@@ -414,7 +414,7 @@ class Table {
         }
         return $ret;
     }
-    
+
     function getNonEmptyObjectFromDB($sql, $low_priority_select = false)
     {
         $ret = array();
@@ -423,12 +423,12 @@ class Table {
             {
                 var_dump($this->conn->error);
             }
-            
+
             if($data->num_rows == 0)
             {
-                throw feException('empty results');                
+                throw feException('empty results');
             }
-            
+
             $ret = mysqli_fetch_assoc($data);
         }
         catch (Exception $e) {
@@ -437,12 +437,12 @@ class Table {
         }
         return $ret;
     }
-    
+
     static function getUniqueValueFromDB($sql, $low_priority_select = false)
-    {        
+    {
         $ret = '';
         try {
-                        
+
             if (!$data = self::$connstat->query($sql))
             {
                 var_dump(self::$connstat->error);
@@ -451,10 +451,10 @@ class Table {
             {
                 throw new feException('too many results');
             }
-            
+
             $row = mysqli_fetch_row($data);
-            
-            $ret = $row[0] ?? 0;            
+
+            $ret = $row[0] ?? 0;
         }
         catch (Exception $e) {
             var_dump($sql);
@@ -462,7 +462,7 @@ class Table {
         }
         return $ret;
     }
-    
+
     function getObjectListFromDB($sql, $bUniqueValue = FALSE)
     {
         $ret = array();
@@ -480,7 +480,7 @@ class Table {
                     $ret[] = $row[$key];
                 }
             }
-            else 
+            else
             {
                 $ret = mysqli_fetch_all ($data, MYSQLI_ASSOC);
             }
@@ -491,10 +491,10 @@ class Table {
         }
         return $ret;
     }
-    
+
     static function DbQuery($sql, $specific_db = NULL, $bMulti = false)
     {
-      //  var_dump($sql); 
+      //  var_dump($sql);
         try {
             self::$connstat->query($sql, $bMulti?MYSQLI_USE_RESULT:MYSQLI_STORE_RESULT);
         } catch (Exception $e) {
@@ -502,63 +502,63 @@ class Table {
             throw $e;
         }
     }
-    
+
     private function saveDatabase()
     {
-        $dir = 'D:\wamp64\databaseExport\database.sql';
+        $dir = '/src/databaseExport/database.sql';
         exec("mysqldump --user={$this->username} --password={$this->password} --host={$this->servername} {$this->dbname} --result-file={$dir} 2>&1", $output);
     }
-    
+
     function loadDatabase()
     {
-        $dir = 'D:\wamp64\databaseExport\database.sql';
+        $dir = '/src/databaseExport/database.sql';
         if(file_exists($dir))
         {
             exec("mysql --user={$this->username} --password={$this->password} --host={$this->servername} {$this->dbname} < {$dir} 2>&1", $output);
         }
     }
-    
+
     /*
      * GAME STATE
      */
-    
+
     public function initGameStateLabels($array)
     {
         $this->gameStateLabels = array_merge($this->gameStateLabels, $array);
     }
-    
+
     function reattributeColorsBasedOnPreferences()
     {
-        
+
     }
-    
+
     function reloadPlayersBasicInfos()
     {
-        
+
     }
-    
+
     function getGameStateValue($key)
     {
         $keyint = $this->gameStateLabels[$key];
         return $this->getUniqueValueFromDB('select global_value from global where global_id = '.$keyint);
     }
-    
+
     function setGameStateInitialValue($key, $value)
     {
         $keyint = $this->gameStateLabels[$key];
         $this->DbQuery('INSERT INTO `global`(`global_id`, `global_value`) VALUES ('.$keyint.','.$value.')');
     }
-    
+
     function setGameStateValue($key, $value)
     {
         $keyint = $this->gameStateLabels[$key];
         $this->DbQuery("INSERT INTO global (global_id, global_value) values({$keyint},{$value}) ON DUPLICATE KEY UPDATE global_value={$value}");
     }
-    
+
     function initStat($type, $key, $value)
     {
         $id = $this->stats_type[$type][$key]['id'];
-        
+
         if($type == 'player')
         {
            $players =  $this->loadPlayersBasicInfos();
@@ -570,10 +570,10 @@ class Table {
         else
         {
             $this->DbQuery('INSERT INTO `stats`(`stats_type`, `stats_player_id`, `stats_value`) VALUES ('.$id.',NULL,'.$value.')');
-            
+
         }
     }
-    
+
     function incStat($delta, $name, $player_id = NULL)
     {
         $type = $player_id==NULL?'table':'player';
@@ -584,7 +584,7 @@ class Table {
         }
         $this->DbQuery('UPDATE `stats` set stats_value = stats_value+'.$delta.' where  stats_type = '.$id.' and stats_player_id='.$player_id);
     }
-    
+
     function setStat($value, $name, $player_id = NULL)
     {
         $type = $player_id==NULL?'table':'player';
@@ -595,7 +595,7 @@ class Table {
         }
         $this->DbQuery('UPDATE `stats` set stats_value = '.$value.' where  stats_type = '.$id.' and stats_player_id='.$player_id);
     }
-    
+
     function getStat($name, $player_id = NULL)
     {
         $type = $player_id==NULL?'table':'player';
@@ -606,14 +606,14 @@ class Table {
         }
         return $this->getUniqueValueFromDB('select stats_value from stats where stats_type = '.$id.' and stats_player_id='.$player_id);
     }
-    
-    
+
+
     function incGameStateValue($value_label, $increment)
     {
         $keyint = $this->gameStateLabels[$value_label];
         $this->DbQuery('UPDATE `global` set global_value = global_value+'.$increment.' where  global_id = '.$keyint);
     }
-    
+
     function checkAction($actionName, $bThrowException = TRUE)
     {
         if(in_array($this->getCurrentPlayerId(), $this->gamestate->getActivePlayerList()) && $this->gamestate->checkPossibleAction($actionName, false))
@@ -630,11 +630,11 @@ class Table {
         }
         return true;
     }
-    
+
     protected function giveExtraTime($player_id, $specific_time = NULL)
     {
     }
-    
+
     function saveState()
     {
         $moveId = $this->getGameStateValue('moveId');
@@ -648,19 +648,19 @@ class Table {
         }
         $this->currentPlayer = $prevCurrentPlayerId;
     }
-    
+
     function _($text)
     {
         return $text;
     }
-    
+
     /**
      * COMMUNICATION
      */
-    
+
     public function doAction($gameServer, $params)
     {
-        $name = $params["bgg_actionName"];        
+        $name = $params["bgg_actionName"];
         if($name == "bg_game_debugsave")
         {
             $this->saveDatabase();
@@ -669,19 +669,19 @@ class Table {
         {
             $this->gameServer = $gameServer;
             $this->currentPlayer = intval($params["bgg_player_id"]);
-            
+
             $action = "action_".$this->getGameName( );
             $act =  new $action();
             $act->game = $this;
             $act->params = $params;
-            
+
             $act->$name();
-            
+
             $this->setGameStateValue('moveId',$this->getGameStateValue('moveId')+1);
             $this->saveState();
         }
     }
-    
+
     /**
      * Send a notification to all players of the game.
      *
@@ -690,8 +690,8 @@ class Table {
      * @param array  $notification_args The arguments of your notifications, as an associative array. This array will be transmitted to the game interface logic, in order the game interface can be updated.
      */
     function notifyAllPlayers($notification_type, $notification_log, $notification_args)
-    {           
-        
+    {
+
         $notif = array();
         $players = $this->loadPlayersBasicInfos();
         $notif['gamelog_id'] = $this->getUniqueValueFromDB('select max(gamelog_id)+1 from gamelog');
@@ -706,13 +706,13 @@ class Table {
             {
                 $this->gameServer->notifPlayer($player['player_id'], $data);
             }
-        }        
-       
+        }
+
         $sql = 'INSERT INTO `gamelog`(`gamelog_move_id`, `gamelog_private`,`gamelog_time`,`gamelog_player`,`gamelog_current_player`,`gamelog_notification` ) VALUES ('.$this->getGameStateValue('moveId').',0,NOW(),NULL,'.$this->getCurrentPlayerId().',\''.$data.'\')';
         $this->DbQuery($sql);
-        
+
     }
-    
+
     /**
      * Same as above notifyAllPlayers, except that the notification is sent to one player only.
      * This method must be used each time some private information must be transmitted to a player.
@@ -725,7 +725,7 @@ class Table {
      */
     function notifyPlayer($player_id, $notification_type, $notification_log, $notification_args)
     {
-        
+
         $notif = array();
         $notif['gamelog_id'] = $this->getUniqueValueFromDB('select max(gamelog_id)+1 from gamelog');
         $notif['gamelog_move_id'] = $this->getGameStateValue('moveId');
@@ -737,18 +737,18 @@ class Table {
         {
             $this->gameServer->notifPlayer($player_id, $data);
         }
-        
+
         $sql = 'INSERT INTO `gamelog`(`gamelog_move_id`, `gamelog_private`,`gamelog_time`,`gamelog_player`,`gamelog_current_player`,`gamelog_notification` ) VALUES ('.$this->getGameStateValue('moveId').',0,NOW(),'.$player_id.','.$this->getCurrentPlayerId().',\''.$data.'\')';
         $this->DbQuery($sql);
     }
-    
+
     function activeNextPlayer()
     {
         $next = $this->getNextPlayerTable()[$this->getActivePlayerId()];
         $this->setGameStateValue("activePlayerId",$next);
-        
+
     }
-    
+
     function getGameinfos()
     {
         $gameinfos = array();

@@ -88,14 +88,13 @@ class Template {
 	 * should be a hash of handle => filename pairs.
 	 */
 	function set_filenames($filename_array)
-	{
+    {
 		if (!is_array($filename_array))
 		{
 			return false;
 		}
 
-		reset($filename_array);
-		while(list($handle, $filename) = each($filename_array))
+        foreach($filename_array as $handle => $filename)
 		{
 			$this->files[$handle] = $this->make_filename($filename);
 		}
@@ -200,8 +199,7 @@ class Template {
 	 */
 	function assign_vars($vararray)
 	{
-		reset ($vararray);
-		while (list($key, $val) = each($vararray))
+        foreach($vararray as $key => $val)
 		{
 			$this->_tpldata['.'][0][$key] = $val;
 		}
@@ -270,16 +268,16 @@ class Template {
 		}
 
 		$this->uncompiled_code[$handle] = $this->prefix($str);
-		
+
 
 		return true;
 	}
 
 	function prefix($str)
 	{
-	    
+
 	    $code_lines = explode("\n", $str);
-	    
+
 	    // Second: prepend echo ', append ' . "\n"; to each line.
 	    $line_count = sizeof($code_lines);
 	    for ($i = 0; $i < $line_count; $i++)
@@ -287,18 +285,18 @@ class Template {
 	        $code_lines[$i] = chop($code_lines[$i]);
 	        if (preg_match('#<!-- BEGIN (.*?) -->#', $code_lines[$i], $m))
 	        {
-	            
+
 	            for ($j = $i++; $j < $line_count; $j++)
 	            {
 	                if ( preg_match('#<!-- END (.*?) -->#', $code_lines[$j], $n) )
 	                {
 	                    break;
 	                }
-	                
+
 	                $code_lines[$j] = preg_replace('#\{([a-z0-9\-_]+?)\.+([a-z0-9\-_]+?)\}#is', '{${1}.'.$m[1].'.${2}}', $code_lines[$j]);
 	                $code_lines[$j] = preg_replace('#\{([a-z0-9\-_]+?)\}#is', '{'.$m[1].'.${1}}', $code_lines[$j]);
 	            }
-	            
+
 	        }
 	    }
 	    return " ".implode("\n",$code_lines);
@@ -334,7 +332,7 @@ class Template {
 
 		// This will handle the remaining root-level varrefs
 		$code = preg_replace('#[^\$]\{([a-z0-9\-_]*?)\}#is', '\' . ( ( isset($this->_tpldata[\'.\'][0][\'\1\']) ) ? $this->_tpldata[\'.\'][0][\'\1\'] : \'\' ) . \'', $code);
-		
+
 		// Break it up into lines.
 		$code_lines = explode("\n", $code);
 
@@ -434,7 +432,7 @@ class Template {
 				}
 				else
 				{
-					$code_lines[$i] = '$' . $retvar . '.= \'' . $code_lines[$i] . '\' . "\\n";'; 
+					$code_lines[$i] = '$' . $retvar . '.= \'' . $code_lines[$i] . '\' . "\\n";';
 				}
 			}
 		}
@@ -502,5 +500,3 @@ class Template {
 	}
 
 }
-
-?>

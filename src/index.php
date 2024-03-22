@@ -20,8 +20,8 @@
 
      define("DEV_MODE",1);
 
-     define("APP_BASE_PATH",'/src');
-     define("APP_GAMEMODULE_PATH",'/src');
+     define("APP_BASE_PATH",'/src/');
+     define("APP_GAMEMODULE_PATH",'/src/');
 
      include('thecrew/thecrew.view.php');
 
@@ -60,21 +60,23 @@
             packages: [
             {
                 name: "jquery",
-                location: "http://localhost/game/",
+                location: "/game/",
                 main: "jquery-3.5.1.min"
             },
             {
                 name: "ebg",
-                location: "http://localhost/game/ebg/"
+                location: "/game/ebg/"
             },
             {
                 name: "socketio",
+                // XXX: We probably want to avoid
+                // hardwiring "localhost" here.
                 location: "http://localhost:3000/socket.io/",
                 main: "socket.io"
             },
             {
                 name: "bgagame",
-                location: "http://localhost/game/thecrew/"
+                location: "/game/thecrew/"
             }]
         };
 

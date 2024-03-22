@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /**
  * Class GameState
@@ -10,7 +10,7 @@ class GameState {
         $this->game = $game;
         $this->machinestates = $machinestates;
     }
-    
+
     /**
      * Not documented
      * @param $str
@@ -47,16 +47,16 @@ class GameState {
             case "manager":
                 //nothing to do
                 break;
-                
+
             case "activeplayer":
                 $actives[] = $this->game->getActivePlayerId();
                 break;
-                
+
             case "multipleactiveplayer":
                 $actives = $this->game->getObjectListFromDB("select player_is_multiactive from players", true);
                 break;
         }
-        
+
         return $actives;
     }
 
@@ -85,10 +85,10 @@ class GameState {
             $this->nextState($next_state);
         }
         else
-        {            
-            $ids = implode( $players, ',' );
+        {
+            $ids = implode( ',', $players );
             $this->game->DbQuery("update players set player_is_multiactive = 0");
-            $this->game->DbQuery("update players set player_is_multiactive = 1 where player_id in (".$ids.")");  
+            $this->game->DbQuery("update players set player_is_multiactive = 1 where player_id in (".$ids.")");
         }
     }
 
@@ -102,8 +102,8 @@ class GameState {
      */
     public function setPlayerNonMultiactive($player_id, $next_state)
     {
-        
-        $this->game->DbQuery("update players set player_is_multiactive = 0 where player_id = ".$player_id); 
+
+        $this->game->DbQuery("update players set player_is_multiactive = 0 where player_id = ".$player_id);
         if($this->game->getUniqueValueFromDB("select count(*) from players where player_is_multiactive = 1") == 0)
         {
             $this->nextState($next_state);
@@ -162,5 +162,5 @@ class GameState {
         $state_id = $this->game->getGameStateValue('currentState');
         return $this->machinestates[$state_id];
     }
-    
+
 }

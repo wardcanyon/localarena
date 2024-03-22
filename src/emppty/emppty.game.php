@@ -88,7 +88,7 @@ class emppty extends Table
             $value = array_shift( $plenitudes);
             $values[] = "('".$color."', ".$value.")";
         }
-        $sql .= implode( $values, ',' );
+        $sql .= implode(',', $values);
         self::DbQuery( $sql );
 
 
@@ -101,7 +101,7 @@ class emppty extends Table
                 $values[] = "(".$player_id.", ".$i.", 'board', ".$i.")";
             }
         }
-        $sql .= implode( $values, ',' );
+        $sql .= implode(',', $values);
         self::DbQuery( $sql );
 
         $sql = "INSERT INTO energy (color, location) VALUES ";
@@ -117,7 +117,7 @@ class emppty extends Table
             }
         }
         shuffle($values);
-        $sql .= implode( $values, ',' );
+        $sql .= implode(',', $values);
         self::DbQuery( $sql );
 
         $this->refillMaya(true);

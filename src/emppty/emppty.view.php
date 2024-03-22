@@ -23,39 +23,40 @@
  * Note: if the HTML of your game interface is always the same, you don't have to place anything here.
  *
  */
-  
-  require_once( APP_BASE_PATH."view/common/game.view.php" );
-  
-  class view_emppty_emppty extends game_view
-  {
-    function getGameName() {
+
+require_once APP_BASE_PATH . "view/common/game.view.php";
+
+class view_emppty_emppty extends game_view
+{
+    function getGameName()
+    {
         return "emppty";
-    }    
-    
-  	function build_page( $viewArgs )
-  	{	 
+    }
+
+    function build_page($viewArgs)
+    {
         /*********** Place your code below:  ************/
-  	    
+
         // Get players & players number
         $players = $this->game->loadPlayersBasicInfos();
-        $players_nbr = count( $players );
-        
-        $this->tpl['TEST'] = self::_("Programming");
-        
+        $players_nbr = count($players);
+
+        $this->tpl["TEST"] = self::_("Programming");
+
         // Arrange players so that I am on south
         $player_positions = $this->game->getPlayerRelativePositions();
-        
+
         $this->page->begin_block("chakra_chakra", "player");
         foreach ($player_positions as $player_id => $dir) {
-            $this->page->insert_block("player", array("PLAYER_ID" => $player_id,
-                "PLAYER_NAME" => $players[$player_id]['player_name'],
-                "PLAYER_COLOR" => $players[$player_id]['player_color'],
-                "PLAYER_NO" => $players[$player_id]['player_no'],
-                "DIR" => $dir));
-        }       
+            $this->page->insert_block("player", [
+                "PLAYER_ID" => $player_id,
+                "PLAYER_NAME" => $players[$player_id]["player_name"],
+                "PLAYER_COLOR" => $players[$player_id]["player_color"],
+                "PLAYER_NO" => $players[$player_id]["player_no"],
+                "DIR" => $dir,
+            ]);
+        }
 
         /*********** Do not change anything below this line  ************/
-  	}
-  }
-  
-
+    }
+}

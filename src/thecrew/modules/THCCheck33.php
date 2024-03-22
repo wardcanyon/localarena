@@ -18,31 +18,32 @@
 
 class THCCheck33 extends THCCheck
 {
-    function __construct($cards )
+    function __construct($cards)
     {
         parent::__construct($cards);
     }
-    
+
     function specialCheck()
     {
-        $specialOne =  $this->thecrew->getGameStateValue( 'special_id');
-        $won = thecrew::getUniqueValueFromDB( "SELECT player_trick_number FROM player where player_id = ".$specialOne);
-        $rockets = thecrew::getUniqueValueFromDB( "select count(*) from card where card_type ='5' and card_location like 'trick%' and card_location_arg = ".$specialOne);// NOI18N
-        
-        if($won>1 || $rockets>0 || ($this->isLastTrick() && $won == 0))
-        {
-             $this->missionFailed();             
-        }
-        else if($this->isLastTrick() && $won == 1)
-        {            
+        $specialOne = $this->thecrew->getGameStateValue("special_id");
+        $won = thecrew::getUniqueValueFromDB(
+            "SELECT player_trick_number FROM player where player_id = " .
+                $specialOne
+        );
+        $rockets = thecrew::getUniqueValueFromDB(
+            "select count(*) from card where card_type ='5' and card_location like 'trick%' and card_location_arg = " .
+                $specialOne
+        ); // NOI18N
+
+        if ($won > 1 || $rockets > 0 || ($this->isLastTrick() && $won == 0)) {
+            $this->missionFailed();
+        } elseif ($this->isLastTrick() && $won == 1) {
             $this->missionSuccess();
-        }
-        else
-        {
+        } else {
             //otherwise we continue
-            $this->thecrew->setGameStateValue( 'mission_finished', 0 );
+            $this->thecrew->setGameStateValue("mission_finished", 0);
         }
-            
-        return true;        
+
+        return true;
     }
 }

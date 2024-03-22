@@ -3,8 +3,8 @@
 /**
  * Class GameState
  */
-class GameState {
-
+class GameState
+{
     function __construct($game, $machinestates)
     {
         $this->game = $game;
@@ -27,7 +27,7 @@ class GameState {
      */
     public function changeActivePlayer($player_id)
     {
-        $this->game->setGameStateValue('activePlayerId', $player_id);
+        $this->game->setGameStateValue("activePlayerId", $player_id);
     }
 
     /**
@@ -39,10 +39,9 @@ class GameState {
      */
     public function getActivePlayerList()
     {
-        $actives = array();
+        $actives = [];
         $state = $this->state();
-        switch($state['type'])
-        {
+        switch ($state["type"]) {
             case "game":
             case "manager":
                 //nothing to do
@@ -53,7 +52,10 @@ class GameState {
                 break;
 
             case "multipleactiveplayer":
-                $actives = $this->game->getObjectListFromDB("select player_is_multiactive from players", true);
+                $actives = $this->game->getObjectListFromDB(
+                    "select player_is_multiactive from players",
+                    true
+                );
                 break;
         }
 
@@ -80,15 +82,18 @@ class GameState {
      */
     public function setPlayersMultiactive($players, $next_state)
     {
-        if(count($players) == 0)
-        {
+        if (count($players) == 0) {
             $this->nextState($next_state);
-        }
-        else
-        {
-            $ids = implode( ',', $players );
-            $this->game->DbQuery("update players set player_is_multiactive = 0");
-            $this->game->DbQuery("update players set player_is_multiactive = 1 where player_id in (".$ids.")");
+        } else {
+            $ids = implode(",", $players);
+            $this->game->DbQuery(
+                "update players set player_is_multiactive = 0"
+            );
+            $this->game->DbQuery(
+                "update players set player_is_multiactive = 1 where player_id in (" .
+                    $ids .
+                    ")"
+            );
         }
     }
 
@@ -102,10 +107,15 @@ class GameState {
      */
     public function setPlayerNonMultiactive($player_id, $next_state)
     {
-
-        $this->game->DbQuery("update players set player_is_multiactive = 0 where player_id = ".$player_id);
-        if($this->game->getUniqueValueFromDB("select count(*) from players where player_is_multiactive = 1") == 0)
-        {
+        $this->game->DbQuery(
+            "update players set player_is_multiactive = 0 where player_id = " .
+                $player_id
+        );
+        if (
+            $this->game->getUniqueValueFromDB(
+                "select count(*) from players where player_is_multiactive = 1"
+            ) == 0
+        ) {
             $this->nextState($next_state);
         }
     }
@@ -118,17 +128,19 @@ class GameState {
      *
      * @param $action
      */
-    public function checkPossibleAction($action, $bThrowException = TRUE)
+    public function checkPossibleAction($action, $bThrowException = true)
     {
         $state = $this->state();
-        if(!isset($state['possibleactions'][$action]))
-        {
-            if($bThrowException)
-            {
-                throw new feException('Impossible action "'.$action.'" at this state "'.$state['name'].'"');
-            }
-            else
-            {
+        if (!isset($state["possibleactions"][$action])) {
+            if ($bThrowException) {
+                throw new feException(
+                    'Impossible action "' .
+                        $action .
+                        '" at this state "' .
+                        $state["name"] .
+                        '"'
+                );
+            } else {
                 return false;
             }
         }
@@ -143,12 +155,17 @@ class GameState {
     public function nextState($transition)
     {
         $state = $this->state();
-        if(!isset($state['transitions'][$transition]))
-        {
-            throw new feException('Impossible transition "'.$transition.'" at this state "'.$state['name'].'"');
+        if (!isset($state["transitions"][$transition])) {
+            throw new feException(
+                'Impossible transition "' .
+                    $transition .
+                    '" at this state "' .
+                    $state["name"] .
+                    '"'
+            );
         }
-        $newStateId = $state['transitions'][$transition];
-        $this->game->setGameStateValue('currentState', $newStateId);
+        $newStateId = $state["transitions"][$transition];
+        $this->game->setGameStateValue("currentState", $newStateId);
         $this->game->enterState();
     }
 
@@ -159,8 +176,7 @@ class GameState {
      */
     public function state()
     {
-        $state_id = $this->game->getGameStateValue('currentState');
+        $state_id = $this->game->getGameStateValue("currentState");
         return $this->machinestates[$state_id];
     }
-
 }

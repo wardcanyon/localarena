@@ -18,49 +18,43 @@
 
 class THCCheck44 extends THCCheck
 {
-    function __construct($cards )
+    function __construct($cards)
     {
         parent::__construct($cards);
     }
-    
+
     function specialCheck()
-    {        
-        $trickCOunt =  $this->thecrew->getGameStateValue( 'trick_count');
+    {
+        $trickCOunt = $this->thecrew->getGameStateValue("trick_count");
         $totalTrump = 0;
         $fail = false;
-        $start = $this->thecrew->getGameStateValue( 'challenge') == 2?2:1;
-        
-        for($i=1;$i<=$trickCOunt;$i++)
-        {
-            $max = thecrew::getUniqueValueFromDB("SELECT COALESCE(MAX(card_type_arg),0) FROM card where card_type='5' and card_location = 'trick".$i."'");
-            
-            if($max != 0)
-            {
-                if($max == $start)
-                {
-                    $start = $max+1;
-                }
-                else
-                {
-                    $fail = true;                    
+        $start = $this->thecrew->getGameStateValue("challenge") == 2 ? 2 : 1;
+
+        for ($i = 1; $i <= $trickCOunt; $i++) {
+            $max = thecrew::getUniqueValueFromDB(
+                "SELECT COALESCE(MAX(card_type_arg),0) FROM card where card_type='5' and card_location = 'trick" .
+                    $i .
+                    "'"
+            );
+
+            if ($max != 0) {
+                if ($max == $start) {
+                    $start = $max + 1;
+                } else {
+                    $fail = true;
                 }
             }
-        }        
-        
-        if(!$fail && $start == 5)
-         {
-             $this->missionSuccess();             
         }
-        else if($fail || $this->isLastTrick())
-        {            
+
+        if (!$fail && $start == 5) {
+            $this->missionSuccess();
+        } elseif ($fail || $this->isLastTrick()) {
             $this->missionFailed();
-        }
-        else
-        {
+        } else {
             //otherwise we continue
-            $this->thecrew->setGameStateValue( 'mission_finished', 0 );
+            $this->thecrew->setGameStateValue("mission_finished", 0);
         }
-            
-        return true;        
+
+        return true;
     }
 }

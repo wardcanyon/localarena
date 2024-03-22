@@ -18,33 +18,33 @@
 
 class THCCheck46 extends THCCheck
 {
-    function __construct($cards )
+    function __construct($cards)
     {
         parent::__construct($cards);
     }
-    
+
     function specialCheck()
-    {       
-        
-        $target = $this->thecrew->getGameStateValue( 'challenge') == 2?8:9;
-        $specialId =  $this->thecrew->getGameStateValue( 'special_id');
-        $pinkGood =  thecrew::getUniqueValueFromDB("SELECT count(*) FROM card where card_type='3' and card_location like 'trick%' and card_location_arg=".$specialId);
-        $pinkBad =  thecrew::getUniqueValueFromDB("SELECT count(*) FROM card where card_type='3' and card_location like 'trick%' and card_location_arg<>".$specialId);
-        
-        if($pinkGood == $target)
-         {
-             $this->missionSuccess();             
-        }
-        else if($this->isLastTrick() || $pinkBad>0)
-        {            
+    {
+        $target = $this->thecrew->getGameStateValue("challenge") == 2 ? 8 : 9;
+        $specialId = $this->thecrew->getGameStateValue("special_id");
+        $pinkGood = thecrew::getUniqueValueFromDB(
+            "SELECT count(*) FROM card where card_type='3' and card_location like 'trick%' and card_location_arg=" .
+                $specialId
+        );
+        $pinkBad = thecrew::getUniqueValueFromDB(
+            "SELECT count(*) FROM card where card_type='3' and card_location like 'trick%' and card_location_arg<>" .
+                $specialId
+        );
+
+        if ($pinkGood == $target) {
+            $this->missionSuccess();
+        } elseif ($this->isLastTrick() || $pinkBad > 0) {
             $this->missionFailed();
-        }
-        else
-        {
+        } else {
             //otherwise we continue
-            $this->thecrew->setGameStateValue( 'mission_finished', 0 );
+            $this->thecrew->setGameStateValue("mission_finished", 0);
         }
-            
-        return true;        
+
+        return true;
     }
 }

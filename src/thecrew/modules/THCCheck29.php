@@ -18,31 +18,29 @@
 
 class THCCheck29 extends THCCheck
 {
-    function __construct($cards )
+    function __construct($cards)
     {
         parent::__construct($cards);
     }
-    
+
     function specialCheck()
     {
-        
-        $min = thecrew::getUniqueValueFromDB("SELECT min(player_trick_number) FROM player");
-        $max = thecrew::getUniqueValueFromDB("SELECT max(player_trick_number) FROM player");          
-        
-        if($min + 2 < $max)
-        {
-            $this->missionFailed();            
-        }
-        else if($this->isLastTrick())
-        {
-            $this->missionSuccess(); 
-        }
-        else
-        {
+        $min = thecrew::getUniqueValueFromDB(
+            "SELECT min(player_trick_number) FROM player"
+        );
+        $max = thecrew::getUniqueValueFromDB(
+            "SELECT max(player_trick_number) FROM player"
+        );
+
+        if ($min + 2 < $max) {
+            $this->missionFailed();
+        } elseif ($this->isLastTrick()) {
+            $this->missionSuccess();
+        } else {
             //otherwise we continue
-            $this->thecrew->setGameStateValue( 'mission_finished', 0 );
+            $this->thecrew->setGameStateValue("mission_finished", 0);
         }
-            
-        return true;        
+
+        return true;
     }
 }

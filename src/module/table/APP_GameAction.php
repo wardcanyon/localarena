@@ -1,8 +1,7 @@
-<?php 
+<?php
 
-
-define("AT_posint",1);
-define("AT_alphanum",2);
+define("AT_posint", 1);
+define("AT_alphanum", 2);
 
 /**
  * Class APP_GameAction
@@ -12,7 +11,6 @@ define("AT_alphanum",2);
  */
 class APP_GameAction
 {
-
     /**
      * @param string $arg
      * @return bool
@@ -27,7 +25,6 @@ class APP_GameAction
      */
     function trace($message)
     {
-
     }
 
     /**
@@ -36,36 +33,27 @@ class APP_GameAction
      * @param bool $required
      * @return mixed
      */
-    function getArg($arg, $type, $required=false)
+    function getArg($arg, $type, $required = false)
     {
-        if(isset($this->params[$arg]))
-        {
-            if($type == AT_posint)
-            {
+        if (isset($this->params[$arg])) {
+            if ($type == AT_posint) {
                 return intval($this->params[$arg]);
-            }
-            else
-            {
+            } else {
                 return $this->params[$arg];
             }
+        } else {
+            if ($required) {
+                throw feException("Parameter " . $arg . " not found");
+            }
         }
-        else
-        {
-            if($required)
-            {
-                throw feException("Parameter ".$arg." not found");
-            }                
-        }        
-        return '';
+        return "";
     }
-    
-    
+
     /**
      *
      */
     function setAjaxMode()
     {
-
     }
 
     /**
@@ -73,7 +61,5 @@ class APP_GameAction
      */
     function ajaxResponse()
     {
-
     }
-
 }

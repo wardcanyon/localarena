@@ -1,15 +1,14 @@
 <?php
 
-define("DEV_MODE",1);
+define("DEV_MODE", 1);
 
-define("APP_BASE_PATH",'/src/');
-define("APP_GAMEMODULE_PATH",'/src/');
+define("APP_BASE_PATH", "/src/");
+define("APP_GAMEMODULE_PATH", "/src/");
 
-require_once '/src/lbga_config.inc.php';
-require (LBGA_GAME_NAME . '/' . LBGA_GAME_NAME . '.view.php');
+require_once "/src/lbga_config.inc.php";
+require LBGA_GAME_NAME . "/" . LBGA_GAME_NAME . ".view.php";
 
 $game_name = LBGA_GAME_NAME;
-
 ?>
 
 <!DOCTYPE html>
@@ -30,29 +29,24 @@ $game_name = LBGA_GAME_NAME;
 </head>
 <body class="claro">
      <?php
+     $view = new "view_{$game_name}_{$game_name}"();
+     $currentPlayer = 2317679;
 
-        $view = new ("view_{$game_name}_{$game_name}")();
-        $currentPlayer = 2317679;
+     if (DEV_MODE) {
+         if (isset($_GET["testplayer"])) {
+             $currentPlayer = $_GET["testplayer"];
+         }
+         if (isset($_GET["loadDatabase"])) {
+             $view->game->loadDatabase();
+         }
+     }
+     $view->game->currentPlayer = $currentPlayer;
 
-        if(DEV_MODE)
-        {
-            if(isset($_GET['testplayer']))
-            {
-                $currentPlayer = $_GET['testplayer'];
-            }
-            if(isset($_GET['loadDatabase']))
-            {
-                $view->game->loadDatabase();
-            }
-        }
-        $view->game->currentPlayer = $currentPlayer;
-
-        if(isset($_GET['replayFrom']))
-        {
-            $view->game->replayFrom = $_GET['replayFrom'];
-        }
-        $view->display();
-    ?>
+     if (isset($_GET["replayFrom"])) {
+         $view->game->replayFrom = $_GET["replayFrom"];
+     }
+     $view->display();
+     ?>
 
     <!-- load Dojo -->
     <script>
@@ -114,23 +108,21 @@ $game_name = LBGA_GAME_NAME;
      require(["dojo", "dojo/_base/unload","bgagame/<?= "$game_name" ?>", "dojo/domReady!"], function( dojo, baseUnload ) {
 
          gameui = new bgagame.<?= "$game_name" ?>();
-        gameui.player_id = <?= $view->game->currentPlayer?>;
+        gameui.player_id = <?= $view->game->currentPlayer ?>;
         gameui.current_player_name="Mistergos1";
-	 gameui.completesetup( "<?= "$game_name" ?>", <?= $view->getFullDatasAsJson()?>);
-		gameui.logAll(<?= json_encode($view->game->getLogs())?>);
+	 gameui.completesetup( "<?= "$game_name" ?>", <?= $view->getFullDatasAsJson() ?>);
+		gameui.logAll(<?= json_encode($view->game->getLogs()) ?>);
 
-		<?php
-		  if($view->game->replayFrom>0)
-		  {
-		      echo "gameui.replay = true;";
-		      $logs = $view->game->getReplay();
-		      foreach($logs as $log)
-		      {
-		          echo "gameui.notifqueue.addEvent(JSON.parse('".$log['gamelog_notification']."'));\n";
-		      }
-		      echo "gameui.notifqueue.processNotif();";
-		  }
-		?>
+		<?php if ($view->game->replayFrom > 0) {
+      echo "gameui.replay = true;";
+      $logs = $view->game->getReplay();
+      foreach ($logs as $log) {
+          echo "gameui.notifqueue.addEvent(JSON.parse('" .
+              $log["gamelog_notification"] .
+              "'));\n";
+      }
+      echo "gameui.notifqueue.processNotif();";
+  } ?>
 
         });
     </script>

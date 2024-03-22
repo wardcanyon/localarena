@@ -21,109 +21,100 @@
  *
  */
 
-
 class action_thecrew extends APP_GameAction
 {
     // Constructor: please do not modify
     public function __default()
     {
-        if( self::isArg( 'notifwindow') )
-        {
+        if (self::isArg("notifwindow")) {
             $this->view = "common_notifwindow";
-            $this->viewArgs['table'] = self::getArg( "table", AT_posint, true );
-        }
-        else
-        {
+            $this->viewArgs["table"] = self::getArg("table", AT_posint, true);
+        } else {
             $this->view = "thecrew_thecrew";
-            self::trace( "Complete reinitialization of board game" );
+            self::trace("Complete reinitialization of board game");
         }
     }
-    
+
     // TODO: defines your action entry points there
-    
- 
-    
+
     public function actChooseTask()
     {
         self::setAjaxMode();
-        
-        $taskId = self::getArg( "taskId", AT_posint, true );
-        $this->game->actChooseTask( $taskId);
-        
-        self::ajaxResponse( );
+
+        $taskId = self::getArg("taskId", AT_posint, true);
+        $this->game->actChooseTask($taskId);
+
+        self::ajaxResponse();
     }
-    
+
     public function actPickCrew()
     {
         self::setAjaxMode();
-        
-        $crewId = self::getArg( "crewId", AT_posint, true );
-        $this->game->actPickCrew( $crewId);
-        
-        self::ajaxResponse( );
+
+        $crewId = self::getArg("crewId", AT_posint, true);
+        $this->game->actPickCrew($crewId);
+
+        self::ajaxResponse();
     }
-    
+
     public function actPlayCard()
     {
         self::setAjaxMode();
-        
-        $cardId = self::getArg( "cardId", AT_posint, true );
-        $this->game->actPlayCard( $cardId);
-        
-        self::ajaxResponse( );
+
+        $cardId = self::getArg("cardId", AT_posint, true);
+        $this->game->actPlayCard($cardId);
+
+        self::ajaxResponse();
     }
-    
+
     public function actFinishComm()
     {
         self::setAjaxMode();
-        
-        $place = self::getArg( "place", AT_alphanum, true );
-        $this->game->actFinishComm( $place);
-        
-        self::ajaxResponse( );
+
+        $place = self::getArg("place", AT_alphanum, true);
+        $this->game->actFinishComm($place);
+
+        self::ajaxResponse();
     }
-    
+
     public function actStartComm()
     {
         self::setAjaxMode();
         $this->game->actStartComm();
-        self::ajaxResponse( );
+        self::ajaxResponse();
     }
-    
+
     public function actCancel()
     {
         self::setAjaxMode();
         $this->game->actCancel();
-        self::ajaxResponse( );
+        self::ajaxResponse();
     }
     public function actDistress()
     {
         self::setAjaxMode();
         $this->game->actDistress();
-        self::ajaxResponse( );
+        self::ajaxResponse();
     }
-    
+
     public function actButton()
     {
         self::setAjaxMode();
-        
-        $choice = self::getArg( "choice", AT_alphanum, true );
+
+        $choice = self::getArg("choice", AT_alphanum, true);
         $this->game->actButton($choice);
-        
-        self::ajaxResponse( );
+
+        self::ajaxResponse();
     }
-    
+
     public function actMultiSelect()
     {
         self::setAjaxMode();
-        
-        $id1 = self::getArg( "id1", AT_alphanum, true );
-        $id2 = self::getArg( "id2", AT_alphanum, true );
-        $this->game->actMultiSelect($id1 ,$id2);
-        
-        self::ajaxResponse( );
+
+        $id1 = self::getArg("id1", AT_alphanum, true);
+        $id2 = self::getArg("id2", AT_alphanum, true);
+        $this->game->actMultiSelect($id1, $id2);
+
+        self::ajaxResponse();
     }
-    
 }
-
-

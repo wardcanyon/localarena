@@ -18,31 +18,29 @@
 
 class THCCheck5 extends THCCheck
 {
-    function __construct($cards )
+    function __construct($cards)
     {
         parent::__construct($cards);
     }
-    
+
     function specialCheck()
     {
-        $specialOne =  $this->thecrew->getGameStateValue( 'special_id');
-        $won = thecrew::getUniqueValueFromDB( "SELECT player_trick_number FROM player where player_id = ".$specialOne)>0;
-                    
-         if($won)
-         {
-             $this->missionFailed();
-             
-        }
-        else if($this->isLastTrick())
-        {            
+        $specialOne = $this->thecrew->getGameStateValue("special_id");
+        $won =
+            thecrew::getUniqueValueFromDB(
+                "SELECT player_trick_number FROM player where player_id = " .
+                    $specialOne
+            ) > 0;
+
+        if ($won) {
+            $this->missionFailed();
+        } elseif ($this->isLastTrick()) {
             $this->missionSuccess();
-        }
-        else
-        {
+        } else {
             //otherwise we continue
-            $this->thecrew->setGameStateValue( 'mission_finished', 0 );
+            $this->thecrew->setGameStateValue("mission_finished", 0);
         }
-            
-        return true;        
+
+        return true;
     }
 }

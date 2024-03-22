@@ -23,47 +23,53 @@
  * Note: if the HTML of your game interface is always the same, you don't have to place anything here.
  *
  */
-  
-  require_once( APP_BASE_PATH."view/common/game.view.php" );
-  
-  class view_thecrew_thecrew extends game_view
-  {
-    function getGameName() {
+
+require_once APP_BASE_PATH . "view/common/game.view.php";
+
+class view_thecrew_thecrew extends game_view
+{
+    function getGameName()
+    {
         return "thecrew";
-    }    
-  	function build_page( $viewArgs )
-  	{		
-  	    // Get players & players number
+    }
+    function build_page($viewArgs)
+    {
+        // Get players & players number
         $players = $this->game->loadPlayersBasicInfos();
-        $players_nbr = count( $players );
+        $players_nbr = count($players);
 
         /*********** Place your code below:  ************/
 
         // Get players & players number
-        $players_nbr_class = $players_nbr == 3 ? "three_players" : ($players_nbr == 4 ? "four_players" : "five_players");
-        
+        $players_nbr_class =
+            $players_nbr == 3
+                ? "three_players"
+                : ($players_nbr == 4
+                    ? "four_players"
+                    : "five_players");
+
         // Arrange players so that I am on south
         $player_positions = $this->game->getPlayerRelativePositions();
-        
+
         $this->page->begin_block("thecrew_thecrew", "player");
         foreach ($player_positions as $player_id => $dir) {
-            $this->page->insert_block("player", array("PLAYER_ID" => $player_id,
-                "PLAYER_NAME" => $players[$player_id]['player_name'],
-                "PLAYER_COLOR" => $players[$player_id]['player_color'],
-                "DIR" => $dir));
+            $this->page->insert_block("player", [
+                "PLAYER_ID" => $player_id,
+                "PLAYER_NAME" => $players[$player_id]["player_name"],
+                "PLAYER_COLOR" => $players[$player_id]["player_color"],
+                "DIR" => $dir,
+            ]);
         }
-        
-        $this->tpl['MISSION'] = self::_("Mission");
-        $this->tpl['TRY'] = self::_("Mission attempts : ");
-        $this->tpl['TOTALTRY'] = self::_("Total attempts : ");
-        $this->tpl['TASKS'] = self::_("Available tasks");
-        $this->tpl['NBR'] = $players_nbr_class;
-        $this->tpl['CONTINUE'] = self::_("Do you want to continue?");
-        $this->tpl['YES'] = self::_("Yes");
-        $this->tpl['NO'] = self::_("No"); 
+
+        $this->tpl["MISSION"] = self::_("Mission");
+        $this->tpl["TRY"] = self::_("Mission attempts : ");
+        $this->tpl["TOTALTRY"] = self::_("Total attempts : ");
+        $this->tpl["TASKS"] = self::_("Available tasks");
+        $this->tpl["NBR"] = $players_nbr_class;
+        $this->tpl["CONTINUE"] = self::_("Do you want to continue?");
+        $this->tpl["YES"] = self::_("Yes");
+        $this->tpl["NO"] = self::_("No");
 
         /*********** Do not change anything below this line  ************/
-  	}
-  }
-  
-
+    }
+}

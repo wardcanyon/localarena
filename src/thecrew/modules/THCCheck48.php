@@ -18,36 +18,48 @@
 
 class THCCheck48 extends THCCheck
 {
-    function __construct($cards )
+    function __construct($cards)
     {
         parent::__construct($cards);
     }
-    
+
     function specialCheck()
-    {       
-        
+    {
         $sql = "SELECT task_id, player_id, status FROM task where token='o'";
-        $task = $this->thecrew->getObjectFromDB( $sql );  
-        
-        $taskId = $this->thecrew->getGameStateValue( 'challenge') == 2?8:9;
-        $specialId =  $this->thecrew->getGameStateValue( 'special_id');
-        $pinkGood =  thecrew::getUniqueValueFromDB("SELECT count(*) FROM card where card_type='3' and card_location like 'trick%' and card_location_arg=".$specialId);
-        $pinkBad =  thecrew::getUniqueValueFromDB("SELECT count(*) FROM card where card_type='3' and card_location like 'trick%' and card_location_arg<>".$specialId);
-        
-        if($this->isLastTrick() && thecrew::getUniqueValueFromDB("select count(*) from task where status <> 'ok'") == 0)// NOI18N
-         {
-             $this->missionSuccess();             
-        }
-        else if($task['status'] == 'ok' || thecrew::getUniqueValueFromDB("select count(*) from task where status = 'nok'") > 0)// NOI18N
-        {            
+        $task = $this->thecrew->getObjectFromDB($sql);
+
+        $taskId = $this->thecrew->getGameStateValue("challenge") == 2 ? 8 : 9;
+        $specialId = $this->thecrew->getGameStateValue("special_id");
+        $pinkGood = thecrew::getUniqueValueFromDB(
+            "SELECT count(*) FROM card where card_type='3' and card_location like 'trick%' and card_location_arg=" .
+                $specialId
+        );
+        $pinkBad = thecrew::getUniqueValueFromDB(
+            "SELECT count(*) FROM card where card_type='3' and card_location like 'trick%' and card_location_arg<>" .
+                $specialId
+        );
+
+        if (
+            $this->isLastTrick() &&
+            thecrew::getUniqueValueFromDB(
+                "select count(*) from task where status <> 'ok'"
+            ) == 0
+        ) {
+            // NOI18N
+            $this->missionSuccess();
+        } elseif (
+            $task["status"] == "ok" ||
+            thecrew::getUniqueValueFromDB(
+                "select count(*) from task where status = 'nok'"
+            ) > 0
+        ) {
+            // NOI18N
             $this->missionFailed();
-        }
-        else
-        {
+        } else {
             //otherwise we continue
-            $this->thecrew->setGameStateValue( 'mission_finished', 0 );
+            $this->thecrew->setGameStateValue("mission_finished", 0);
         }
-            
-        return true;        
+
+        return true;
     }
 }

@@ -15,44 +15,56 @@
  *
  */
 
-$stats_type = array(
-
+$stats_type = [
     // Statistics global to table
-    "table" => array(
+    "table" => [],
 
-    ),
-    
     // Statistics existing for each player
-    "player" => array(
-        
-        "turns_number" => array("id"=> 10,
+    "player" => [
+        "turns_number" => [
+            "id" => 10,
             "name" => totranslate("Number of turns"),
-            "type" => "int" ),
-        
-        "chakra_harmonized" => array("id"=> 11,
-            "name" => totranslate("Number of harmonized chakra"),
-            "type" => "int" ),
-        
-        "chakra_aligned" => array("id"=> 12,
-            "name" => totranslate("Number of aligned harmonized chakra "),
-            "type" => "int" ),
-        
-        "chakra_points" => array("id"=> 13,
-            "name" => totranslate("Number of points gains with chakra"),
-            "type" => "int" ),
-        
-        "black_points" => array("id"=> 14,
-            "name" => totranslate("Number of points gains with alleviated black energy"),
-            "type" => "int" ),
-        
-        "harmo_points" => array("id"=> 15,
-            "name" => totranslate("Number of points gains with harmonization bonus"),
-            "type" => "int" ),
-        
-        "meditation" => array("id"=> 16,
-            "name" => totranslate("Number of meditation done"),
-            "type" => "int" ),
-   
-    )
+            "type" => "int",
+        ],
 
-);
+        "chakra_harmonized" => [
+            "id" => 11,
+            "name" => totranslate("Number of harmonized chakra"),
+            "type" => "int",
+        ],
+
+        "chakra_aligned" => [
+            "id" => 12,
+            "name" => totranslate("Number of aligned harmonized chakra "),
+            "type" => "int",
+        ],
+
+        "chakra_points" => [
+            "id" => 13,
+            "name" => totranslate("Number of points gains with chakra"),
+            "type" => "int",
+        ],
+
+        "black_points" => [
+            "id" => 14,
+            "name" => totranslate(
+                "Number of points gains with alleviated black energy"
+            ),
+            "type" => "int",
+        ],
+
+        "harmo_points" => [
+            "id" => 15,
+            "name" => totranslate(
+                "Number of points gains with harmonization bonus"
+            ),
+            "type" => "int",
+        ],
+
+        "meditation" => [
+            "id" => 16,
+            "name" => totranslate("Number of meditation done"),
+            "type" => "int",
+        ],
+    ],
+];

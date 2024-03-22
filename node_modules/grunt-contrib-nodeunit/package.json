@@ -1,0 +1,37 @@
+{
+  "name": "grunt-contrib-nodeunit",
+  "description": "Run Nodeunit unit tests",
+  "version": "5.0.0",
+  "author": {
+    "name": "Grunt Team",
+    "url": "http://gruntjs.com/"
+  },
+  "repository": "gruntjs/grunt-contrib-nodeunit",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0"
+  },
+  "main": "tasks/nodeunit.js",
+  "scripts": {
+    "test": "grunt test && grunt jshint"
+  },
+  "dependencies": {
+    "nodeunit-x": "^0.16.0"
+  },
+  "devDependencies": {
+    "grunt": "^1.6.1",
+    "grunt-contrib-clean": "^2.0.1",
+    "grunt-contrib-internal": "^8.0.2",
+    "grunt-contrib-jshint": "^3.2.0",
+    "tap": "^16.3.4"
+  },
+  "keywords": [
+    "gruntplugin",
+    "nodeunit",
+    "test",
+    "runner"
+  ],
+  "files": [
+    "tasks"
+  ]
+}

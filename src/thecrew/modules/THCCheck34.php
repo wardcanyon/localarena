@@ -18,37 +18,36 @@
 
 class THCCheck34 extends THCCheck
 {
-    function __construct($cards )
+    function __construct($cards)
     {
         parent::__construct($cards);
     }
-    
+
     function specialCheck()
     {
-        
-        $commanderId =  $this->thecrew->getGameStateValue( 'commander_id');
-        $lastwinner =  $this->thecrew->getGameStateValue( 'last_winner');
-        $trickCOunt =  $this->thecrew->getGameStateValue( 'trick_count');
-        $min = thecrew::getUniqueValueFromDB("SELECT min(player_trick_number) FROM player");
-        $max = thecrew::getUniqueValueFromDB("SELECT max(player_trick_number) FROM player");
-        
-        if($min + 2 < $max 
-            || ($lastwinner !=$commanderId && $trickCOunt == 1)
-            || ($lastwinner !=$commanderId && $this->isLastTrick())
-            )
-        {
-            $this->missionFailed();            
-        }
-        else if($this->isLastTrick())
-        {
-            $this->missionSuccess(); 
-        }
-        else
-        {
+        $commanderId = $this->thecrew->getGameStateValue("commander_id");
+        $lastwinner = $this->thecrew->getGameStateValue("last_winner");
+        $trickCOunt = $this->thecrew->getGameStateValue("trick_count");
+        $min = thecrew::getUniqueValueFromDB(
+            "SELECT min(player_trick_number) FROM player"
+        );
+        $max = thecrew::getUniqueValueFromDB(
+            "SELECT max(player_trick_number) FROM player"
+        );
+
+        if (
+            $min + 2 < $max ||
+            ($lastwinner != $commanderId && $trickCOunt == 1) ||
+            ($lastwinner != $commanderId && $this->isLastTrick())
+        ) {
+            $this->missionFailed();
+        } elseif ($this->isLastTrick()) {
+            $this->missionSuccess();
+        } else {
             //otherwise we continue
-            $this->thecrew->setGameStateValue( 'mission_finished', 0 );
+            $this->thecrew->setGameStateValue("mission_finished", 0);
         }
-            
-        return true;        
+
+        return true;
     }
 }

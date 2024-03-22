@@ -18,52 +18,50 @@
 
 class THCCheck9 extends THCCheck
 {
-    function __construct($cards )
+    function __construct($cards)
     {
         parent::__construct($cards);
     }
-    
+
     function specialCheck()
-    {        
+    {
         //Check last trick
-        $trickCOunt =  $this->thecrew->getGameStateValue( 'trick_count');
-        $cards_on_table = $this->thecrew->cards->getCardsInLocation('trick'.$trickCOunt);
+        $trickCOunt = $this->thecrew->getGameStateValue("trick_count");
+        $cards_on_table = $this->thecrew->cards->getCardsInLocation(
+            "trick" . $trickCOunt
+        );
         $best_value = 0;
         $best_value_player_id = null;
-        $winningColor = $this->thecrew->getGameStateValue('trick_color'); // The color needed to win the trick color unless a trump (5) was played
-        
+        $winningColor = $this->thecrew->getGameStateValue("trick_color"); // The color needed to win the trick color unless a trump (5) was played
+
         // Who wins ?
         foreach ($cards_on_table as $card) {
             // Note: type = card color
             // Note: type_arg = value of the card
             // Note: location_arg = player who played this card on table
-            if ($card['type'] == 5 && $winningColor != 5) { // A trump has been played: this is the first one
+            if ($card["type"] == 5 && $winningColor != 5) {
+                // A trump has been played: this is the first one
                 $winningColor = 5; // Now trumps are needed to win the trick
-                $best_value_player_id = $card['location_arg'];
-                $best_value = $card['type_arg'];
-            }
-            else if($card['type'] == $winningColor) { // This card is the right color to win the trick
-                if($card['type_arg'] > $best_value) {
-                    $best_value_player_id = $card['location_arg'];
-                    $best_value = $card['type_arg'];
+                $best_value_player_id = $card["location_arg"];
+                $best_value = $card["type_arg"];
+            } elseif ($card["type"] == $winningColor) {
+                // This card is the right color to win the trick
+                if ($card["type_arg"] > $best_value) {
+                    $best_value_player_id = $card["location_arg"];
+                    $best_value = $card["type_arg"];
                 }
             }
         }
-                    
-        if($best_value == 1 && $winningColor < 5)
-        {            
-            $this->missionSuccess();             
-        }
-        else if($this->isLastTrick())
-        {
+
+        if ($best_value == 1 && $winningColor < 5) {
+            $this->missionSuccess();
+        } elseif ($this->isLastTrick()) {
             $this->missionFailed();
-        }
-        else
-        {
+        } else {
             //otherwise we continue
-            $this->thecrew->setGameStateValue( 'mission_finished', 0 );
+            $this->thecrew->setGameStateValue("mission_finished", 0);
         }
-            
-        return true;        
+
+        return true;
     }
 }

@@ -18,34 +18,41 @@
 
 class THCCheck41 extends THCCheck
 {
-    function __construct($cards )
+    function __construct($cards)
     {
         parent::__construct($cards);
     }
-    
+
     function specialCheck()
     {
-        
-        $specialId =  $this->thecrew->getGameStateValue( 'special_id');
-        $lastwinner =  $this->thecrew->getGameStateValue( 'last_winner');
-        $trickCOunt =  $this->thecrew->getGameStateValue( 'trick_count');
-        $rockets = thecrew::getUniqueValueFromDB( "select count(*) from card where card_type ='5' and card_location = 'trick1' and card_location_arg = ".$specialId);// NOI18N
-        $rocketslast = thecrew::getUniqueValueFromDB( "select count(*) from card where card_type ='5' and card_location = 'trick".$trickCOunt."' and card_location_arg = ".$specialId);// NOI18N
-                
-        if(($lastwinner !=$specialId && $trickCOunt == 1) || $rockets>0 || ($this->isLastTrick() && ($lastwinner !=$specialId || $rocketslast>0)))
-        {
-            $this->missionFailed();            
-        }
-        else if($this->isLastTrick())
-        {
-            $this->missionSuccess(); 
-        }
-        else
-        {
+        $specialId = $this->thecrew->getGameStateValue("special_id");
+        $lastwinner = $this->thecrew->getGameStateValue("last_winner");
+        $trickCOunt = $this->thecrew->getGameStateValue("trick_count");
+        $rockets = thecrew::getUniqueValueFromDB(
+            "select count(*) from card where card_type ='5' and card_location = 'trick1' and card_location_arg = " .
+                $specialId
+        ); // NOI18N
+        $rocketslast = thecrew::getUniqueValueFromDB(
+            "select count(*) from card where card_type ='5' and card_location = 'trick" .
+                $trickCOunt .
+                "' and card_location_arg = " .
+                $specialId
+        ); // NOI18N
+
+        if (
+            ($lastwinner != $specialId && $trickCOunt == 1) ||
+            $rockets > 0 ||
+            ($this->isLastTrick() &&
+                ($lastwinner != $specialId || $rocketslast > 0))
+        ) {
+            $this->missionFailed();
+        } elseif ($this->isLastTrick()) {
+            $this->missionSuccess();
+        } else {
             //otherwise we continue
-            $this->thecrew->setGameStateValue( 'mission_finished', 0 );
+            $this->thecrew->setGameStateValue("mission_finished", 0);
         }
-            
-        return true;        
+
+        return true;
     }
 }

@@ -282,12 +282,17 @@ class Table extends APP_GameClass
      // errors) but don't for "emppty" and "burglebrostwo""?
      public $stats_type;
 
+     public $game_options;
+
      function __construct()
      {
          parent::__construct();
 
          include $this->getGameName() . "/stats.inc.php";
          $this->stats_type = $stats_type;
+
+         include $this->getGameName() . "/gameoptions.inc.php";
+         $this->game_options = $game_options;
 
          include $this->getGameName() . "/material.inc.php";
          include $this->getGameName() . "/states.inc.php";
@@ -302,6 +307,12 @@ class Table extends APP_GameClass
              "moveId" => 3,
          ];
          $this->gamestate = new GameState($this, $machinestates);
+     }
+
+     function lbgaSetDefaultOptions() {
+         foreach ($this->game_options as $option_id => $option_desc) {
+             $this->lbgaSetGameStateInitialValue($option_id, $option_desc['default']);
+         }
      }
 
      function getNew($path)
@@ -599,6 +610,9 @@ class Table extends APP_GameClass
              "player_name" => "Mistergos2",
              "player_avatar" => "",
          ];
+
+         $this->lbgaSetDefaultOptions();
+
          $this->setupNewGame($players);
          $this->gamestate->nextState("");
      }
@@ -667,6 +681,11 @@ class Table extends APP_GameClass
      function setGameStateInitialValue($key, $value)
      {
          $keyint = $this->gameStateLabels[$key];
+         $this->lbgaSetGameStateInitialValue($keyint, $value);
+     }
+
+     private function lbgaSetGameStateInitialValue($keyint, $value)
+     {
          $this->DbQuery(
              "INSERT INTO `global`(`global_id`, `global_value`) VALUES (" .
                  $keyint .

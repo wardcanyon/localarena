@@ -33,6 +33,47 @@ $ docker volume rm local_db-data
 
 ### TODOs
 
+- Refine types/interfaces.  Can we also support unit testing?
+
+- Separate games, vendored deps, and the local framework.
+
+- Write integration tests with PhpUnit.
+
+- Set up tests for the local framework itself. (e.g. "can you
+  initialize a table and run through a few actions without blowing
+  up?" for a couple of different games)
+
+- Add type annotations in PHP codebase.
+
+- Convert client-side codebase to TypeScript; add types.  Move
+  framework types/interfaces over from BB2 repository.
+
+### Future ideas
+
+- Integrate some project-linting stuff (e.g. from BGA Workbench).
+
+- Make it easy to use LBGA without copying a built project into the
+  LBGA repository and rebuilding the Docker images.
+
+### Limitations
+
+- The logging functions (`trace()` et al.) just echo the message
+  they're given, which isn't very helpful.
+
+- The number of players, and their usernames and IDs, is fixed.
+
+- We don't do anything with game options at the moment;
+  e.g. `getGameStateValue("optionSuspicion")` returns -1.  (In fact,
+  it doesn't look like we ever include "gameoptions.inc.php"!)
+
+- Markup may not match current BGA markup very closely.
+
+### Behavioral differences
+
+- `PHP Fatal error:  Uncaught mysqli_sql_exception: Field 'card_order' doesn't have a default value` -- and it's NOT NULL; I wonder why this works on BGA Studio.
+
+### TODOs
+
 - Bind-mount /src into the `server` container so that we don't need to
   rebuild it and restart services every time something is edited.
 

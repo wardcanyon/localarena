@@ -5,48 +5,296 @@
  require_once APP_GAMEMODULE_PATH . "module/table/deck.php";
  require_once APP_GAMEMODULE_PATH . "view/common/util.php";
 
- class Table
+class APP_Object
+{
+    function __construct() {
+    }
+
+    function dump($v, $value)
+    {
+        echo "$v=";
+        var_dump($value);
+    }
+
+    function info($value)
+    {
+        echo "$value\n";
+    }
+
+    function trace($value)
+    {
+        echo "$value\n";
+    }
+
+    function debug($value)
+    {
+        echo "$value\n";
+    }
+
+    function watch($value)
+    {
+        echo "$value\n";
+    }
+
+    function warn($value)
+    {
+        echo "$value\n";
+    }
+
+    function error($msg)
+    {
+        echo "$msg\n";
+    }
+}
+
+class APP_DbObject extends APP_Object
+{
+    static $connstat = null;
+
+    public $conn;
+
+    // XXX: Hmm, yikes.  The way that this is being done now, multiple
+    // instantiations will overwrite each other's $connstat.
+    //
+    // We need a way to make the database interface functions
+    // available to e.g. burglebrostwo's CardManager without that
+    // issue.
+    function __construct() {
+        parent::__construct();
+
+        # These are provided by Docker Compose; see "compose.yaml".
+        $this->servername = getenv("DB_HOST");
+        $this->username = getenv("DB_USER");
+        $this->dbname = getenv("DB_NAME");
+        $this->password = trim(
+            file_get_contents(getenv("DB_PASSWORD_FILE_PATH"))
+        );
+
+        $this->currentPlayer = 0;
+        $this->replayFrom = 0;
+
+        // Create connection
+        $this->conn = new mysqli(
+            $this->servername,
+            $this->username,
+            $this->password,
+            $this->dbname
+        );
+        self::$connstat = $this->conn;
+
+        // Check connection
+        if ($this->conn->connect_error) {
+            die("Connection failed: " . $this->conn->connect_error);
+        }
+
+        /* Activation du reporting */
+        $driver = new mysqli_driver();
+        $driver->report_mode = MYSQLI_REPORT_ALL ^ MYSQLI_REPORT_INDEX;
+    }
+
+     protected function getCollectionFromDB(
+         $sql,
+         $bSingleValue = false,
+         $low_priority_select = false
+     ) {
+         $ret = [];
+         try {
+             if (!($data = $this->conn->query($sql))) {
+                 var_dump($this->conn->error);
+             }
+             $fetch = mysqli_fetch_all($data, MYSQLI_ASSOC);
+
+             foreach ($fetch as $row) {
+                 $key = array_key_first($row);
+                 $ret[$row[$key]] = $row;
+             }
+
+             if ($bSingleValue && count($ret)) {
+                 throw feException("too many results");
+             }
+         } catch (mysqli_sql_exception $e) {
+             var_dump($sql);
+             throw $e;
+         }
+         return $ret;
+     }
+
+     function getNonEmptyCollectionFromDB($sql)
+     {
+         $ret = [];
+         try {
+             if (!($data = $this->conn->query($sql))) {
+                 var_dump($this->conn->error);
+             }
+             $fetch = mysqli_fetch_all($data, MYSQLI_ASSOC);
+
+             foreach ($fetch as $row) {
+                 $key = array_key_first($row);
+                 $ret[$row[$key]] = $row;
+             }
+
+             if (count($ret) == 0) {
+                 throw feException("empty results");
+             }
+         } catch (mysqli_sql_exception $e) {
+             var_dump($sql);
+             throw $e;
+         }
+         return $ret;
+     }
+
+     function getObjectFromDB($sql, $low_priority_select = false)
+     {
+         $ret = [];
+         try {
+             if (!($data = $this->conn->query($sql))) {
+                 var_dump($this->conn->error);
+             }
+             $ret = mysqli_fetch_assoc($data);
+         } catch (Exception $e) {
+             var_dump($sql);
+             throw $e;
+         }
+         return $ret;
+     }
+
+     function getNonEmptyObjectFromDB($sql, $low_priority_select = false)
+     {
+         $ret = [];
+         try {
+             if (!($data = $this->conn->query($sql))) {
+                 var_dump($this->conn->error);
+             }
+
+             if ($data->num_rows == 0) {
+                 throw feException("empty results");
+             }
+
+             $ret = mysqli_fetch_assoc($data);
+         } catch (Exception $e) {
+             var_dump($sql);
+             throw $e;
+         }
+         return $ret;
+     }
+
+     static function getUniqueValueFromDB($sql, $low_priority_select = false)
+     {
+         $ret = "";
+         try {
+             if (!($data = self::$connstat->query($sql))) {
+                 var_dump(self::$connstat->error);
+             }
+             if ($data->num_rows > 1) {
+                 throw new feException("too many results");
+             }
+
+             $row = mysqli_fetch_row($data);
+
+             $ret = $row[0] ?? 0;
+         } catch (Exception $e) {
+             var_dump($sql);
+             throw $e;
+         }
+         return $ret;
+     }
+
+     function getObjectListFromDB($sql, $bUniqueValue = false)
+     {
+         $ret = [];
+         try {
+             if (!($data = $this->conn->query($sql))) {
+                 var_dump($this->conn->error);
+             }
+             if ($bUniqueValue) {
+                 $fetch = mysqli_fetch_all($data, MYSQLI_ASSOC);
+                 foreach ($fetch as $row) {
+                     $key = array_key_first($row);
+                     $ret[] = $row[$key];
+                 }
+             } else {
+                 $ret = mysqli_fetch_all($data, MYSQLI_ASSOC);
+             }
+         } catch (mysqli_sql_exception $e) {
+             var_dump($sql);
+             throw $e;
+         }
+         return $ret;
+     }
+
+     static function DbQuery($sql, $specific_db = null, $bMulti = false)
+     {
+         //  var_dump($sql);
+         try {
+             self::$connstat->query(
+                 $sql,
+                 $bMulti ? MYSQLI_USE_RESULT : MYSQLI_STORE_RESULT
+             );
+         } catch (Exception $e) {
+             var_dump($sql);
+             throw $e;
+         }
+     }
+
+    // XXX: This isn't part of the interface of this class; it's
+    // something added in LBGA.
+     private function saveDatabase()
+     {
+         $dir = "/src/databaseExport/database.sql";
+         exec(
+             "mysqldump --user={$this->username} --password={$this->password} --host={$this->servername} {$this->dbname} --result-file={$dir} 2>&1",
+             $output
+         );
+     }
+
+    function escapeStringForDB($string)
+    {
+        return $this->conn->real_escape_string($string);
+    }
+
+
+    // XXX: This isn't part of the interface of this class; it's
+    // something added in LBGA.
+    function loadDatabase()
+     {
+         $dir = "/src/databaseExport/database.sql";
+         if (file_exists($dir)) {
+             exec(
+                 "mysql --user={$this->username} --password={$this->password} --host={$this->servername} {$this->dbname} < {$dir} 2>&1",
+                 $output
+             );
+         }
+     }
+}
+
+class APP_GameClass extends APP_DbObject
+{
+}
+
+class Table extends APP_GameClass
  {
-     static $connstat = null;
+     // This contains the data defined in `stats.inc.php`.
+     //
+     // XXX: Is this available in the actual BGA implementation? Do we
+     // need to hide it?
+     //
+     // XXX: Why do stats work for "thecrew" (or at least not throw
+     // errors) but don't for "emppty" and "burglebrostwo""?
+     public $stats_type;
 
      function __construct()
      {
-         include $this->getGameName() . "/material.inc.php";
+         parent::__construct();
+
          include $this->getGameName() . "/stats.inc.php";
+         $this->stats_type = $stats_type;
+
+         include $this->getGameName() . "/material.inc.php";
          include $this->getGameName() . "/states.inc.php";
          include_once $this->getGameName() .
              "/" .
              $this->getGameName() .
              ".action.php";
-
-         # These are provided by Docker Compose; see "compose.yaml".
-         $this->servername = getenv("DB_HOST");
-         $this->username = getenv("DB_USER");
-         $this->dbname = getenv("DB_NAME");
-         $this->password = trim(
-             file_get_contents(getenv("DB_PASSWORD_FILE_PATH"))
-         );
-
-         $this->currentPlayer = 0;
-         $this->replayFrom = 0;
-
-         // Create connection
-         $this->conn = new mysqli(
-             $this->servername,
-             $this->username,
-             $this->password,
-             $this->dbname
-         );
-         self::$connstat = $this->conn;
-
-         // Check connection
-         if ($this->conn->connect_error) {
-             die("Connection failed: " . $this->conn->connect_error);
-         }
-
-         /* Activation du reporting */
-         $driver = new mysqli_driver();
-         $driver->report_mode = MYSQLI_REPORT_ALL ^ MYSQLI_REPORT_INDEX;
 
          $this->gameStateLabels = [
              "currentState" => 1,
@@ -392,174 +640,6 @@
      }
 
      /*
-      * DATABASE
-      */
-
-     protected function getCollectionFromDB(
-         $sql,
-         $bSingleValue = false,
-         $low_priority_select = false
-     ) {
-         $ret = [];
-         try {
-             if (!($data = $this->conn->query($sql))) {
-                 var_dump($this->conn->error);
-             }
-             $fetch = mysqli_fetch_all($data, MYSQLI_ASSOC);
-
-             foreach ($fetch as $row) {
-                 $key = array_key_first($row);
-                 $ret[$row[$key]] = $row;
-             }
-
-             if ($bSingleValue && count($ret)) {
-                 throw feException("too many results");
-             }
-         } catch (mysqli_sql_exception $e) {
-             var_dump($sql);
-             throw $e;
-         }
-         return $ret;
-     }
-
-     function getNonEmptyCollectionFromDB($sql)
-     {
-         $ret = [];
-         try {
-             if (!($data = $this->conn->query($sql))) {
-                 var_dump($this->conn->error);
-             }
-             $fetch = mysqli_fetch_all($data, MYSQLI_ASSOC);
-
-             foreach ($fetch as $row) {
-                 $key = array_key_first($row);
-                 $ret[$row[$key]] = $row;
-             }
-
-             if (count($ret) == 0) {
-                 throw feException("empty results");
-             }
-         } catch (mysqli_sql_exception $e) {
-             var_dump($sql);
-             throw $e;
-         }
-         return $ret;
-     }
-
-     function getObjectFromDB($sql, $low_priority_select = false)
-     {
-         $ret = [];
-         try {
-             if (!($data = $this->conn->query($sql))) {
-                 var_dump($this->conn->error);
-             }
-             $ret = mysqli_fetch_assoc($data);
-         } catch (Exception $e) {
-             var_dump($sql);
-             throw $e;
-         }
-         return $ret;
-     }
-
-     function getNonEmptyObjectFromDB($sql, $low_priority_select = false)
-     {
-         $ret = [];
-         try {
-             if (!($data = $this->conn->query($sql))) {
-                 var_dump($this->conn->error);
-             }
-
-             if ($data->num_rows == 0) {
-                 throw feException("empty results");
-             }
-
-             $ret = mysqli_fetch_assoc($data);
-         } catch (Exception $e) {
-             var_dump($sql);
-             throw $e;
-         }
-         return $ret;
-     }
-
-     static function getUniqueValueFromDB($sql, $low_priority_select = false)
-     {
-         $ret = "";
-         try {
-             if (!($data = self::$connstat->query($sql))) {
-                 var_dump(self::$connstat->error);
-             }
-             if ($data->num_rows > 1) {
-                 throw new feException("too many results");
-             }
-
-             $row = mysqli_fetch_row($data);
-
-             $ret = $row[0] ?? 0;
-         } catch (Exception $e) {
-             var_dump($sql);
-             throw $e;
-         }
-         return $ret;
-     }
-
-     function getObjectListFromDB($sql, $bUniqueValue = false)
-     {
-         $ret = [];
-         try {
-             if (!($data = $this->conn->query($sql))) {
-                 var_dump($this->conn->error);
-             }
-             if ($bUniqueValue) {
-                 $fetch = mysqli_fetch_all($data, MYSQLI_ASSOC);
-                 foreach ($fetch as $row) {
-                     $key = array_key_first($row);
-                     $ret[] = $row[$key];
-                 }
-             } else {
-                 $ret = mysqli_fetch_all($data, MYSQLI_ASSOC);
-             }
-         } catch (mysqli_sql_exception $e) {
-             var_dump($sql);
-             throw $e;
-         }
-         return $ret;
-     }
-
-     static function DbQuery($sql, $specific_db = null, $bMulti = false)
-     {
-         //  var_dump($sql);
-         try {
-             self::$connstat->query(
-                 $sql,
-                 $bMulti ? MYSQLI_USE_RESULT : MYSQLI_STORE_RESULT
-             );
-         } catch (Exception $e) {
-             var_dump($sql);
-             throw $e;
-         }
-     }
-
-     private function saveDatabase()
-     {
-         $dir = "/src/databaseExport/database.sql";
-         exec(
-             "mysqldump --user={$this->username} --password={$this->password} --host={$this->servername} {$this->dbname} --result-file={$dir} 2>&1",
-             $output
-         );
-     }
-
-     function loadDatabase()
-     {
-         $dir = "/src/databaseExport/database.sql";
-         if (file_exists($dir)) {
-             exec(
-                 "mysql --user={$this->username} --password={$this->password} --host={$this->servername} {$this->dbname} < {$dir} 2>&1",
-                 $output
-             );
-         }
-     }
-
-     /*
       * GAME STATE
       */
 
@@ -604,9 +684,21 @@
          );
      }
 
-     function initStat($type, $key, $value)
+     function initStat($type, $key, $value, $player_id = null)
      {
+         if (!is_null($player_id)) {
+             throw new \feException('$player_id parameter not supported');
+         }
+         if ($type !== "player" && $type !== "table") {
+             throw new \feException('Stat type must be "player" or "table".');
+         }
+
          $id = $this->stats_type[$type][$key]["id"];
+         if (!is_int($id)) {
+             echo "*** stat does not have integer ID\n";
+             // XXX: Should add an "internal LBGA error" exception type.
+             throw new \feException('Stat must have an integer ID.');
+         }
 
          if ($type == "player") {
              $players = $this->loadPlayersBasicInfos();
@@ -874,4 +966,3 @@
          return $gameinfos;
      }
  }
-

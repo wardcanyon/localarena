@@ -9,6 +9,21 @@ require_once "/src/lbga_config.inc.php";
 require LBGA_GAME_NAME . "/" . LBGA_GAME_NAME . ".view.php";
 
 $game_name = LBGA_GAME_NAME;
+
+// The game-specific view code expects this.
+//
+// XXX: Find this a better home.
+class GUser
+{
+    public function get_id()
+    {
+        // XXX:
+        return 1;
+    }
+}
+global $g_user;
+$g_user = new GUser();
+
 ?>
 
 <!DOCTYPE html>
@@ -28,8 +43,9 @@ $game_name = LBGA_GAME_NAME;
 
 </head>
 <body class="claro">
-     <?php
-     $view = new "view_{$game_name}_{$game_name}"();
+    <?php
+    $view_class_name = "view_{$game_name}_{$game_name}";
+    $view = new $view_class_name();
      $currentPlayer = 2317679;
 
      if (DEV_MODE) {

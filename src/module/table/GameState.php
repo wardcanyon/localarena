@@ -53,7 +53,7 @@ class GameState
 
             case "multipleactiveplayer":
                 $actives = $this->game->getObjectListFromDB(
-                    "select player_is_multiactive from players",
+                    "SELECT `player_is_multiactive` FROM `player`",
                     true
                 );
                 break;
@@ -68,7 +68,7 @@ class GameState
      */
     public function setAllPlayersMultiactive()
     {
-        $this->game->DbQuery("update players set player_is_multiactive = 1");
+        $this->game->DbQuery("UPDATE `player` SET `player_is_multiactive` = 1");
     }
 
     /**
@@ -87,10 +87,10 @@ class GameState
         } else {
             $ids = implode(",", $players);
             $this->game->DbQuery(
-                "update players set player_is_multiactive = 0"
+                "UPDATE `player` SET `player_is_multiactive` = 0"
             );
             $this->game->DbQuery(
-                "update players set player_is_multiactive = 1 where player_id in (" .
+                "UPDATE `player` SET `player_is_multiactive` = 1 WHERE `player_id` IN (" .
                     $ids .
                     ")"
             );
@@ -108,12 +108,12 @@ class GameState
     public function setPlayerNonMultiactive($player_id, $next_state)
     {
         $this->game->DbQuery(
-            "update players set player_is_multiactive = 0 where player_id = " .
+            "UPDATE `player` SET `player_is_multiactive` = 0 WHERE `player_id` = " .
                 $player_id
         );
         if (
             $this->game->getUniqueValueFromDB(
-                "select count(*) from players where player_is_multiactive = 1"
+                "SELECT COUNT(*) FROM `player` WHERE `player_is_multiactive` = 1"
             ) == 0
         ) {
             $this->nextState($next_state);

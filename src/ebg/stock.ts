@@ -372,7 +372,7 @@ export default class EbgStock {
         dojo
             .query("#" + this.container_div.id + " .stockitem_selected")
             .forEach(function(node) {
-                node.removeClass("stockitem_selected");
+                node.classList.remove("stockitem_selected");
             });
     }
 

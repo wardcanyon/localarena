@@ -10,7 +10,7 @@ declare function __(site: string, str: string): string;
 declare function $(text: string | Element): HTMLElement;
 
 declare const define;
-declare const ebg;
+declare let ebg: any;
 declare const dojo;
 declare const dijit;
 declare type eventhandler = (event?: any) => void;

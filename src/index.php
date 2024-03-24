@@ -66,6 +66,16 @@ $g_user = new GUser();
 
     <!-- load Dojo -->
     <script>
+     // N.B.: This is a bit of a hack so that when our modules try to
+     // assign the classes that they define to a property of these
+     // objects, the objects are defined.
+     //
+     // The fact that we need to do this probably means that we aren't
+     // doing something quite right with how we `declare()` classes for
+     // Dojo.
+     var ebg = {};
+     ebg.core = {};
+
     var dojoConfig = {
             async: true,
             baseUrl: './dojo',

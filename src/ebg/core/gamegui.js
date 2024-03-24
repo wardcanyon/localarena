@@ -1,15 +1,23 @@
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
 (function (factory) {
     if (typeof module === "object" && typeof module.exports === "object") {
         var v = factory(require, exports);
         if (v !== undefined) module.exports = v;
     }
     else if (typeof define === "function" && define.amd) {
-        define(["require", "exports", "ebg/core/notificationQueue", "dojo/dom-geometry", "dojo/dom-style", "dojo/fx", "dijit/Tooltip"], factory);
+        define(["require", "exports", "../declareDecorator", "ebg/core/notificationQueue", "dojo/dom-geometry", "dojo/dom-style", "dojo/fx", "dijit/Tooltip"], factory);
     }
 })(function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    var notifqueue = require("ebg/core/notificationQueue");
+    exports.EbgCoreGamegui = void 0;
+    var declareDecorator_1 = require("../declareDecorator");
+    require("ebg/core/notificationQueue");
     var domGeom = require("dojo/dom-geometry");
     var style = require("dojo/dom-style");
     var fx = require("dojo/fx");
@@ -21,7 +29,7 @@
             this.replay = false;
             this.processingNotifications = false;
             this.notificationsBuffer = [];
-            this.notifqueue = new ebg.core.notificationQueue();
+            this.notifqueue = null;
             this.socket = null;
             this.player_id = null;
             this.bg_game_players = null;
@@ -33,7 +41,9 @@
         }
         EbgCoreGamegui.prototype.setup = function (gamedatas) {
             console.log("setup parent");
-            notifqueue.game = this;
+            console.log('*** gamegui ctor');
+            console.log(ebg);
+            this.notifqueue = new ebg.core.notificationQueue(this);
         };
         EbgCoreGamegui.prototype.completesetup = function (gamename, gamedatas) {
             this.socket = new WebSocket("ws://localhost:3000/" + this.player_id);
@@ -471,7 +481,11 @@
                 this.socket.send(JSON.stringify(parameters));
             }
         };
+        EbgCoreGamegui = __decorate([
+            (0, declareDecorator_1.default)()
+        ], EbgCoreGamegui);
         return EbgCoreGamegui;
     }());
+    exports.EbgCoreGamegui = EbgCoreGamegui;
     ebg.core.gamegui = EbgCoreGamegui;
 });

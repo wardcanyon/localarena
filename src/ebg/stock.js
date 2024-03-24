@@ -10,14 +10,14 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
         if (v !== undefined) module.exports = v;
     }
     else if (typeof define === "function" && define.amd) {
-        define(["require", "exports", "dojo/dom-geometry", "dojo/dom-style", "./declareDecorator"], factory);
+        define(["require", "exports", "./declareDecorator", "dojo/dom-geometry", "dojo/dom-style"], factory);
     }
 })(function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
+    var declareDecorator_1 = require("./declareDecorator");
     var domGeom = require("dojo/dom-geometry");
     var style = require("dojo/dom-style");
-    var declareDecorator_1 = require("./declareDecorator");
     var EbgStock = (function () {
         function EbgStock() {
             this.page = null;
@@ -341,7 +341,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
             dojo
                 .query("#" + this.container_div.id + " .stockitem_selected")
                 .forEach(function (node) {
-                node.removeClass("stockitem_selected");
+                node.classList.remove("stockitem_selected");
             });
         };
         EbgStock.prototype.getSelectedItems = function () {

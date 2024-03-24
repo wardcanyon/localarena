@@ -1,6 +1,14 @@
-import declare from './declareDecorator';
+import declare from '../declareDecorator';
 
-import * as notifqueue from 'ebg/core/notificationQueue';
+// import { EbgCoreNotificationQueue } from 'ebg/core/notificationQueue';
+// import * as XXX_notifqueuemodule from 'ebg/core/notificationQueue';
+
+// N.B.: We need to do this rather than to import the
+// `EbgCoreNotificationQueue` class because otherwise TypeScript will
+// notice that we aren't using the imported symbol and will omit the
+// source module from the call to `define()` that it generates.
+import 'ebg/core/notificationQueue';
+
 import * as domGeom from 'dojo/dom-geometry';
 import * as style from 'dojo/dom-style';
 import * as fx from 'dojo/fx';
@@ -11,13 +19,13 @@ import * as Tooltip from 'dijit/Tooltip';
 declare const jQuery;
 
 @declare()
-class EbgCoreGamegui {
+export class EbgCoreGamegui {
     lock = false;
     bgg_stateId = 0;
     replay = false;
     processingNotifications = false;
     notificationsBuffer = [];
-    notifqueue = new ebg.core.notificationQueue();
+    notifqueue = null;
 
     // TODO: This is from backfilling missing properties; should go
     // through and refine this.
@@ -30,9 +38,15 @@ class EbgCoreGamegui {
     bRealtime = null;
     multiactive = null;
 
+    constructor() {
+    }
+
     setup(gamedatas) {
-      console.log("setup parent");
-        notifqueue.game = this;
+        console.log("setup parent");
+
+        console.log('*** gamegui ctor');
+        console.log(ebg);
+        this.notifqueue = new ebg.core.notificationQueue(this);
     }
 
     completesetup(gamename, gamedatas) {
@@ -645,4 +659,6 @@ class EbgCoreGamegui {
 
 }
 
+// ebg ??= {};
+// ebg.core ??= {};
 ebg.core.gamegui = EbgCoreGamegui;

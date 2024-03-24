@@ -20,6 +20,8 @@ declare type eventhandler = (event?: any) => void;
 // XXX: New stuff added here
 // ----
 
+type PlayerId = number;
+
 type Coords = {
     x: number;
     y: number;

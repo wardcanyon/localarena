@@ -370,8 +370,17 @@ class Table extends APP_GameClass
      {
          $ret = [];
          $ret["id"] = $this->getCurrentStateId();
-         $ret["active_player_id"] = $this->getActivePlayerId();
-         $ret["multiactive"] = $this->gamestate->getActivePlayerList();
+
+         // XXX: This was confusing the client when the local player
+         // was the last player active in an "activeplayer" state but
+         // was not active in a "multiactive" state.
+         if ($this->gamestate->state()['type'] === 'activeplayer') {
+             $ret["active_player_id"] = $this->getActivePlayerId();
+         }
+         if ($this->gamestate->state()['type'] === 'multipleactiveplayer') {
+             $ret["multiactive"] = $this->gamestate->getActivePlayerList();
+         }
+
          $ret["players"] = $this->loadPlayersUIInfos();
          $state = $this->gamestate->state();
          if (isset($state["args"])) {

@@ -30,13 +30,15 @@ export class EbgCoreGamegui {
     // TODO: This is from backfilling missing properties; should go
     // through and refine this.
     socket = null;
-    player_id = null;
     bg_game_players = null;
     gamedatas = null;
-    active_player_id = null;
     bgg_states = null;
-    bRealtime = null;
-    multiactive = null;
+    bRealtime: boolean;
+
+    player_id: PlayerId;
+
+    active_player_id?: PlayerId = null;
+    multiactive: PlayerId[] = [];
 
     constructor() {
     }
@@ -112,10 +114,27 @@ export class EbgCoreGamegui {
         var state = this.bgg_states[this.bgg_stateId];
         this.onLeavingState(state["name"]);
       }
-      dojo.empty("bg_game_main_buttons");
-      this.active_player_id = gamedatas.active_player_id;
-      this.multiactive = gamedatas.multiactive;
+        dojo.empty("bg_game_main_buttons");
+        console.log('*** notif_bg_onEnteringState() gamedatas=');
+        console.log(gamedatas);
+
+        // XXX: Right now, the server is only supplying whichever one
+        // of these matches the type of the current state (if any),
+        // and the client treats any player ID in either variable as
+        // active.  Should we be more discerning?
+        if (this.active_player_id === undefined) {
+            this.active_player_id = null;
+        } else {
+            this.active_player_id = parseInt(gamedatas.active_player_id);
+        }
+        if (this.multiactive === undefined) {
+            this.multiactive = [];
+        } else {
+            this.multiactive = gamedatas.multiactive.map((x) => parseInt(x));
+        }
+
       this.bgg_stateId = gamedatas.id;
+
       var state = this.bgg_states[this.bgg_stateId];
       state["id"] = this.bgg_stateId;
       state["args"] = gamedatas.args;
@@ -261,8 +280,8 @@ export class EbgCoreGamegui {
       return log;
     }
     divActPlayer() {
-      var color = this.bg_game_players[this.active_player_id].player_color;
-      var name = this.bg_game_players[this.active_player_id].player_name;
+      var color = this.bg_game_players[this.player_id].player_color;
+      var name = this.bg_game_players[this.player_id].player_name;
       var color_bg = "";
       if (
         this.gamedatas.players[this.player_id] &&

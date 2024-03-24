@@ -54,7 +54,7 @@ class GameState
 
             case "multipleactiveplayer":
                 $actives = $this->game->getObjectListFromDB(
-                    "SELECT `player_is_multiactive` FROM `player`",
+                    "SELECT `player_id` FROM `player` WHERE `player_is_multiactive` = 1",
                     true
                 );
                 break;

@@ -31,13 +31,11 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
             this.notificationsBuffer = [];
             this.notifqueue = null;
             this.socket = null;
-            this.player_id = null;
             this.bg_game_players = null;
             this.gamedatas = null;
-            this.active_player_id = null;
             this.bgg_states = null;
-            this.bRealtime = null;
-            this.multiactive = null;
+            this.active_player_id = null;
+            this.multiactive = [];
         }
         EbgCoreGamegui.prototype.setup = function (gamedatas) {
             console.log("setup parent");
@@ -94,8 +92,20 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
                 this.onLeavingState(state["name"]);
             }
             dojo.empty("bg_game_main_buttons");
-            this.active_player_id = gamedatas.active_player_id;
-            this.multiactive = gamedatas.multiactive;
+            console.log('*** notif_bg_onEnteringState() gamedatas=');
+            console.log(gamedatas);
+            if (this.active_player_id === undefined) {
+                this.active_player_id = null;
+            }
+            else {
+                this.active_player_id = parseInt(gamedatas.active_player_id);
+            }
+            if (this.multiactive === undefined) {
+                this.multiactive = [];
+            }
+            else {
+                this.multiactive = gamedatas.multiactive.map(function (x) { return parseInt(x); });
+            }
             this.bgg_stateId = gamedatas.id;
             var state = this.bgg_states[this.bgg_stateId];
             state["id"] = this.bgg_stateId;
@@ -211,8 +221,8 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
             return log;
         };
         EbgCoreGamegui.prototype.divActPlayer = function () {
-            var color = this.bg_game_players[this.active_player_id].player_color;
-            var name = this.bg_game_players[this.active_player_id].player_name;
+            var color = this.bg_game_players[this.player_id].player_color;
+            var name = this.bg_game_players[this.player_id].player_name;
             var color_bg = "";
             if (this.gamedatas.players[this.player_id] &&
                 this.bg_game_players[this.player_id].color_back) {

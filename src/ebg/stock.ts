@@ -1,15 +1,7 @@
-// define([
-//   "dojo",
-//   "dojo/_base/declare",
-//   "dojo/dom-geometry",
-//   "dojo/fx",
-//   "dojo/dom-style",
-// ], function (dojo, declare, domGeom, fx, style) {
-//   return declare("ebg.stock", null, {
+import declare from './declareDecorator';
 
 import * as domGeom from 'dojo/dom-geometry';
 import * as style from 'dojo/dom-style';
-import declare from './declareDecorator';
 
 @declare()
 export default class EbgStock {

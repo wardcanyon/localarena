@@ -101,9 +101,7 @@ export default class EbgStock {
         'px; "></div>';
       dojo.place(template, this.container_div);
       if (this.selectionMode != 0) {
-        dojo
-          .query("#" + this.container_div.id + "_item_" + id)
-          .addClass("stockitem_selectable");
+          $(this.container_div.id + "_item_" + id).classList.add("stockitem_selectable");
       }
       var item = dojo.query("#" + this.container_div.id + "_item_" + id);
       item.connect("onclick", this, "onClick");
@@ -347,15 +345,15 @@ export default class EbgStock {
     }
 
     setSelectionMode(mode) {
-      this.selectionMode = mode;
-      dojo
-        .query("#" + this.container_div.id + " .stockitem")
-        .removeClass("stockitem_selectable stockitem_selected");
+        this.selectionMode = mode;
+        dojo.query(this.container_div.id + " .stockitem").forEach(function(node) {
+            node.classList.remove("stockitem_selectable stockitem_selected");
+        });
 
       if (this.selectionMode != 0) {
-        dojo
-          .query("#" + this.container_div.id + " .stockitem")
-          .addClass("stockitem_selectable");
+          dojo.query(this.container_div.id + " .stockitem").forEach(function(node) {
+              node.classList.add("stockitem_selectable");
+          });
       }
     }
 

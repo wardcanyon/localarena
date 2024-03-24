@@ -101,9 +101,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
                 'px; "></div>';
             dojo.place(template, this.container_div);
             if (this.selectionMode != 0) {
-                dojo
-                    .query("#" + this.container_div.id + "_item_" + id)
-                    .addClass("stockitem_selectable");
+                $(this.container_div.id + "_item_" + id).classList.add("stockitem_selectable");
             }
             var item = dojo.query("#" + this.container_div.id + "_item_" + id);
             item.connect("onclick", this, "onClick");
@@ -315,13 +313,13 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
         };
         EbgStock.prototype.setSelectionMode = function (mode) {
             this.selectionMode = mode;
-            dojo
-                .query("#" + this.container_div.id + " .stockitem")
-                .removeClass("stockitem_selectable stockitem_selected");
+            dojo.query(this.container_div.id + " .stockitem").forEach(function (node) {
+                node.classList.remove("stockitem_selectable stockitem_selected");
+            });
             if (this.selectionMode != 0) {
-                dojo
-                    .query("#" + this.container_div.id + " .stockitem")
-                    .addClass("stockitem_selectable");
+                dojo.query(this.container_div.id + " .stockitem").forEach(function (node) {
+                    node.classList.add("stockitem_selectable");
+                });
             }
         };
         EbgStock.prototype.setSelectionAppearance = function (type) {

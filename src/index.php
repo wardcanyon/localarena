@@ -115,7 +115,7 @@ $g_user = new GUser();
 		return dojo.byId(val);
 	};
 
-     g_gamethemeurl = "http://localhost/game/<?= "$game_name" ?>/";
+     g_gamethemeurl = "/game/<?= "$game_name" ?>/";
 
     </script>
     <script src="dojo/dojo.js"></script>

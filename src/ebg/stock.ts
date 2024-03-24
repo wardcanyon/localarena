@@ -364,10 +364,6 @@ export default class EbgStock {
     }
 
     isSelected(id) {
-      // dojo
-      //   .query("#" + this.container_div.id + "_item_" + id)
-        //   .hasClass("stockitem_selected");
-
         return $(this.container_div.id + "_item_" + id).classList.contains("stockitem_selected");
     }
 
@@ -375,16 +371,10 @@ export default class EbgStock {
       if (this.selectionMode == 1) {
         this.unselectAll();
       }
-      // dojo
-      //   .query("#" + this.container_div.id + "_item_" + id)
-        //   .addClass("stockitem_selected");
         $(this.container_div.id + "_item_" + id).classList.add("stockitem_selected");
     }
 
     unselectItem(id) {
-      // dojo
-      //   .query("#" + this.container_div.id + "_item_" + id)
-      //   .removeClass("stockitem_selected");
         $(this.container_div.id + "_item_" + id).classList.remove("stockitem_selected");
     }
 

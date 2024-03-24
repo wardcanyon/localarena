@@ -17,6 +17,7 @@ class GameState
      */
     public function updateMultiactiveOrNextState($str)
     {
+        throw new \feException('updateMultiactiveOrNextState(): not implemented');
     }
 
     /**

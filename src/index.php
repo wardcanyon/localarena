@@ -135,9 +135,12 @@ $g_user = new GUser();
 
          gameui = new bgagame.<?= "$game_name" ?>();
         gameui.player_id = <?= $view->game->currentPlayer ?>;
-        gameui.current_player_name="Mistergos1";
-	 gameui.completesetup( "<?= "$game_name" ?>", <?= $view->getFullDatasAsJson() ?>);
-		gameui.logAll(<?= json_encode($view->game->getLogs()) ?>);
+         gameui.current_player_name="Mistergos1";
+         console.log('*** about to call completesetup');
+         var fullDatas = <?= $view->getFullDatasAsJson() ?>;
+	 gameui.completesetup( "<?= "$game_name" ?>", fullDatas);
+         console.log('*** back from completesetup');
+	 gameui.logAll(<?= json_encode($view->game->getLogs()) ?>);
 
 		<?php if ($view->game->replayFrom > 0) {
       echo "gameui.replay = true;";

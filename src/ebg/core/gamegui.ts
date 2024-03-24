@@ -45,22 +45,24 @@ export class EbgCoreGamegui {
 
     setup(gamedatas) {
         console.log("setup parent");
-
-        console.log('*** gamegui ctor');
-        console.log(ebg);
-        this.notifqueue = new ebg.core.notificationQueue(this);
     }
 
     completesetup(gamename, gamedatas) {
-      this.socket = new WebSocket("ws://localhost:3000/" + this.player_id);
+        console.log('*** YYY: entering completesetup()');
 
+      this.socket = new WebSocket("ws://localhost:3000/" + this.player_id);
       this.socket.onopen = function (e) {};
 
+      console.log('*** YYY: constructing notifqueue');
+      this.notifqueue = new ebg.core.notificationQueue(this);
+
       var gui = this;
-      this.socket.onmessage = function (event) {
-        var event = JSON.parse(event.data);
-        gui.notifqueue.addEvent(event);
-      };
+        this.socket.onmessage = function (event) {
+            console.log('*** YYY: socket.onmessage()');
+            var event = JSON.parse(event.data);
+            console.log('*** YYY: calling notifqueue.addEvent()');
+            gui.notifqueue.addEvent(event);
+        };
 
       this.socket.onclose = function (event) {
         alert("[close] Connection close");
@@ -107,6 +109,8 @@ export class EbgCoreGamegui {
     }
 
     notif_bg_onEnteringState(gamedatas) {
+        console.log('onenteringstate');
+
       gamedatas = gamedatas.args;
       this.bg_game_players = gamedatas.players;
 

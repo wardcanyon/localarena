@@ -39,16 +39,18 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
         }
         EbgCoreGamegui.prototype.setup = function (gamedatas) {
             console.log("setup parent");
-            console.log('*** gamegui ctor');
-            console.log(ebg);
-            this.notifqueue = new ebg.core.notificationQueue(this);
         };
         EbgCoreGamegui.prototype.completesetup = function (gamename, gamedatas) {
+            console.log('*** YYY: entering completesetup()');
             this.socket = new WebSocket("ws://localhost:3000/" + this.player_id);
             this.socket.onopen = function (e) { };
+            console.log('*** YYY: constructing notifqueue');
+            this.notifqueue = new ebg.core.notificationQueue(this);
             var gui = this;
             this.socket.onmessage = function (event) {
+                console.log('*** YYY: socket.onmessage()');
                 var event = JSON.parse(event.data);
+                console.log('*** YYY: calling notifqueue.addEvent()');
                 gui.notifqueue.addEvent(event);
             };
             this.socket.onclose = function (event) {

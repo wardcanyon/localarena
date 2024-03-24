@@ -6,15 +6,23 @@ import { EbgCoreGamegui } from 'ebg/core/gamegui';
 export class EbgCoreNotificationQueue {
     game: EbgCoreGamegui = null;
     processingNotifications: boolean = false;
-    notificationsBuffer = [];
-    notificationDelay = [];
+    notificationsBuffer;
+    notificationDelay;
     lastMoveId: number = -1;
 
     constructor(game?: EbgCoreGamegui) {
-      this.game = game;
+        this.game = game;
+        this.notificationsBuffer = [];
+        this.notificationDelay = [];
+    }
+
+    addevent(event) {
+        console.log('*** YYY: addevent()');
+        this.addEvent(event);
     }
 
     addEvent(event) {
+        console.log('*** YYY: addEvent()');
       this.notificationsBuffer.push(event);
       if (!this.game.replay) {
         this.processNotif();
@@ -22,6 +30,8 @@ export class EbgCoreNotificationQueue {
     }
 
     processNotif() {
+        console.log('*** processNotif()...');
+
       if (
         !this.processingNotifications &&
         this.notificationsBuffer.length > 0
@@ -40,7 +50,7 @@ export class EbgCoreNotificationQueue {
             dojo.publish(event.notification_type, event);
             var delay = 0;
             if (event.notification_type in this.notificationDelay) {
-              delay = this.notificationDelay[event.notification_type];
+                delay = this.notificationDelay[event.notification_type];
             }
             setTimeout(
               dojo.hitch(this, function () {
@@ -60,12 +70,8 @@ export class EbgCoreNotificationQueue {
     }
 
     setSynchronous(notif, delay) {
-      this.notificationDelay[notif] = delay;
+        this.notificationDelay[notif] = delay;
     }
 }
 
-console.log('**notifqueue class:');
-console.log(EbgCoreNotificationQueue);
-console.log(EbgCoreNotificationQueue.constructor);
-
-ebg.core.notificationQueue = EbgCoreNotificationQueue.constructor;
+ebg.core.notificationQueue = EbgCoreNotificationQueue;

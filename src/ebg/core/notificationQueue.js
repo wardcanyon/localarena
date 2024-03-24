@@ -21,18 +21,24 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
         function EbgCoreNotificationQueue(game) {
             this.game = null;
             this.processingNotifications = false;
-            this.notificationsBuffer = [];
-            this.notificationDelay = [];
             this.lastMoveId = -1;
             this.game = game;
+            this.notificationsBuffer = [];
+            this.notificationDelay = [];
         }
+        EbgCoreNotificationQueue.prototype.addevent = function (event) {
+            console.log('*** YYY: addevent()');
+            this.addEvent(event);
+        };
         EbgCoreNotificationQueue.prototype.addEvent = function (event) {
+            console.log('*** YYY: addEvent()');
             this.notificationsBuffer.push(event);
             if (!this.game.replay) {
                 this.processNotif();
             }
         };
         EbgCoreNotificationQueue.prototype.processNotif = function () {
+            console.log('*** processNotif()...');
             if (!this.processingNotifications &&
                 this.notificationsBuffer.length > 0) {
                 this.processingNotifications = true;
@@ -68,8 +74,5 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
         return EbgCoreNotificationQueue;
     }());
     exports.EbgCoreNotificationQueue = EbgCoreNotificationQueue;
-    console.log('**notifqueue class:');
-    console.log(EbgCoreNotificationQueue);
-    console.log(EbgCoreNotificationQueue.constructor);
-    ebg.core.notificationQueue = EbgCoreNotificationQueue.constructor;
+    ebg.core.notificationQueue = EbgCoreNotificationQueue;
 });

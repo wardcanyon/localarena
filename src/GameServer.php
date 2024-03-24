@@ -41,7 +41,7 @@ class GameServer implements MessageComponentInterface
             "",
             $from->httpRequest->getUri()->getPath()
         );
-        $game = new LBGA_GAME_NAME();
+        $game = new (''.LBGA_GAME_NAME)();
         $game->doAction($this, json_decode($msg, true));
     }
 

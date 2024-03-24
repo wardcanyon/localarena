@@ -1,7 +1,7 @@
 import declare from './declareDecorator';
 
 @declare()
-export default class Zone {
+export default class EbgZone {
     page = null;
     container_div = null;
     item_height: number = null;
@@ -289,4 +289,4 @@ export default class Zone {
 
 // XXX: I'm sure that this is probably not the "right" way to do this,
 // but it works!
-ebg.zone = Zone;
+ebg.zone = EbgZone;

@@ -236,6 +236,15 @@ class APP_DbObject extends APP_Object
          }
      }
 
+    function escapeStringForDB($string)
+    {
+        return $this->conn->real_escape_string($string);
+    }
+
+    function DbGetLastId() {
+        return $this->conn->insert_id;
+    }
+
     // XXX: This isn't part of the interface of this class; it's
     // something added in LBGA.
      private function saveDatabase()
@@ -246,12 +255,6 @@ class APP_DbObject extends APP_Object
              $output
          );
      }
-
-    function escapeStringForDB($string)
-    {
-        return $this->conn->real_escape_string($string);
-    }
-
 
     // XXX: This isn't part of the interface of this class; it's
     // something added in LBGA.
@@ -391,7 +394,11 @@ class Table extends APP_GameClass
              );
              $ret["alldatas"] = json_decode($data);
          } else {
-             $ret["alldatas"] = $this->getAllDatas();
+             // XXX:
+             $ret["alldatas"] = array_merge(
+                 $this->getMediumDatas(),
+                 $this->getAllDatas(),
+             );
          }
 
          $ret["states"] = $this->gamestate->machinestates;

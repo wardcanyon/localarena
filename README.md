@@ -48,6 +48,12 @@ $ docker volume rm local_db-data
 - Convert client-side codebase to TypeScript; add types.  Move
   framework types/interfaces over from BB2 repository.
 
+- Update bundled deps.
+
+- There are still a few deps (jQuery, Popper, Bootstrap) that are
+  loaded from CDNs.  We should bundle those to allow for completely
+  offline development.
+
 ### Future ideas
 
 - Integrate some project-linting stuff (e.g. from BGA Workbench).
@@ -55,7 +61,9 @@ $ docker volume rm local_db-data
 - Make it easy to use LBGA without copying a built project into the
   LBGA repository and rebuilding the Docker images.
 
-### Limitations
+- Add a viewer for logs, server-side errors, etc.
+
+## Limitations
 
 - The logging functions (`trace()` et al.) just echo the message
   they're given, which isn't very helpful.

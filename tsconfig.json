@@ -1,0 +1,23 @@
+{
+    "rootDir": ".",
+    "compilerOptions": {
+        "target": "es5",
+        "module": "none",
+        "lib": ["dom", "esnext"],
+        "sourceMap": false,
+	"experimentalDecorators": true,
+        "module": "umd",
+        "typeRoots": [
+            "src/ebg/types",
+            "./node_modules/@types"
+        ]
+
+    },
+    "include": [
+        "src/ebg/**/*.ts"
+    ],
+    "exclude": [
+        "node_modules",
+        "**/*.spec.ts"
+    ]
+}

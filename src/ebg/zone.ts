@@ -206,20 +206,22 @@ export default class EbgZone {
         );
         var line = Math.floor(i / itemsPerLine);
 
-        var c: Coords;
-        c.y = line * (this.item_height + this.item_margin);
-        c.x = (i - line * itemsPerLine) * (this.item_width + this.item_margin);
-        c.w = this.item_width;
-        c.h = this.item_height;
+        let c: Coords = {
+            w: this.item_width,
+            h: this.item_height,
+            y: line * (this.item_height + this.item_margin),
+            x: (i - line * itemsPerLine) * (this.item_width + this.item_margin),
+        };
         return c;
     }
 
     itemIdToCoordsDiagonal(i: number, controlWidth: number): Coords {
-        var c: Coords;
-        c.y = i * this.item_margin;
-        c.x = i * this.item_margin;
-        c.w = this.item_width;
-        c.h = this.item_height;
+        var c: Coords = {
+            w: this.item_width,
+            h: this.item_height,
+            y: i * this.item_margin,
+            x: i * this.item_margin,
+        };
         return c;
     }
 
@@ -235,11 +237,12 @@ export default class EbgZone {
             var offset = 0;
         }
 
-        var c: Coords;
-        c.w = this.item_width;
-        c.h = this.item_height;
-        c.y = Math.round(i * spacing + offset);
-        c.x = 0;
+        var c: Coords = {
+            w: this.item_width,
+            h: this.item_height,
+            y: Math.round(i * spacing + offset),
+            x: 0,
+        };
         return c;
     }
 
@@ -255,11 +258,12 @@ export default class EbgZone {
             var offset = 0;
         }
 
-        var c: Coords;
-        c.w = this.item_width;
-        c.h = this.item_height;
-        c.x = Math.round(i * spacing + offset);
-        c.y = 0;
+        var c: Coords = {
+            w: this.item_width,
+            h: this.item_height,
+            x: Math.round(i * spacing + offset),
+            y: 0,
+        };
         return c;
     }
 
@@ -278,11 +282,12 @@ export default class EbgZone {
             var theta = Math.PI - Math.PI / 2 + (j - 4) * ((2 * Math.PI) / Math.max(10, itemCount - 5));
         }
 
-        var c: Coords;
-        c.w = this.item_width;
-        c.h = this.item_height;
-        c.x = centerX + a * Math.cos(theta) - c.w / 2;
-        c.y = centerY + b * Math.sin(theta) - c.h / 2;
+        var c: Coords = {
+            w: this.item_width,
+            h: this.item_height,
+            x: centerX + a * Math.cos(theta) - c.w / 2,
+            y: centerY + b * Math.sin(theta) - c.h / 2,
+        };
         return c;
     }
 }

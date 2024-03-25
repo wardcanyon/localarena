@@ -703,10 +703,6 @@ class Table extends APP_GameClass
      function enterState()
      {
          $state = $this->gamestate->state();
-         if (isset($state['action'])) {
-             $mname = $state['action'];
-             $this->$mname();
-         }
 
          echo 'enterState(): name=' . $state['name'] . ' type=' . $state['type'] . "\n";
 
@@ -716,6 +712,11 @@ class Table extends APP_GameClass
          }
 
          echo 'enterState(): done sending notifs' . "\n";
+
+         if (isset($state['action'])) {
+             $mname = $state['action'];
+             $this->$mname();
+         }
      }
 
      function initTable()
@@ -953,12 +954,19 @@ class Table extends APP_GameClass
 
      public function doAction($gameServer, $params)
      {
+         $this->gameServer = $gameServer;
+         $this->currentPlayer = intval($params["bgg_player_id"]);
+
          $name = $params["bgg_actionName"];
          if ($name == "bg_game_debugsave") {
              $this->saveDatabase();
          } else {
-             $this->gameServer = $gameServer;
-             $this->currentPlayer = intval($params["bgg_player_id"]);
+             if (!$this->conn->begin_transaction()) {
+                 // XXX: Error type
+                 throw new \feException('Unable to begin transaction.');
+             }
+             $prev_last_gamelog_id = $this->getUniqueValueFromDB(
+                 'SELECT MAX(gamelog_id) FROM `gamelog`');
 
              $action = "action_" . $this->getGameName();
              $act = new $action();
@@ -972,6 +980,40 @@ class Table extends APP_GameClass
                  $this->getGameStateValue("moveId") + 1
              );
              $this->saveState();
+
+             try {
+                 $this->conn->commit();
+             } catch (mysqli_sql_exception $e) {
+                 $this->conn->rollback();
+                 throw $e;
+             }
+
+             $this->sendCommittedNotifs($prev_last_gamelog_id);
+         }
+     }
+
+     // Sends notifs for gamelog entries with IDs greater than
+     // $prev_last_gamelog_id to the appropriate player(s).
+     function sendCommittedNotifs($prev_last_gamelog_id) {
+         if (!isset($this->gameServer)) {
+             // XXX: In the existing code, there were guards for
+             // `isset($this->gameServer)`.  When would that not be
+             // true?
+             return;
+         }
+
+         $players = $this->loadPlayersBasicInfos();
+         $entries = $this->getCollectionFromDB('SELECT * FROM `gamelog` WHERE `gamelog_id` > ' . $prev_last_gamelog_id . ' ORDER BY `gamelog_id` ASC');
+
+         foreach (array_values($entries) as $entry) {
+             $data = $entry['gamelog_notification'];
+             if ($entry['gamelog_player'] !== null) {
+                 $this->gameServer->notifPlayer($entry['gamelog_player'], $data);
+             } else {
+                 foreach ($players as $player) {
+                     $this->gameServer->notifPlayer($player['player_id'], $data);
+                 }
+             }
          }
      }
 
@@ -987,8 +1029,12 @@ class Table extends APP_GameClass
          $notification_log,
          $notification_args
      ) {
+         // N.B.: This function and `notifyPlayer()` do not actually
+         // send notifs; they add entries to the gamelog.  After the
+         // transaction commits, we send notifs to the appropriate
+         // player(s).
+
          $notif = [];
-         $players = $this->loadPlayersBasicInfos();
          $notif["gamelog_id"] = $this->getUniqueValueFromDB(
              "select max(gamelog_id)+1 from gamelog"
          );
@@ -997,11 +1043,6 @@ class Table extends APP_GameClass
          $notif["notification_log"] = $notification_log;
          $notif["gamelog_move_id"] = $this->getGameStateValue("moveId");
          $data = json_encode($notif);
-         if (isset($this->gameServer)) {
-             foreach ($players as $player) {
-                 $this->gameServer->notifPlayer($player["player_id"], $data);
-             }
-         }
 
          $sql =
              "INSERT INTO `gamelog`(`gamelog_move_id`, `gamelog_private`,`gamelog_time`,`gamelog_player`,`gamelog_current_player`,`gamelog_notification` ) VALUES (" .
@@ -1039,9 +1080,6 @@ class Table extends APP_GameClass
          $notif["notification_type"] = $notification_type;
          $notif["notification_log"] = $notification_log;
          $data = json_encode($notif);
-         if (isset($this->gameServer)) {
-             $this->gameServer->notifPlayer($player_id, $data);
-         }
 
          $sql =
              "INSERT INTO `gamelog`(`gamelog_move_id`, `gamelog_private`,`gamelog_time`,`gamelog_player`,`gamelog_current_player`,`gamelog_notification` ) VALUES (" .

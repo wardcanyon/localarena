@@ -49,18 +49,10 @@ class APP_Object
 
 class APP_DbObject extends APP_Object
 {
-    static $connstat = null;
-
     public $conn;
 
     public $gameServer = null;
 
-    // XXX: Hmm, yikes.  The way that this is being done now, multiple
-    // instantiations will overwrite each other's $connstat.
-    //
-    // We need a way to make the database interface functions
-    // available to e.g. burglebrostwo's CardManager without that
-    // issue.
     function __construct() {
         parent::__construct();
 
@@ -82,7 +74,6 @@ class APP_DbObject extends APP_Object
             $this->password,
             $this->dbname
         );
-        self::$connstat = $this->conn;
 
         // Check connection
         if ($this->conn->connect_error) {
@@ -192,12 +183,12 @@ class APP_DbObject extends APP_Object
          return $ret;
      }
 
-     static function getUniqueValueFromDB($sql, $low_priority_select = false)
+     function getUniqueValueFromDB($sql, $low_priority_select = false)
      {
          $ret = "";
          try {
-             if (!($data = self::$connstat->query($sql))) {
-                 var_dump(self::$connstat->error);
+             if (!($data = $this->conn->query($sql))) {
+                 var_dump($this->conn->error);
              }
              if ($data->num_rows > 1) {
                  throw new feException("too many results");
@@ -236,11 +227,11 @@ class APP_DbObject extends APP_Object
          return $ret;
      }
 
-     static function DbQuery($sql, $specific_db = null, $bMulti = false)
+     function DbQuery($sql, $specific_db = null, $bMulti = false)
      {
          //  var_dump($sql);
          try {
-             self::$connstat->query(
+             $this->conn->query(
                  $sql,
                  $bMulti ? MYSQLI_USE_RESULT : MYSQLI_STORE_RESULT
              );

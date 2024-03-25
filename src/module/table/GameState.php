@@ -182,17 +182,17 @@ class GameState
         $state = $this->state();
         if (!isset($state["transitions"][$transition])) {
             throw new feException(
-                'Impossible transition "' .
+                'The transition "' .
                     $transition .
-                    '" at this state "' .
+                    '" is not valid in the current state ("' .
                     $state["name"] .
-                    '"'
+                    '").'
             );
         }
         $newStateId = $state["transitions"][$transition];
         $this->game->setGameStateValue("currentState", $newStateId);
 
-        $this->log('Activating transition "'.$transition.'" from state "' . $state['name'] . '" to state "' . $this->machinestates[$newStateId]['name'] . '".');
+        $this->log('From state "' . $state['name'] . '", taking transition "'.$transition.'" to state "' . $this->machinestates[$newStateId]['name'] . '".');
 
         $this->game->enterState();
     }

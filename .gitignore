@@ -3,6 +3,4 @@
 .#*
 
 # XXX: Temporary, until we have the TypeScript and JavaScript better separated out.
-src/ebg/declareDecorator.js
-src/ebg/zone.js
-
+src/ebg/**/*.js

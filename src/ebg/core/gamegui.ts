@@ -140,9 +140,6 @@ export class EbgCoreGamegui {
         this.onLeavingState(state["name"]);
       }
 
-        // XXX: improve update-buttons logic
-        dojo.empty("bg_game_main_buttons");
-
         console.log('*** notif_gameStateChange() notifArgs=');
         console.log(notifArgs);
 
@@ -176,6 +173,8 @@ export class EbgCoreGamegui {
     // `this.{gamestate,active_player,multiactive}` change.
     updateUiForState() {
         let state = this.gameState;
+
+        dojo.empty("bg_game_main_buttons");
 
       dojo.query(".bg_game_thinking").addClass("bg_game_hidden");
       for (var player_id in this.bg_game_players.players) {

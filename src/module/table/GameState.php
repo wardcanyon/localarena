@@ -108,6 +108,8 @@ class GameState
      */
     public function setPlayerNonMultiactive($player_id, $next_state)
     {
+        // XXX: Should we throw an error if the player is not
+        // currently multiactive?
         $this->game->DbQuery(
             "UPDATE `player` SET `player_is_multiactive` = 0 WHERE `player_id` = " .
                 $player_id
@@ -118,6 +120,13 @@ class GameState
             ) == 0
         ) {
             $this->nextState($next_state);
+        } else {
+            // TODO: Check behavior of BGA for compatibility:
+            // - Do we get an update when the last player becomes
+            //   non-multiactive, before the "gameStateChange" notif?
+            // - If multiple players are made non-multiactive in one
+            //   turn, do we get multiple messages?
+            $this->game->notify_gameStateMultipleActiveUpdate();
         }
     }
 
@@ -167,6 +176,9 @@ class GameState
         }
         $newStateId = $state["transitions"][$transition];
         $this->game->setGameStateValue("currentState", $newStateId);
+
+        echo 'Activating transition "'.$transition.'" from state "' . $state['name'] . '" to state "' . $this->machinestates[$newStateId]['name'] . '".' . "\n";
+
         $this->game->enterState();
     }
 

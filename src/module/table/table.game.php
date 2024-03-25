@@ -408,6 +408,7 @@ class Table extends APP_GameClass
      }
 
      function notify_gameStateChange(bool $includeMultiactive) {
+         echo 'Sending notif: gameStateChange' . "\n";
          $this->notifyAllPlayers(
              'gameStateChange',
              '',
@@ -416,6 +417,8 @@ class Table extends APP_GameClass
      }
 
      function notify_gameStateMultipleActiveUpdate() {
+         echo 'Sending notif: gameStateMultipleActiveUpdate' . "\n";
+
          $this->notifyAllPlayers(
              'gameStateMultipleActiveUpdate',
              '',
@@ -705,10 +708,14 @@ class Table extends APP_GameClass
              $this->$mname();
          }
 
+         echo 'enterState(): name=' . $state['name'] . ' type=' . $state['type'] . "\n";
+
          $this->notify_gameStateChange(/*includeMultiactive=*/false);
          if ($state['type'] == 'multipleactiveplayer') {
              $this->notify_gameStateMultipleActiveUpdate();
          }
+
+         echo 'enterState(): done sending notifs' . "\n";
      }
 
      function initTable()

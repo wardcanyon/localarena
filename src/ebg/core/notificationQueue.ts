@@ -64,8 +64,4 @@ export class EbgCoreNotificationQueue {
     }
 }
 
-console.log('**notifqueue class:');
-console.log(EbgCoreNotificationQueue);
-console.log(EbgCoreNotificationQueue.constructor);
-
-ebg.core.notificationQueue = EbgCoreNotificationQueue.constructor;
+ebg.core.notificationQueue = EbgCoreNotificationQueue;

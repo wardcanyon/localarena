@@ -45,6 +45,10 @@ $g_user = new GUser();
 <body class="claro">
     <?php
     $view_class_name = "view_{$game_name}_{$game_name}";
+    // XXX: This calls `initTable()`, which is a little strange.  We
+    // should probably reorganize that so that the database is
+    // initialized at table creation, before the view class is ever
+    // constructed.
     $view = new $view_class_name();
      $currentPlayer = 2317679;
 

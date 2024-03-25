@@ -366,17 +366,75 @@ class Table extends APP_GameClass
          return $logs;
      }
 
+     // Returns the state descriptor, plus:
+     // - active_player as a PlayerIdString
+     // - multiactive as an array of PlayerIdString
+     // - "reflexion"
+     // - args is the result of calling the args function rather than its name
+     // - id (the key that the state has in the states.inc.php array)
+     function getStateForClient(bool $includeMultiactive) {
+         $ret = $this->gamestate->state();
+
+         $ret['id'] = $this->getCurrentStateId();
+
+         if (isset($ret['args'])) {
+             $mname = $ret['args'];
+             $ret['args'] = $this->$mname();
+         }
+
+         // This is always set, even when we're in a multiactive state
+         // and it should have no effect.  The client needs to be
+         // smart enough to ignore it in those situations.
+         $ret['active_player'] = $this->getActivePlayerId();
+
+         if ($this->gamestate->state()['type'] === 'multipleactiveplayer') {
+             // This is always empty when the message is being sent in
+             // response to a state transition (if the state is
+             // multiactive; absent otherwise).  There will be a
+             // subsequent "gameStateMultipleActiveUpdate" message
+             // with actual values.
+
+             if ($includeMultiactive) {
+                 $ret['multiactive'] = $this->gamestate->getActivePlayerList();
+             } else {
+                 $ret['multiactive'] = [];
+             }
+         }
+
+         // TODO: We don't support this feature yet.
+         $ret['reflexion'] = null;
+
+         return $ret;
+     }
+
+     function notify_gameStateChange(bool $includeMultiactive) {
+         $this->notifyAllPlayers(
+             'gameStateChange',
+             '',
+             $this->getStateForClient($includeMultiactive),
+         );
+     }
+
+     function notify_gameStateMultipleActiveUpdate() {
+         $this->notifyAllPlayers(
+             'gameStateMultipleActiveUpdate',
+             '',
+             // An array of `PlayerIdString`s identifying the players
+             // who are currently multiactive.
+             $this->gamestate->getActivePlayerList(),
+         );
+     }
+
      function getMediumDatas()
      {
          $ret = [];
          $ret["id"] = $this->getCurrentStateId();
 
-         // XXX: This was confusing the client when the local player
-         // was the last player active in an "activeplayer" state but
-         // was not active in a "multiactive" state.
-         if ($this->gamestate->state()['type'] === 'activeplayer') {
-             $ret["active_player_id"] = $this->getActivePlayerId();
-         }
+         // This is always set, even when we're in a multiactive state
+         // and it should have no effect.  The client needs to be
+         // smart enough to ignore it in those situations.
+         $ret["active_player_id"] = $this->getActivePlayerId();
+
          if ($this->gamestate->state()['type'] === 'multipleactiveplayer') {
              $ret["multiactive"] = $this->gamestate->getActivePlayerList();
          }
@@ -411,6 +469,12 @@ class Table extends APP_GameClass
          }
 
          $ret["states"] = $this->gamestate->machinestates;
+
+         // XXX: This duplicates some information; it's used in our
+         // bootstrapping call to `completesetup()` on the client,
+         // after initial page load.
+         $ret['gameState'] = $this->getStateForClient(/*includeMultiactive=*/true);
+
          return $ret;
      }
 
@@ -635,12 +699,15 @@ class Table extends APP_GameClass
 
      function enterState()
      {
-         $data = $this->getMediumDatas();
-         $this->notifyAllPlayers("bg_onEnteringState", "", $data);
          $state = $this->gamestate->state();
-         if (isset($state["action"])) {
-             $mname = $state["action"];
-             $ret["action"] = $this->$mname();
+         if (isset($state['action'])) {
+             $mname = $state['action'];
+             $this->$mname();
+         }
+
+         $this->notify_gameStateChange(/*includeMultiactive=*/false);
+         if ($state['type'] == 'multipleactiveplayer') {
+             $this->notify_gameStateMultipleActiveUpdate();
          }
      }
 

@@ -37,11 +37,23 @@ $ docker volume rm local_db-data
 
 ### TODOs
 
+- Be specific about which client/server-side components, notifs,
+  etc. are supported.
+
+- Multiple table support.  This will be necessary for integration
+  xtesting.
+
+- Write integration tests with PhpUnit.  This will require test
+  fixtures built on top of multiple table support.
+
+- Probably worth eventually having some tests for LBGA itself.
+
+- Better validation all over; e.g. we should be strict about rejecting
+  invalid state definitions, etc.
+
 - Refine types/interfaces.  Can we also support unit testing?
 
 - Separate games, vendored deps, and the local framework.
-
-- Write integration tests with PhpUnit.
 
 - Set up tests for the local framework itself. (e.g. "can you
   initialize a table and run through a few actions without blowing
@@ -49,8 +61,10 @@ $ docker volume rm local_db-data
 
 - Add type annotations in PHP codebase.
 
-- Convert client-side codebase to TypeScript; add types.  Move
-  framework types/interfaces over from BB2 repository.
+- There are a few client-side components that are probably common that
+  we don't support yet; and some of the ones that *are* supported
+
+- Move framework types/interfaces over from BB2 repository.
 
 - Update bundled deps.
 
@@ -72,6 +86,10 @@ $ docker volume rm local_db-data
 - Zombie players are not supported.
 
 - Private states are not supported.
+
+- `reflexion` is not supported.
+
+- Client-side translation (i18n) is not supported.
 
 - The logging functions (`trace()` et al.) just echo the message
   they're given, which isn't very helpful.

@@ -40,18 +40,21 @@ export class EbgCoreGamegui {
     active_player_id?: PlayerId = null;
     multiactive: PlayerId[] = [];
 
+    // XXX: Add a type for this.  This is the rendered state
+    // information, like what the server produces in
+    // `getStateForClient()`.
+    gameState = null;
+
     constructor() {
     }
 
     setup(gamedatas) {
-        console.log("setup parent");
-
-        console.log('*** gamegui ctor');
-        console.log(ebg);
-        this.notifqueue = new ebg.core.notificationQueue(this);
+        throw "XXX: This is not being called; remove?";
     }
 
     completesetup(gamename, gamedatas) {
+      this.notifqueue = new ebg.core.notificationQueue(this);
+
       this.socket = new WebSocket("ws://localhost:3000/" + this.player_id);
 
       this.socket.onopen = function (e) {};
@@ -78,8 +81,10 @@ export class EbgCoreGamegui {
       this.setup(gamedatas.alldatas);
       this.bRealtime = true;
 
-      // XXX: is this now "gameStateChange"?
-      dojo.subscribe("bg_onEnteringState", this, "notif_bg_onEnteringState");
+        // XXX: Move over code to autoregister notif_* handlers.
+        dojo.subscribe("gameStateChange", this, "notif_gameStateChange");
+        dojo.subscribe("gameStateMultipleActiveUpdate", this, "notif_gameStateMultipleActiveUpdate");
+
       this.addTooltipToClass("bg_game_score", _("Current score"));
       this.addTooltipToClass(
         "bg_game_debug_user",
@@ -89,7 +94,7 @@ export class EbgCoreGamegui {
 
       dojo.query(".socketButton").connect("onclick", this, "onSocketButton");
 
-      this.notif_bg_onEnteringState({ args: gamedatas });
+      this.notif_gameStateChange({ args: gamedatas.gameState });
     }
 
     onUpdateActionButtons(stateName, args) {}
@@ -107,43 +112,73 @@ export class EbgCoreGamegui {
       this.socket.send(JSON.stringify(parameters));
     }
 
-    notif_bg_onEnteringState(gamedatas) {
-      gamedatas = gamedatas.args;
-      this.bg_game_players = gamedatas.players;
+    // XXX: multiactive is PlayerIdString[]
+    updateMultiactive(multiactive):void {
+        if (multiactive === undefined) {
+            this.multiactive = [];
+        } else {
+            this.multiactive = multiactive.map((x) => parseInt(x));
+        }
+    }
+
+    // XXX: Add types to these notif messages.
+    notif_gameStateMultipleActiveUpdate(notif) {
+        console.log('** got notif: gameStateMultipleActiveUpdate');
+        console.log(notif.args);
+
+        this.updateMultiactive(notif.args);
+        this.updateUiForState();
+    }
+
+    notif_gameStateChange(notif) {
+      let notifArgs = notif.args;
+
+      // this.bg_game_players = gamedatas.players;
 
       if (this.bgg_stateId > 0) {
-        var state = this.bgg_states[this.bgg_stateId];
+        let state = this.bgg_states[this.bgg_stateId];
         this.onLeavingState(state["name"]);
       }
+
+        // XXX: improve update-buttons logic
         dojo.empty("bg_game_main_buttons");
-        console.log('*** notif_bg_onEnteringState() gamedatas=');
-        console.log(gamedatas);
+
+        console.log('*** notif_gameStateChange() notifArgs=');
+        console.log(notifArgs);
 
         // XXX: Right now, the server is only supplying whichever one
         // of these matches the type of the current state (if any),
         // and the client treats any player ID in either variable as
         // active.  Should we be more discerning?
-        if (this.active_player_id === undefined) {
+        if (notifArgs.active_player_id === undefined) {
             this.active_player_id = null;
         } else {
-            this.active_player_id = parseInt(gamedatas.active_player_id);
+            this.active_player_id = parseInt(notifArgs.active_player);
         }
-        if (this.multiactive === undefined) {
-            this.multiactive = [];
-        } else {
-            this.multiactive = gamedatas.multiactive.map((x) => parseInt(x));
-        }
+        this.updateMultiactive(notifArgs.multiactive);
 
-      this.bgg_stateId = gamedatas.id;
+      this.bgg_stateId = notifArgs.id;
 
-      var state = this.bgg_states[this.bgg_stateId];
-      state["id"] = this.bgg_stateId;
-      state["args"] = gamedatas.args;
-      state["active_player"] = gamedatas.active_player_id;
-      state["multiactive"] = gamedatas.multiactive;
+        // XXX: I think that this was the original author trying to
+        // reconstruct a message more like what BGA sends to pass on
+        // to game code; that's not necessary now that the server is
+        // sending a more similar message.
+        let state = notifArgs;
+
+        this.gameState = state;
+        this.updateUiForState();
+
+      this.onEnteringState(state["name"], state);
+      this.lock = false;
+    }
+
+    // Must be called whenever any of
+    // `this.{gamestate,active_player,multiactive}` change.
+    updateUiForState() {
+        let state = this.gameState;
 
       dojo.query(".bg_game_thinking").addClass("bg_game_hidden");
-      for (var player_id in gamedatas.players) {
+      for (var player_id in this.bg_game_players.players) {
         if (this.isPlayerActive(player_id)) {
           dojo.removeClass("bg_game_thinking_" + player_id, "bg_game_hidden");
         }
@@ -155,24 +190,23 @@ export class EbgCoreGamegui {
         dojo.addClass("bg_game_thinking_top", "bg_game_hidden");
       }
 
-      this.onUpdateActionButtons(state["name"], gamedatas.args);
+      this.onUpdateActionButtons(state["name"], state.args);
 
       if (this.isCurrentPlayerActive()) {
         dojo.byId("pagemaintitletext").innerHTML = this.format_string_recursive(
           _(state["descriptionmyturn"]),
-          gamedatas.args,
+          state.args,
         );
       } else {
         dojo.byId("pagemaintitletext").innerHTML = this.format_string_recursive(
           _(state["description"]),
-          gamedatas.args,
+          state.args,
         );
       }
-
-      this.onEnteringState(state["name"], state);
-      this.lock = false;
     }
 
+    // XXX: This does not appear to ever be sent by the server, and
+    // onLeavingState() is called in notif_gameStateChange() above.
     notif_bg_LeavingState(gamedatas) {
       this.bgg_stateId = gamedatas.id;
       var state = this.bgg_states[this.bgg_stateId];
@@ -350,6 +384,8 @@ export class EbgCoreGamegui {
      * State
      */
     newState(gamedatas) {
+        throw "XXX: this is not called, is it?";
+
       this.bgg_stateId = gamedatas.id;
       var state = this.bgg_states[this.bgg_stateId];
       state["id"] = this.bgg_stateId;
@@ -609,12 +645,19 @@ export class EbgCoreGamegui {
       return this.isPlayerActive(this.player_id);
     }
 
+    // XXX: this should support both strings and ints
     isPlayerActive(player_id) {
-      var active = this.active_player_id == player_id;
-      return (
-        this.active_player_id == player_id ||
-        this.multiactive.includes(player_id)
-      );
+        var state = this.bgg_states[this.bgg_stateId];
+
+        switch (state.type) {
+            case 'activeplayer':
+                return this.active_player_id == player_id;
+            case 'multipleactiveplayer':
+                return this.multiactive.includes(player_id);
+        }
+
+        // 'game', 'manager' states
+        return false;
     }
 
     getActivePlayers() {

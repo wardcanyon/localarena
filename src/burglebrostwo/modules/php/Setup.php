@@ -11,8 +11,6 @@ trait Setup
 {
     protected function setupNewGame($players, $options = [])
     {
-        echo "*** BurgleBrosTwo::setupNewGame()\n";
-
         self::initPlayers($players);
         self::initBoard();
         self::initCards();

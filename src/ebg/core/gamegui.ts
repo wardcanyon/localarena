@@ -78,6 +78,7 @@ export class EbgCoreGamegui {
       this.setup(gamedatas.alldatas);
       this.bRealtime = true;
 
+      // XXX: is this now "gameStateChange"?
       dojo.subscribe("bg_onEnteringState", this, "notif_bg_onEnteringState");
       this.addTooltipToClass("bg_game_score", _("Current score"));
       this.addTooltipToClass(

@@ -1,3 +1,7 @@
+### What is LBGA?
+
+
+
 ### Running tests
 
 (Right now, this is hardwired to serve `emppty`.)
@@ -64,6 +68,10 @@ $ docker volume rm local_db-data
 - Add a viewer for logs, server-side errors, etc.
 
 ## Limitations
+
+- Zombie players are not supported.
+
+- Private states are not supported.
 
 - The logging functions (`trace()` et al.) just echo the message
   they're given, which isn't very helpful.

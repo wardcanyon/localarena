@@ -90,6 +90,18 @@ class APP_DbObject extends APP_Object
         /* Activation du reporting */
         $driver = new mysqli_driver();
         $driver->report_mode = MYSQLI_REPORT_ALL ^ MYSQLI_REPORT_INDEX;
+
+        // Set transaction isolation level so that we can read back
+        // changes later in the same transaction.
+        $this->conn->query('SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED');
+    }
+
+    // XXX: This is part of the LBGA API, not the BGA API; it is
+    // intended only for internal use.  We should fix its visibility.
+    public function log($msg) {
+        if ($this->gameServer) {
+            echo $msg . "\n";
+        }
     }
 
      protected function getCollectionFromDB(

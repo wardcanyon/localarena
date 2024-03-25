@@ -37,6 +37,10 @@ $ docker volume rm local_db-data
 
 ### TODOs
 
+- Reject actions from players who are not active, including
+  non-multiactive players when in multiactive states, on the server
+  side.
+
 - Be specific about which client/server-side components, notifs,
   etc. are supported.
 

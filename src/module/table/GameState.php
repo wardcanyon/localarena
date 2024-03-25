@@ -11,6 +11,10 @@ class GameState
         $this->machinestates = $machinestates;
     }
 
+    private function log($msg) {
+        $this->game->log($msg);
+    }
+
     /**
      * Not documented
      * @param $str
@@ -60,6 +64,8 @@ class GameState
                 break;
         }
 
+        $this->log('getActivePlayerList(): ' . implode(', ', $actives));
+
         return $actives;
     }
 
@@ -70,6 +76,8 @@ class GameState
     public function setAllPlayersMultiactive()
     {
         $this->game->DbQuery("UPDATE `player` SET `player_is_multiactive` = 1");
+
+        $this->game->notify_gameStateMultipleActiveUpdate();
     }
 
     /**
@@ -83,18 +91,22 @@ class GameState
      */
     public function setPlayersMultiactive($players, $next_state)
     {
+        $ids = implode(",", $players);
+        $this->game->DbQuery(
+            "UPDATE `player` SET `player_is_multiactive` = 0"
+        );
+        $this->game->DbQuery(
+            "UPDATE `player` SET `player_is_multiactive` = 1 WHERE `player_id` IN (" .
+                $ids .
+                ")"
+        );
+
+        // TODO: Check behavior against BGA.  Here, we send an update
+        // notif even if $players is empty.
+        $this->game->notify_gameStateMultipleActiveUpdate();
+
         if (count($players) == 0) {
             $this->nextState($next_state);
-        } else {
-            $ids = implode(",", $players);
-            $this->game->DbQuery(
-                "UPDATE `player` SET `player_is_multiactive` = 0"
-            );
-            $this->game->DbQuery(
-                "UPDATE `player` SET `player_is_multiactive` = 1 WHERE `player_id` IN (" .
-                    $ids .
-                    ")"
-            );
         }
     }
 
@@ -108,6 +120,8 @@ class GameState
      */
     public function setPlayerNonMultiactive($player_id, $next_state)
     {
+        $this->log('setPlayerNonMultiactive(): ' . $player_id);
+
         // XXX: Should we throw an error if the player is not
         // currently multiactive?
         $this->game->DbQuery(
@@ -119,6 +133,7 @@ class GameState
                 "SELECT COUNT(*) FROM `player` WHERE `player_is_multiactive` = 1"
             ) == 0
         ) {
+            $this->log("setPlayerNonMultiactive(): no more multiactive players; transitioning to next state");
             $this->nextState($next_state);
         } else {
             // TODO: Check behavior of BGA for compatibility:
@@ -177,7 +192,7 @@ class GameState
         $newStateId = $state["transitions"][$transition];
         $this->game->setGameStateValue("currentState", $newStateId);
 
-        echo 'Activating transition "'.$transition.'" from state "' . $state['name'] . '" to state "' . $this->machinestates[$newStateId]['name'] . '".' . "\n";
+        $this->log('Activating transition "'.$transition.'" from state "' . $state['name'] . '" to state "' . $this->machinestates[$newStateId]['name'] . '".');
 
         $this->game->enterState();
     }

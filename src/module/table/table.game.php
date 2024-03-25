@@ -53,6 +53,8 @@ class APP_DbObject extends APP_Object
 
     public $conn;
 
+    public $gameServer = null;
+
     // XXX: Hmm, yikes.  The way that this is being done now, multiple
     // instantiations will overwrite each other's $connstat.
     //

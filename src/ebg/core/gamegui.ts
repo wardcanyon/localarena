@@ -37,7 +37,7 @@ export class EbgCoreGamegui {
 
     player_id: PlayerId;
 
-    active_player_id?: PlayerId = null;
+    active_player?: PlayerId = null;
     multiactive: PlayerId[] = [];
 
     // XXX: Add a type for this.  This is the rendered state
@@ -76,7 +76,7 @@ export class EbgCoreGamegui {
       console.log(gamedatas);
       this.bg_game_players = gamedatas.players;
       this.gamedatas = gamedatas.alldatas;
-      this.active_player_id = gamedatas.active_player_id;
+      this.active_player = gamedatas.active_player;
       this.bgg_states = gamedatas.states;
       this.setup(gamedatas.alldatas);
       this.bRealtime = true;
@@ -147,10 +147,10 @@ export class EbgCoreGamegui {
         // of these matches the type of the current state (if any),
         // and the client treats any player ID in either variable as
         // active.  Should we be more discerning?
-        if (notifArgs.active_player_id === undefined) {
-            this.active_player_id = null;
+        if (notifArgs.active_player === undefined) {
+            this.active_player = null;
         } else {
-            this.active_player_id = parseInt(notifArgs.active_player);
+            this.active_player = parseInt(notifArgs.active_player);
         }
         this.updateMultiactive(notifArgs.multiactive);
 
@@ -314,16 +314,18 @@ export class EbgCoreGamegui {
       return log;
     }
     divActPlayer() {
-      var color = this.bg_game_players[this.player_id].player_color;
-      var name = this.bg_game_players[this.player_id].player_name;
+        let player_id = this.active_player;
+
+      var color = this.bg_game_players[player_id].player_color;
+      var name = this.bg_game_players[player_id].player_name;
       var color_bg = "";
       if (
-        this.gamedatas.players[this.player_id] &&
-        this.bg_game_players[this.player_id].color_back
+        this.gamedatas.players[player_id] &&
+        this.bg_game_players[player_id].color_back
       ) {
         color_bg =
           "background-color:#" +
-          this.bg_game_players[this.player_id].color_back +
+          this.bg_game_players[player_id].color_back +
           ";";
       }
       var you =
@@ -389,7 +391,7 @@ export class EbgCoreGamegui {
       var state = this.bgg_states[this.bgg_stateId];
       state["id"] = this.bgg_stateId;
       state["args"] = gamedatas.args;
-      state["active_player"] = gamedatas.active_player_id;
+      state["active_player"] = gamedatas.active_player;
       state["multiactive"] = gamedatas.multiactive;
 
       if (this.isCurrentPlayerActive()) {
@@ -650,7 +652,7 @@ export class EbgCoreGamegui {
 
         switch (state.type) {
             case 'activeplayer':
-                return this.active_player_id == player_id;
+                return this.active_player == player_id;
             case 'multipleactiveplayer':
                 return this.multiactive.includes(player_id);
         }
@@ -664,7 +666,7 @@ export class EbgCoreGamegui {
     }
 
     getActivePlayerId() {
-      return this.active_player_id;
+      return this.active_player;
     }
 
     addActionButton(

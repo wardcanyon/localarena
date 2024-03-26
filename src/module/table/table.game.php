@@ -441,7 +441,7 @@ class Table extends APP_GameClass
          // This is always set, even when we're in a multiactive state
          // and it should have no effect.  The client needs to be
          // smart enough to ignore it in those situations.
-         $ret["active_player_id"] = $this->getActivePlayerId();
+         $ret["active_player"] = $this->getActivePlayerId();
 
          if ($this->gamestate->state()['type'] === 'multipleactiveplayer') {
              $ret["multiactive"] = $this->gamestate->getActivePlayerList();

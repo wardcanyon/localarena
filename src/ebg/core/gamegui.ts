@@ -175,12 +175,13 @@ export class EbgCoreGamegui {
         let state = this.gameState;
 
         dojo.empty("bg_game_main_buttons");
+        this.onUpdateActionButtons(state["name"], state.args);
 
       dojo.query(".bg_game_thinking").addClass("bg_game_hidden");
-      for (var player_id in this.bg_game_players.players) {
-        if (this.isPlayerActive(player_id)) {
-          dojo.removeClass("bg_game_thinking_" + player_id, "bg_game_hidden");
-        }
+        for (var player_id in this.bg_game_players) {
+          if (this.isPlayerActive(player_id)) {
+              dojo.removeClass("bg_game_thinking_" + player_id, "bg_game_hidden");
+          }
       }
 
       if (this.isCurrentPlayerActive()) {
@@ -188,8 +189,6 @@ export class EbgCoreGamegui {
       } else {
         dojo.addClass("bg_game_thinking_top", "bg_game_hidden");
       }
-
-      this.onUpdateActionButtons(state["name"], state.args);
 
       if (this.isCurrentPlayerActive()) {
         dojo.byId("pagemaintitletext").innerHTML = this.format_string_recursive(
@@ -646,8 +645,12 @@ export class EbgCoreGamegui {
       return this.isPlayerActive(this.player_id);
     }
 
-    // XXX: this should support both strings and ints
     isPlayerActive(player_id) {
+        // XXX: This is here in the interest of supporting both strings and ints.
+        if (typeof player_id !== 'number') {
+            player_id = parseInt(player_id);
+        }
+
         var state = this.bgg_states[this.bgg_stateId];
 
         switch (state.type) {

@@ -172,7 +172,6 @@ export default class EbgZone {
                     duration: duration,
                     unit: 'px',
                 });
-                anim = this.page.transformSlideAnimTo3d(anim, itemEl, duration, null);
                 anim.play();
             }
         }

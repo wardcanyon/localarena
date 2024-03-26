@@ -8,13 +8,18 @@
 	"experimentalDecorators": true,
         "module": "umd",
         "typeRoots": [
-            "src/ebg/types",
+            "src/client/ebg/types",
             "./node_modules/@types"
+        ],
+        "rootDirs": [
+            "./src/client",
+            "./vendor/client",
+            "src/client",
+            "vendor/client"
         ]
-
     },
     "include": [
-        "src/ebg/**/*.ts"
+        "src/client/ebg/**/*.ts"
     ],
     "exclude": [
         "node_modules",

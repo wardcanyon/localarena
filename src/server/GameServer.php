@@ -6,15 +6,15 @@ use Ratchet\ConnectionInterface;
 
 use Ratchet\MessageComponentInterface;
 
-define("APP_BASE_PATH", "/src/");
-define("APP_GAMEMODULE_PATH", "/src/");
+define("APP_BASE_PATH", "/src/server/");
+define("APP_GAMEMODULE_PATH", "/src/game/");
 
-set_include_path(get_include_path() . PATH_SEPARATOR . APP_GAMEMODULE_PATH);
+set_include_path(get_include_path() . PATH_SEPARATOR . APP_BASE_PATH);
 
-require_once "/src/localarena_config.inc.php";
-require "/src/vendor/autoload.php";
+require_once APP_BASE_PATH . "/localarena_config.inc.php";
+require APP_BASE_PATH . "/vendor/autoload.php";
 
-require LOCALARENA_GAME_NAME . "/" . LOCALARENA_GAME_NAME . ".game.php";
+require APP_GAMEMODULE_PATH . "/" . LOCALARENA_GAME_NAME . "/" . LOCALARENA_GAME_NAME . ".game.php";
 
 class GameServer implements MessageComponentInterface
 {

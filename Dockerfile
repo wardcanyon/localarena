@@ -47,19 +47,25 @@ RUN docker-php-ext-install mysqli && docker-php-ext-enable mysqli
 # https://github.com/docker-library/docs/tree/master/php#configuration
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 
-ENV APACHE_DOCUMENT_ROOT /src
+ENV APACHE_DOCUMENT_ROOT /src/server
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
 COPY config/000-default.conf /etc/apache2/sites-available/000-default.conf
 
-# Copy app files from the app directory.
-#
-# TODO: Especially for development purposes, we probably want to mount
-# this as a volume instead.
-COPY ./src /src
-RUN chown -R www-data: /src
-RUN chmod -R 755 /src
+# Vendored deps
+COPY ./vendor/server /src/server/vendor
+COPY ./vendor/client /src/client/vendor
+RUN chown -R www-data: /src && RUN chmod -R 755 /src
+
+# LocalArena framework
+COPY ./src/server /src/server
+COPY ./src/client /src/client
+RUN chown -R www-data: /src && RUN chmod -R 755 /src
+
+# Games
+COPY ./src/game /src/game
+RUN chown -R www-data: /src/game && RUN chmod -R 755 /src/game
 
 # Switch to a non-privileged user (defined in the base image) that the app will run under.
 # See https://docs.docker.com/go/dockerfile-user-best-practices/

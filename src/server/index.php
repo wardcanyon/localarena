@@ -2,11 +2,11 @@
 
 define("DEV_MODE", 1);
 
-define("APP_BASE_PATH", "/src/");
-define("APP_GAMEMODULE_PATH", "/src/");
+define("APP_BASE_PATH", "/src/server/");
+define("APP_GAMEMODULE_PATH", "/src/game/");
 
-require_once "/src/localarena_config.inc.php";
-require LOCALARENA_GAME_NAME . "/" . LOCALARENA_GAME_NAME . ".view.php";
+require_once APP_BASE_PATH . "/localarena_config.inc.php";
+require APP_GAMEMODULE_PATH . "/" . LOCALARENA_GAME_NAME . "/" . LOCALARENA_GAME_NAME . ".view.php";
 
 $game_name = LOCALARENA_GAME_NAME;
 

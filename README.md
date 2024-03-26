@@ -1,6 +1,37 @@
-### What is LBGA?
+# LocalArena
 
+## What is LocalArena?
 
+LocalArena is a set of development and testing tools for games written
+to run on Board Game Arena (BGA).
+
+Concretely, it consists of
+
+- A compatible reimplementation of the parts of BGA's client-side and
+  server-side frameworks that are necessary to run and test individual
+  games.
+
+- Interfaces and type definitions for the relevant parts of BGA's
+  client-side and server-side frameworks.
+
+- Fixtures and frameworks for writing both unit and integration tests
+  for the server-side components of a game.
+
+- Docker Compose configuration for running all of the above.
+
+_LocalArena is a community project.  It is not written, supported, or
+endorsed by Board Game Arena or any of its staff._
+
+If you notice differences in behavior, please report them here as bugs
+after reading through the "Limitations" section below.  Please **do
+not** ask BGA staff for support for LocalArena.
+
+### Developing LocalArena
+
+LocalArena is written in TypeScript and type-annotated PHP.
+
+TODO: Add instructions on local machine setup necessary to get the
+`grunt` build to work.
 
 ### Running tests
 
@@ -32,7 +63,7 @@ To wipe the database so that it will be reinitialized, issue...
 
 ```
 $ docker compose down
-$ docker volume rm local_db-data
+$ docker volume rm localarena_db-data
 ```
 
 ### TODOs
@@ -45,12 +76,12 @@ $ docker volume rm local_db-data
   etc. are supported.
 
 - Multiple table support.  This will be necessary for integration
-  xtesting.
+  testing.
 
 - Write integration tests with PhpUnit.  This will require test
   fixtures built on top of multiple table support.
 
-- Probably worth eventually having some tests for LBGA itself.
+- Probably worth eventually having some tests for LocalArena itself.
 
 - Better validation all over; e.g. we should be strict about rejecting
   invalid state definitions, etc.
@@ -76,16 +107,36 @@ $ docker volume rm local_db-data
   loaded from CDNs.  We should bundle those to allow for completely
   offline development.
 
+- Bind-mount /src into the `server` container so that we don't need to
+  rebuild it and restart services every time something is edited.
+
 ### Future ideas
 
 - Integrate some project-linting stuff (e.g. from BGA Workbench).
 
-- Make it easy to use LBGA without copying a built project into the
-  LBGA repository and rebuilding the Docker images.
+- Make it easy to use LocalArena without copying a built project into the
+  LocalArena repository and rebuilding the Docker images.
 
 - Add a viewer for logs, server-side errors, etc.
 
+- Add facilities for client-side testing.
+
 ## Limitations
+
+### To be addressed before "0.1"
+
+- The logging functions (`trace()` et al.) just echo the message
+  they're given, which isn't very helpful.
+
+- The number of players, and their usernames and IDs, is fixed.
+
+- At the moment, game options are always set to their defaults.
+
+- Markup may not match current BGA markup very closely.
+
+### Long-term
+
+- 3D is not supported.
 
 - Zombie players are not supported.
 
@@ -95,40 +146,8 @@ $ docker volume rm local_db-data
 
 - Client-side translation (i18n) is not supported.
 
-- The logging functions (`trace()` et al.) just echo the message
-  they're given, which isn't very helpful.
+## Behavioral differences
 
-- The number of players, and their usernames and IDs, is fixed.
-
-- We don't do anything with game options at the moment;
-  e.g. `getGameStateValue("optionSuspicion")` returns -1.  (In fact,
-  it doesn't look like we ever include "gameoptions.inc.php"!)
-
-- Markup may not match current BGA markup very closely.
-
-### Behavioral differences
-
-- `PHP Fatal error:  Uncaught mysqli_sql_exception: Field 'card_order' doesn't have a default value` -- and it's NOT NULL; I wonder why this works on BGA Studio.
-
-### TODOs
-
-- Bind-mount /src into the `server` container so that we don't need to
-  rebuild it and restart services every time something is edited.
-
-- 404: "/css/csslayer.css".  This appears to have been part of the BGA
-  theme, but it looks like an empty file today on BGA (2024-03).
-
-  From running a snippet I found quickly online, the following CSS classes appear to be undefined:
-
-  0: "dj_ff124"
-  1: "dj_contentbox"
-  2: "finalbutton"
-  3: "bgabutton"
-  4: "bgabutton_blue"
-  5: "bgabutton_gray"
-  6: "socketButton"
-  7: "bg_game_thinking"
-  8: "id="
-  9: "bg_game_score"
-  10: "bg_game_debug_user"
-  11: "dijitTooltipContents"
+- `PHP Fatal error: Uncaught mysqli_sql_exception: Field 'card_order'
+  doesn't have a default value` -- and it's NOT NULL; I wonder why
+  this works on BGA Studio.

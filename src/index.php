@@ -5,10 +5,10 @@ define("DEV_MODE", 1);
 define("APP_BASE_PATH", "/src/");
 define("APP_GAMEMODULE_PATH", "/src/");
 
-require_once "/src/lbga_config.inc.php";
-require LBGA_GAME_NAME . "/" . LBGA_GAME_NAME . ".view.php";
+require_once "/src/localarena_config.inc.php";
+require LOCALARENA_GAME_NAME . "/" . LOCALARENA_GAME_NAME . ".view.php";
 
-$game_name = LBGA_GAME_NAME;
+$game_name = LOCALARENA_GAME_NAME;
 
 // The game-specific view code expects this.
 //

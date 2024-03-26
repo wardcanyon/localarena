@@ -11,10 +11,10 @@ define("APP_GAMEMODULE_PATH", "/src/");
 
 set_include_path(get_include_path() . PATH_SEPARATOR . APP_GAMEMODULE_PATH);
 
-require_once "/src/lbga_config.inc.php";
+require_once "/src/localarena_config.inc.php";
 require "/src/vendor/autoload.php";
 
-require LBGA_GAME_NAME . "/" . LBGA_GAME_NAME . ".game.php";
+require LOCALARENA_GAME_NAME . "/" . LOCALARENA_GAME_NAME . ".game.php";
 
 class GameServer implements MessageComponentInterface
 {
@@ -41,7 +41,7 @@ class GameServer implements MessageComponentInterface
             "",
             $from->httpRequest->getUri()->getPath()
         );
-        $game = new (''.LBGA_GAME_NAME)();
+        $game = new (''.LOCALARENA_GAME_NAME)();
         $game->doAction($this, json_decode($msg, true));
     }
 

@@ -89,7 +89,7 @@ class APP_DbObject extends APP_Object
         $this->conn->query('SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED');
     }
 
-    // XXX: This is part of the LBGA API, not the BGA API; it is
+    // XXX: This is part of the LOCALARENA API, not the BGA API; it is
     // intended only for internal use.  We should fix its visibility.
     public function log($msg) {
         if ($this->gameServer) {
@@ -251,7 +251,7 @@ class APP_DbObject extends APP_Object
     }
 
     // XXX: This isn't part of the interface of this class; it's
-    // something added in LBGA.
+    // something added in LOCALARENA.
      private function saveDatabase()
      {
          $dir = "/src/databaseExport/database.sql";
@@ -262,7 +262,7 @@ class APP_DbObject extends APP_Object
      }
 
     // XXX: This isn't part of the interface of this class; it's
-    // something added in LBGA.
+    // something added in LOCALARENA.
     function loadDatabase()
      {
          $dir = "/src/databaseExport/database.sql";
@@ -317,9 +317,9 @@ class Table extends APP_GameClass
          $this->gamestate = new GameState($this, $machinestates);
      }
 
-     function lbgaSetDefaultOptions() {
+     function localarenaSetDefaultOptions() {
          foreach ($this->game_options as $option_id => $option_desc) {
-             $this->lbgaSetGameStateInitialValue($option_id, $option_desc['default']);
+             $this->localarenaSetGameStateInitialValue($option_id, $option_desc['default']);
          }
      }
 
@@ -699,7 +699,7 @@ class Table extends APP_GameClass
              "player_avatar" => "",
          ];
 
-         $this->lbgaSetDefaultOptions();
+         $this->localarenaSetDefaultOptions();
 
          $this->setupNewGame($players);
          $this->gamestate->nextState("");
@@ -777,10 +777,10 @@ class Table extends APP_GameClass
      function setGameStateInitialValue($key, $value)
      {
          $keyint = $this->gameStateLabels[$key];
-         $this->lbgaSetGameStateInitialValue($keyint, $value);
+         $this->localarenaSetGameStateInitialValue($keyint, $value);
      }
 
-     private function lbgaSetGameStateInitialValue($keyint, $value)
+     private function localarenaSetGameStateInitialValue($keyint, $value)
      {
          $this->DbQuery(
              "INSERT INTO `global`(`global_id`, `global_value`) VALUES (" .
@@ -811,7 +811,7 @@ class Table extends APP_GameClass
          $id = $this->stats_type[$type][$key]["id"];
          if (!is_int($id)) {
              echo "*** stat does not have integer ID\n";
-             // XXX: Should add an "internal LBGA error" exception type.
+             // XXX: Should add an "internal LocalArena error" exception type.
              throw new \feException('Stat must have an integer ID.');
          }
 

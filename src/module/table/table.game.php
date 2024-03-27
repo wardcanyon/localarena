@@ -120,7 +120,7 @@
              }
 
              if ($bSingleValue && count($ret)) {
-                 throw feException("too many results");
+                 throw new feException("too many results");
              }
          } catch (mysqli_sql_exception $e) {
              var_dump($sql);
@@ -144,7 +144,45 @@
              }
 
              if (count($ret) == 0) {
-                 throw feException("empty results");
+                 throw new feException("empty results");
+             }
+         } catch (mysqli_sql_exception $e) {
+             var_dump($sql);
+             throw $e;
+         }
+         return $ret;
+     }
+
+     /*
+       Return an associative array of associative array, from a SQL SELECT query.
+       First array level correspond to first column specified in SQL query.
+       Second array level correspond to second column specified in SQL query.
+       If $bSingleValue = true, keep only third column on result.
+     */
+     function getDoubleKeyCollectionFromDB(string $sql, bool $bSingleValue=false) {
+         $ret = [];
+         try {
+             if (!($data = $this->conn->query($sql))) {
+                 var_dump($this->conn->error);
+             }
+             $fetch = mysqli_fetch_all($data, MYSQLI_ASSOC);
+
+             foreach ($fetch as $row) {
+                 $key_a = array_keys($row)[0];
+                 $key_b = array_keys($row)[1];
+
+                 if (!array_key_exists($row[$key_a], $ret)) {
+                     $ret[$row[$key_a]] = [];
+                 }
+
+                 // XXX: is bSingleValue behavior incorrect in some of these other functions?
+                 if ($bSingleValue) {
+                     $key_c = array_keys($row)[2];
+                     $value = $row[$key_c];
+                 } else {
+                     $value = $row;
+                 }
+                 $ret[$row[$key_a]][$row[$key_b]] = $value;
              }
          } catch (mysqli_sql_exception $e) {
              var_dump($sql);
@@ -177,7 +215,7 @@
              }
 
              if ($data->num_rows == 0) {
-                 throw feException("empty results");
+                 throw new feException("empty results");
              }
 
              $ret = mysqli_fetch_assoc($data);
@@ -232,11 +270,13 @@
          return $ret;
      }
 
+     // N.B.: The "reversi" example uses `mysql_fetch_assoc()` on the
+     // return value of this function.
      function DbQuery($sql, $specific_db = null, $bMulti = false)
      {
          //  var_dump($sql);
          try {
-             $this->conn->query(
+             return $this->conn->query(
                  $sql,
                  $bMulti ? MYSQLI_USE_RESULT : MYSQLI_STORE_RESULT
              );
@@ -696,28 +736,19 @@
 
      function stGameSetup()
      {
+         $first_player_id = 2317679;
+
          $players = [];
-         $players[2317679] = [
-             "player_no" => 1,
-             "player_id" => 2317679,
-             "player_canal" => "5ee02c466b5611e99d3379755f289b56",
-             "player_name" => "Mistergos0",
-             "player_avatar" => "",
-         ];
-         $players[2317680] = [
-             "player_no" => 2,
-             "player_id" => 2317680,
-             "player_canal" => "5ee02c466b5611e99d3379755f289b56",
-             "player_name" => "Mistergos1",
-             "player_avatar" => "",
-         ];
-         $players[2317681] = [
-             "player_no" => 3,
-             "player_id" => 2317681,
-             "player_canal" => "5ee02c466b5611e99d3379755f289b56",
-             "player_name" => "Mistergos2",
-             "player_avatar" => "",
-         ];
+         for ($i = 0; $i < LOCALARENA_PLAYER_COUNT; $i++) {
+             $player_id = $first_player_id + $i;
+             $players[$player_id] = [
+                 'player_no' => $i + 1,
+                 'player_id' => $player_id,
+                 'player_canal' => '5ee02c466b5611e99d3379755f289b56',
+                 'player_name' => LOCALARENA_PLAYER_NAME_STEM . $i,
+                 'player_avatar' => '',
+             ];
+         }
 
          $this->localarenaSetDefaultOptions();
 
@@ -1154,4 +1185,3 @@
          return $gameinfos;
      }
  }
-

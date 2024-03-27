@@ -1,6 +1,10 @@
 <?php
 
-// This file contains configuration for LOCALARENA, the framework for local
+// This file contains configuration for LocalArena, the framework for local
 // BGA development and testing.
 
-const LOCALARENA_GAME_NAME = "burglebrostwo";
+const LOCALARENA_GAME_NAME = 'reversi';
+
+const LOCALARENA_PLAYER_NAME_STEM = 'localdev';
+
+const LOCALARENA_PLAYER_COUNT = 2;

@@ -49,7 +49,7 @@ class Reversi extends Table
             else
                 $whiteplayer_id = $player_id;
         }
-        $sql .= implode( $values, ',' );
+        $sql .= implode( ',', $values );
         self::DbQuery( $sql );
         self::reloadPlayersBasicInfos();
         
@@ -69,7 +69,7 @@ class Reversi extends Table
                 $sql_values[] = "('$x','$y',$disc_value)";
             }
         }
-        $sql .= implode( $sql_values, ',' );
+        $sql .= implode( ',', $sql_values );
         self::DbQuery( $sql );
         
         // Init stats
@@ -92,7 +92,7 @@ class Reversi extends Table
         $sql .= "FROM player ";
         $sql .= "WHERE 1 ";
         $dbres = self::DbQuery( $sql );
-        while( $player = mysql_fetch_assoc( $dbres ) )
+        while( $player = mysqli_fetch_assoc( $dbres ) )
         {
             $result['players'][ $player['id'] ] = $player;
         }
@@ -388,5 +388,3 @@ class Reversi extends Table
    
    
 }
-  
-

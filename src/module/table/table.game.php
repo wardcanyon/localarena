@@ -116,11 +116,14 @@
 
              foreach ($fetch as $row) {
                  $key = array_key_first($row);
-                 $ret[$row[$key]] = $row;
-             }
 
-             if ($bSingleValue && count($ret)) {
-                 throw new feException("too many results");
+                 if ($bSingleValue) {
+                     $key_b = array_keys($row)[1];
+                     $value = $row[$key_b];
+                 } else {
+                     $value = $row;
+                 }
+                 $ret[$row[$key]] = $value;
              }
          } catch (mysqli_sql_exception $e) {
              var_dump($sql);
@@ -175,7 +178,6 @@
                      $ret[$row[$key_a]] = [];
                  }
 
-                 // XXX: is bSingleValue behavior incorrect in some of these other functions?
                  if ($bSingleValue) {
                      $key_c = array_keys($row)[2];
                      $value = $row[$key_c];

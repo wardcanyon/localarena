@@ -19,8 +19,10 @@
 // - "thecrew": status unknown.
 
 
-const LOCALARENA_GAME_NAME = 'hearts';
+// const LOCALARENA_GAME_NAME = 'hearts';
+// const LOCALARENA_PLAYER_COUNT = 3;
+
+const LOCALARENA_GAME_NAME = 'reversi';
+const LOCALARENA_PLAYER_COUNT = 2;
 
 const LOCALARENA_PLAYER_NAME_STEM = 'localdev';
-
-const LOCALARENA_PLAYER_COUNT = 3;

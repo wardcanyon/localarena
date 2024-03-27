@@ -705,6 +705,19 @@ export class EbgCoreGamegui {
       this.socket.send(JSON.stringify(parameters));
     }
   }
+
+    // ----------------
+    // Image loading control
+    // ----------------
+
+    // TODO: These are no-ops for the time being.
+
+    ensureImageLoading(): void {}
+    // N.B.: It sounds like games are not supposed to call this
+    // function, but some (including the "reversi" example!) do.
+    ensureSpecificImageLoading(imageList: string[]): void {}
+    ensureSpecificGameImageLoading(imageList: string[]): void {}
+    dontPreloadImage(imageName: string): void {}
 }
 
 // ebg ??= {};

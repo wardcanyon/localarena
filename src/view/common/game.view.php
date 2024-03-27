@@ -88,4 +88,12 @@ class game_view
     function build_page($viewArgs)
     {
     }
+
+    // Encodes the raw HTML in $s so that when it is assigned to a
+    // template variable and then rendered, the result is exactly $s.
+    public function raw($s) {
+        // XXX: This doesn't seem like it should be correct, but it
+        // appears to work (?).
+        return $s;
+    }
 }

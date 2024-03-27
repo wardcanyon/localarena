@@ -102,7 +102,7 @@
          }
      }
 
-     protected function getCollectionFromDB(
+     function getCollectionFromDB(
          $sql,
          $bSingleValue = false,
          $low_priority_select = false
@@ -366,9 +366,12 @@
      function localarenaSetDefaultOptions()
      {
          foreach ($this->game_options as $option_id => $option_desc) {
+             echo '** set default options; id = ' . $option_id . ' and desc = ' . print_r($option_desc, true) . "\n";
+             // N.B.: "default" is optional; if not given, the first
+             // option listed is the default.
              $this->localarenaSetGameStateInitialValue(
                  $option_id,
-                 $option_desc["default"]
+                 $option_desc["default"] ?? array_key_first($option_desc['values']),
              );
          }
      }
@@ -669,6 +672,31 @@
          return $this->getUniqueValueFromDB($sql);
      }
 
+     // XXX: Does this function (and its wrappers) need to also accept
+     // player-ID-as-string values?
+     //
+     // XXX: Double-check the exact return values/types of these functions.
+     //
+     private function getPlayerRowById(int $player_id)
+     {
+         return $this->getObjectFromDB('SELECT * FROM `player` WHERE `player_id` = '.$player_id);
+     }
+
+     function getPlayerNameById(int $player_id): string {
+         echo 'getPlayerNameById() for player_id=' . $player_id . "\n";
+         $row = $this->getPlayerRowById($player_id);
+         echo '  row = ' . print_r($row, true) . "\n";
+         return $row['player_name'];
+     }
+
+     function getPlayerNoById(int $player_id): int {
+         return intval($this->getPlayerRowById($player_id)['player_no']);
+     }
+
+     function getPlayerColorById(int $player_id): int {
+         return $this->getPlayerRowById($player_id)['player_color'];
+     }
+
      function getActivePlayerName()
      {
          $sql =
@@ -697,6 +725,12 @@
              "SELECT player_zombie FROM player where player_id=" .
              $this->getCurrentPlayerId();
          return $this->getUniqueValueFromDB($sql);
+     }
+
+     function isSpectator()
+     {
+         // XXX: We don't support spectators yet.
+         return false;
      }
 
      function getCurrentStateId()
@@ -837,12 +871,27 @@
 
      private function localarenaSetGameStateInitialValue($keyint, $value)
      {
+         // echo 'localarenaSetGameStateInitialValue(): key=' . $keyint . ' value=' . $value . "\n";
+         // $this->DbQuery(
+         //     "INSERT INTO `global`(`global_id`, `global_value`) VALUES (" .
+         //         $keyint .
+         //         "," .
+         //         $value .
+         //         ")"
+         // );
+
+         // XXX: The query above does not allow duplicate calls.  This
+         // causes trouble when a game calls
+         // `setGameStateInitialValue()` during setup, because right
+         // now LocalArena always calls `setGameStateInitialValue()`
+         // to set options to defaults.  The BGA "hearts" example does
+         // this.
+         //
+         // Another option here is probably to wait until after the
+         // game's setup code runs, and then fill in defaults for any
+         // options that aren't set.
          $this->DbQuery(
-             "INSERT INTO `global`(`global_id`, `global_value`) VALUES (" .
-                 $keyint .
-                 "," .
-                 $value .
-                 ")"
+             "INSERT INTO global (global_id, global_value) values({$keyint},{$value}) ON DUPLICATE KEY UPDATE global_value={$value}"
          );
      }
 

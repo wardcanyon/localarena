@@ -121,24 +121,27 @@ $ docker volume rm localarena_db-data
 
 - Add facilities for client-side testing.
 
+- Support database save/loads like BGA Studio does.
+
 ## Limitations
 
 - The logging functions (`trace()` et al.) just echo the message
   they're given, which isn't very helpful.
 
-- The number of players, and their usernames and IDs, is fixed.
+- The number of players, and their usernames and IDs, can only be
+  configured by editing "localarena_config.inc.php".
 
 - At the moment, game options are always set to their defaults.
 
 - Markup may not match current BGA markup very closely.
-
-- Database save/loads are not supported; this may be useful.
 
 - Replays are not supported.
 
 - 3D is not supported.
 
 - Zombie players are not supported.
+
+- Spectators are not supported.
 
 - Private states are not supported.
 

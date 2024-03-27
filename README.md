@@ -149,6 +149,9 @@ $ docker volume rm localarena_db-data
 
 - Client-side translation (i18n) is not supported.
 
+- Image-loading control functions (e.g. `ensure...ImageLoading()`) are
+  not supported; they are no-ops.
+
 ## Behavioral differences
 
 - `PHP Fatal error: Uncaught mysqli_sql_exception: Field 'card_order'

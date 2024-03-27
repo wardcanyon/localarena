@@ -11,10 +11,11 @@ define("APP_GAMEMODULE_PATH", "/src/");
 
 set_include_path(get_include_path() . PATH_SEPARATOR . APP_GAMEMODULE_PATH);
 
-require_once "/src/localarena_config.inc.php";
-require "/src/vendor/autoload.php";
+require_once APP_BASE_PATH . "/localarena_config.inc.php";
+require_once APP_BASE_PATH . "/vendor/autoload.php";
 
-require LOCALARENA_GAME_NAME . "/" . LOCALARENA_GAME_NAME . ".game.php";
+require_once APP_BASE_PATH . "/module/tablemanager/tablemanager.php";
+
 
 class GameServer implements MessageComponentInterface
 {
@@ -36,12 +37,16 @@ class GameServer implements MessageComponentInterface
 
     public function onMessage(ConnectionInterface $from, $msg)
     {
+        // XXX: We need more plumbing to support multiple table IDs.
+        $table_id = 1;
+
         $currentPlayerId = str_replace(
             "/",
             "",
             $from->httpRequest->getUri()->getPath()
         );
-        $game = new (''.LOCALARENA_GAME_NAME)();
+        $table_manager = new TableManager();
+        $game = $table_manager->getTable($table_id);
         $game->doAction($this, json_decode($msg, true));
     }
 

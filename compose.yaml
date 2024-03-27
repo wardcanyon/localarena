@@ -52,7 +52,7 @@ services:
       - db-data:/var/lib/mysql
     environment:
       - MYSQL_ROOT_PASSWORD_FILE=/run/secrets/db-password
-      - MYSQL_DATABASE=example
+      - MYSQL_DATABASE=localarena
       # - MARIADB_ROOT_PASSWORD_FILE=/run/secrets/db-password
       # - MARIADB_DATABASE=example
     expose:

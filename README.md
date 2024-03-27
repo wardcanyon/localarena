@@ -123,8 +123,6 @@ $ docker volume rm localarena_db-data
 
 ## Limitations
 
-### To be addressed before "0.1"
-
 - The logging functions (`trace()` et al.) just echo the message
   they're given, which isn't very helpful.
 
@@ -134,7 +132,9 @@ $ docker volume rm localarena_db-data
 
 - Markup may not match current BGA markup very closely.
 
-### Long-term
+- Database save/loads are not supported; this may be useful.
+
+- Replays are not supported.
 
 - 3D is not supported.
 

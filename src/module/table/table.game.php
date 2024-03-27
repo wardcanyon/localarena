@@ -1,9 +1,10 @@
  <?php
- require_once APP_GAMEMODULE_PATH . "module/table/feException.php";
- require_once APP_GAMEMODULE_PATH . "module/table/GameState.php";
- require_once APP_GAMEMODULE_PATH . "module/table/APP_GameAction.php";
- require_once APP_GAMEMODULE_PATH . "module/table/deck.php";
- require_once APP_GAMEMODULE_PATH . "view/common/util.php";
+ require_once APP_BASE_PATH . "module/table/feException.php";
+ require_once APP_BASE_PATH . "module/table/GameState.php";
+ require_once APP_BASE_PATH . "module/table/APP_GameAction.php";
+ require_once APP_BASE_PATH . "module/table/deck.php";
+require_once APP_BASE_PATH . "view/common/util.php";
+require_once APP_BASE_PATH . "module/LocalArenaContext.php";
 
 class APP_Object
 {
@@ -54,12 +55,13 @@ class APP_DbObject extends APP_Object
     public $gameServer = null;
 
     function __construct() {
-        parent::__construct();
+        $la_ctx = LocalArenaContext::get();
+        $dbname = 'table_' . $la_ctx->table_id;
 
-        # These are provided by Docker Compose; see "compose.yaml".
+        // These are provided by Docker Compose; see "compose.yaml".
         $this->servername = getenv("DB_HOST");
         $this->username = getenv("DB_USER");
-        $this->dbname = getenv("DB_NAME");
+        $this->dbname = $dbname;
         $this->password = trim(
             file_get_contents(getenv("DB_PASSWORD_FILE_PATH"))
         );
@@ -330,6 +332,10 @@ class Table extends APP_GameClass
          $obj = new $classname();
          $obj->game = $this;
          return $obj;
+     }
+
+     public function localarenaGetGameName() {
+         return $this->getGameName();
      }
 
      protected function getGameName()

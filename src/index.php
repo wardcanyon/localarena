@@ -5,16 +5,40 @@ define("DEV_MODE", 1);
 define("APP_BASE_PATH", "/src/");
 define("APP_GAMEMODULE_PATH", "/src/");
 
-require_once "/src/localarena_config.inc.php";
-require LOCALARENA_GAME_NAME . "/" . LOCALARENA_GAME_NAME . ".view.php";
+require_once APP_BASE_PATH . "/localarena_config.inc.php";
+require_once APP_BASE_PATH . "/module/tablemanager/tablemanager.php";
 
-$game_name = LOCALARENA_GAME_NAME;
+// XXX: Un-hardwire.  In particular, at the moment we'll create a new table if this table_id does not exist; but it'll have the sequentially-next table ID, not this one.
+$table_id = 1;
+
+// XXX: Un-hardwire.
+    $currentPlayer = 2317679;
+
+    if (DEV_MODE) {
+        if (isset($_GET["testplayer"])) {
+            $currentPlayer = $_GET["testplayer"];
+        }
+
+        // XXX: Either support or remove this.  If we want to keep it,
+        // we'll need to move it lower, once we have $game.
+        //
+        // if (isset($_GET["loadDatabase"])) {
+        //    $view->game->loadDatabase();
+        // }
+    }
+
 
 // The game-specific view code expects this.
 //
 // XXX: Find this a better home.
 class GUser
 {
+    public int $id;
+
+    public function __construct($id) {
+        $this->id = $id;
+    }
+
     public function get_id()
     {
         // XXX:
@@ -22,8 +46,30 @@ class GUser
     }
 }
 global $g_user;
-$g_user = new GUser();
+$g_user = new GUser($currentPlayer);
 
+    $table_manager = new TableManager();
+
+    $game = $table_manager->getTable($table_id);
+    if (is_null($game)) {
+        $params = new TableParams();
+        $params->game = LOCALARENA_GAME_NAME;
+        $game = $table_manager->createTable($params);
+    }
+    // XXX: If the table is an existing one, check that the current
+    // player is part of the game.
+    $game->currentPlayer = $currentPlayer;
+
+    $game_name = $game->localarenaGetGameName();
+
+   require $game_name . "/" . $game_name . ".view.php";
+    $view_class_name = "view_{$game_name}_{$game_name}";
+    $view = new $view_class_name($game);
+
+    // XXX: Either support this or remove it.
+if (isset($_GET["replayFrom"])) {
+    $view->game->replayFrom = $_GET["replayFrom"];
+}
 ?>
 
 <!DOCTYPE html>
@@ -44,27 +90,6 @@ $g_user = new GUser();
 </head>
 <body class="claro">
     <?php
-    $view_class_name = "view_{$game_name}_{$game_name}";
-    // XXX: This calls `initTable()`, which is a little strange.  We
-    // should probably reorganize that so that the database is
-    // initialized at table creation, before the view class is ever
-    // constructed.
-    $view = new $view_class_name();
-     $currentPlayer = 2317679;
-
-     if (DEV_MODE) {
-         if (isset($_GET["testplayer"])) {
-             $currentPlayer = $_GET["testplayer"];
-         }
-         if (isset($_GET["loadDatabase"])) {
-             $view->game->loadDatabase();
-         }
-     }
-     $view->game->currentPlayer = $currentPlayer;
-
-     if (isset($_GET["replayFrom"])) {
-         $view->game->replayFrom = $_GET["replayFrom"];
-     }
      $view->display();
      ?>
 

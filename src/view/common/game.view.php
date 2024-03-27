@@ -2,16 +2,19 @@
 
 require_once APP_GAMEMODULE_PATH . "view/common/util.php";
 require_once APP_GAMEMODULE_PATH . "view/common/template.php";
+require_once APP_GAMEMODULE_PATH . "module/tablemanager/tablemanager.php";
 
 class game_view
 {
-    function __construct()
-    {
-        $classname = ucfirst($this->getGameName());
-        include $this->getGameName() . "/" . $this->getGameName() . ".game.php";
+    public $game;
+    public $template;
+    public $tpl;
+    public $page;
 
-        $this->game = new $classname();
-        $this->game->initTable();
+    function __construct($game)
+    {
+        $this->game = $game;
+
         $this->template = new Template("default");
         $this->template->set_filenames([
             "game" =>
@@ -52,7 +55,7 @@ class game_view
 
     function getGameName()
     {
-        return "noname";
+        return $this->game->getGameName();
     }
 
     function getFullDatasAsJson()

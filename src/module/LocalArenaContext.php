@@ -12,10 +12,12 @@
 // The implementation of this class will need to become more
 // sophisticated if we ever use threading, because then there might be
 // a different active context per thread.
-class LocalArenaContext {
+class LocalArenaContext
+{
     public int $table_id;
 
-    public static function get(): LocalArenaContext {
+    public static function get(): LocalArenaContext
+    {
         global $localarena_context;
         if (is_null($localarena_context)) {
             $localarena_context = new LocalArenaContext();

@@ -16,7 +16,6 @@ require_once APP_BASE_PATH . "/vendor/autoload.php";
 
 require_once APP_BASE_PATH . "/module/tablemanager/tablemanager.php";
 
-
 class GameServer implements MessageComponentInterface
 {
     public function __construct()

@@ -3,101 +3,104 @@
  require_once APP_BASE_PATH . "module/table/GameState.php";
  require_once APP_BASE_PATH . "module/table/APP_GameAction.php";
  require_once APP_BASE_PATH . "module/table/deck.php";
-require_once APP_BASE_PATH . "view/common/util.php";
-require_once APP_BASE_PATH . "module/LocalArenaContext.php";
+ require_once APP_BASE_PATH . "view/common/util.php";
+ require_once APP_BASE_PATH . "module/LocalArenaContext.php";
 
-class APP_Object
-{
-    function __construct() {
-    }
+ class APP_Object
+ {
+     function __construct()
+     {
+     }
 
-    function dump($v, $value)
-    {
-        echo "$v=";
-        var_dump($value);
-    }
+     function dump($v, $value)
+     {
+         echo "$v=";
+         var_dump($value);
+     }
 
-    function info($value)
-    {
-        echo "$value\n";
-    }
+     function info($value)
+     {
+         echo "$value\n";
+     }
 
-    function trace($value)
-    {
-        echo "$value\n";
-    }
+     function trace($value)
+     {
+         echo "$value\n";
+     }
 
-    function debug($value)
-    {
-        echo "$value\n";
-    }
+     function debug($value)
+     {
+         echo "$value\n";
+     }
 
-    function watch($value)
-    {
-        echo "$value\n";
-    }
+     function watch($value)
+     {
+         echo "$value\n";
+     }
 
-    function warn($value)
-    {
-        echo "$value\n";
-    }
+     function warn($value)
+     {
+         echo "$value\n";
+     }
 
-    function error($msg)
-    {
-        echo "$msg\n";
-    }
-}
+     function error($msg)
+     {
+         echo "$msg\n";
+     }
+ }
 
-class APP_DbObject extends APP_Object
-{
-    public $conn;
+ class APP_DbObject extends APP_Object
+ {
+     public $conn;
 
-    public $gameServer = null;
+     public $gameServer = null;
 
-    function __construct() {
-        $la_ctx = LocalArenaContext::get();
-        $dbname = 'table_' . $la_ctx->table_id;
+     function __construct()
+     {
+         $la_ctx = LocalArenaContext::get();
+         $dbname = "table_" . $la_ctx->table_id;
 
-        // These are provided by Docker Compose; see "compose.yaml".
-        $this->servername = getenv("DB_HOST");
-        $this->username = getenv("DB_USER");
-        $this->dbname = $dbname;
-        $this->password = trim(
-            file_get_contents(getenv("DB_PASSWORD_FILE_PATH"))
-        );
+         // These are provided by Docker Compose; see "compose.yaml".
+         $this->servername = getenv("DB_HOST");
+         $this->username = getenv("DB_USER");
+         $this->dbname = $dbname;
+         $this->password = trim(
+             file_get_contents(getenv("DB_PASSWORD_FILE_PATH"))
+         );
 
-        $this->currentPlayer = 0;
-        $this->replayFrom = 0;
+         $this->currentPlayer = 0;
+         $this->replayFrom = 0;
 
-        // Create connection
-        $this->conn = new mysqli(
-            $this->servername,
-            $this->username,
-            $this->password,
-            $this->dbname
-        );
+         // Create connection
+         $this->conn = new mysqli(
+             $this->servername,
+             $this->username,
+             $this->password,
+             $this->dbname
+         );
 
-        // Check connection
-        if ($this->conn->connect_error) {
-            die("Connection failed: " . $this->conn->connect_error);
-        }
+         // Check connection
+         if ($this->conn->connect_error) {
+             die("Connection failed: " . $this->conn->connect_error);
+         }
 
-        /* Activation du reporting */
-        $driver = new mysqli_driver();
-        $driver->report_mode = MYSQLI_REPORT_ALL ^ MYSQLI_REPORT_INDEX;
+         /* Activation du reporting */
+         $driver = new mysqli_driver();
+         $driver->report_mode = MYSQLI_REPORT_ALL ^ MYSQLI_REPORT_INDEX;
 
-        // Set transaction isolation level so that we can read back
-        // changes later in the same transaction.
-        $this->conn->query('SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED');
-    }
+         // Set transaction isolation level so that we can read back
+         // changes later in the same transaction.
+         $this->conn->query("SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED");
+     }
 
-    // XXX: This is part of the LOCALARENA API, not the BGA API; it is
-    // intended only for internal use.  We should fix its visibility.
-    public function log($msg) {
-        if ($this->gameServer) {
-            echo $msg . "\n";
-        }
-    }
+     // XXX: This is part of the LOCALARENA API, not the BGA API; it is
+     // intended only for internal use.  We should fix its visibility.
+     public function log($msg)
+     {
+         if ($this->gameServer) {
+             echo $msg . "\n";
+         }
+     }
 
      protected function getCollectionFromDB(
          $sql,
@@ -243,17 +246,18 @@ class APP_DbObject extends APP_Object
          }
      }
 
-    function escapeStringForDB($string)
-    {
-        return $this->conn->real_escape_string($string);
-    }
+     function escapeStringForDB($string)
+     {
+         return $this->conn->real_escape_string($string);
+     }
 
-    function DbGetLastId() {
-        return $this->conn->insert_id;
-    }
+     function DbGetLastId()
+     {
+         return $this->conn->insert_id;
+     }
 
-    // XXX: This isn't part of the interface of this class; it's
-    // something added in LOCALARENA.
+     // XXX: This isn't part of the interface of this class; it's
+     // something added in LOCALARENA.
      private function saveDatabase()
      {
          $dir = "/src/databaseExport/database.sql";
@@ -263,9 +267,9 @@ class APP_DbObject extends APP_Object
          );
      }
 
-    // XXX: This isn't part of the interface of this class; it's
-    // something added in LOCALARENA.
-    function loadDatabase()
+     // XXX: This isn't part of the interface of this class; it's
+     // something added in LOCALARENA.
+     function loadDatabase()
      {
          $dir = "/src/databaseExport/database.sql";
          if (file_exists($dir)) {
@@ -275,13 +279,13 @@ class APP_DbObject extends APP_Object
              );
          }
      }
-}
+ }
 
-class APP_GameClass extends APP_DbObject
-{
-}
+ class APP_GameClass extends APP_DbObject
+ {
+ }
 
-class Table extends APP_GameClass
+ class Table extends APP_GameClass
  {
      // This contains the data defined in `stats.inc.php`.
      //
@@ -319,9 +323,13 @@ class Table extends APP_GameClass
          $this->gamestate = new GameState($this, $machinestates);
      }
 
-     function localarenaSetDefaultOptions() {
+     function localarenaSetDefaultOptions()
+     {
          foreach ($this->game_options as $option_id => $option_desc) {
-             $this->localarenaSetGameStateInitialValue($option_id, $option_desc['default']);
+             $this->localarenaSetGameStateInitialValue(
+                 $option_id,
+                 $option_desc["default"]
+             );
          }
      }
 
@@ -334,7 +342,8 @@ class Table extends APP_GameClass
          return $obj;
      }
 
-     public function localarenaGetGameName() {
+     public function localarenaGetGameName()
+     {
          return $this->getGameName();
      }
 
@@ -383,22 +392,23 @@ class Table extends APP_GameClass
      // - "reflexion"
      // - args is the result of calling the args function rather than its name
      // - id (the key that the state has in the states.inc.php array)
-     function getStateForClient(bool $includeMultiactive) {
+     function getStateForClient(bool $includeMultiactive)
+     {
          $ret = $this->gamestate->state();
 
-         $ret['id'] = $this->getCurrentStateId();
+         $ret["id"] = $this->getCurrentStateId();
 
-         if (isset($ret['args'])) {
-             $mname = $ret['args'];
-             $ret['args'] = $this->$mname();
+         if (isset($ret["args"])) {
+             $mname = $ret["args"];
+             $ret["args"] = $this->$mname();
          }
 
          // This is always set, even when we're in a multiactive state
          // and it should have no effect.  The client needs to be
          // smart enough to ignore it in those situations.
-         $ret['active_player'] = $this->getActivePlayerId();
+         $ret["active_player"] = $this->getActivePlayerId();
 
-         if ($this->gamestate->state()['type'] === 'multipleactiveplayer') {
+         if ($this->gamestate->state()["type"] === "multipleactiveplayer") {
              // This is always empty when the message is being sent in
              // response to a state transition (if the state is
              // multiactive; absent otherwise).  There will be a
@@ -406,36 +416,38 @@ class Table extends APP_GameClass
              // with actual values.
 
              if ($includeMultiactive) {
-                 $ret['multiactive'] = $this->gamestate->getActivePlayerList();
+                 $ret["multiactive"] = $this->gamestate->getActivePlayerList();
              } else {
-                 $ret['multiactive'] = [];
+                 $ret["multiactive"] = [];
              }
          }
 
          // TODO: We don't support this feature yet.
-         $ret['reflexion'] = null;
+         $ret["reflexion"] = null;
 
          return $ret;
      }
 
-     function notify_gameStateChange(bool $includeMultiactive) {
-         echo 'Sending notif: gameStateChange' . "\n";
+     function notify_gameStateChange(bool $includeMultiactive)
+     {
+         echo "Sending notif: gameStateChange" . "\n";
          $this->notifyAllPlayers(
-             'gameStateChange',
-             '',
-             $this->getStateForClient($includeMultiactive),
+             "gameStateChange",
+             "",
+             $this->getStateForClient($includeMultiactive)
          );
      }
 
-     function notify_gameStateMultipleActiveUpdate() {
-         echo 'Sending notif: gameStateMultipleActiveUpdate' . "\n";
+     function notify_gameStateMultipleActiveUpdate()
+     {
+         echo "Sending notif: gameStateMultipleActiveUpdate" . "\n";
 
          $this->notifyAllPlayers(
-             'gameStateMultipleActiveUpdate',
-             '',
+             "gameStateMultipleActiveUpdate",
+             "",
              // An array of `PlayerIdString`s identifying the players
              // who are currently multiactive.
-             $this->gamestate->getActivePlayerList(),
+             $this->gamestate->getActivePlayerList()
          );
      }
 
@@ -449,7 +461,7 @@ class Table extends APP_GameClass
          // smart enough to ignore it in those situations.
          $ret["active_player"] = $this->getActivePlayerId();
 
-         if ($this->gamestate->state()['type'] === 'multipleactiveplayer') {
+         if ($this->gamestate->state()["type"] === "multipleactiveplayer") {
              $ret["multiactive"] = $this->gamestate->getActivePlayerList();
          }
 
@@ -478,7 +490,7 @@ class Table extends APP_GameClass
              // XXX:
              $ret["alldatas"] = array_merge(
                  $this->getMediumDatas(),
-                 $this->getAllDatas(),
+                 $this->getAllDatas()
              );
          }
 
@@ -487,7 +499,9 @@ class Table extends APP_GameClass
          // XXX: This duplicates some information; it's used in our
          // bootstrapping call to `completesetup()` on the client,
          // after initial page load.
-         $ret['gameState'] = $this->getStateForClient(/*includeMultiactive=*/true);
+         $ret["gameState"] = $this->getStateForClient(
+             /*includeMultiactive=*/ true
+         );
 
          return $ret;
      }
@@ -715,17 +729,21 @@ class Table extends APP_GameClass
      {
          $state = $this->gamestate->state();
 
-         echo 'enterState(): name=' . $state['name'] . ' type=' . $state['type'] . "\n";
+         echo "enterState(): name=" .
+             $state["name"] .
+             " type=" .
+             $state["type"] .
+             "\n";
 
-         $this->notify_gameStateChange(/*includeMultiactive=*/false);
-         if ($state['type'] == 'multipleactiveplayer') {
+         $this->notify_gameStateChange(/*includeMultiactive=*/ false);
+         if ($state["type"] == "multipleactiveplayer") {
              $this->notify_gameStateMultipleActiveUpdate();
          }
 
-         echo 'enterState(): done sending notifs' . "\n";
+         echo "enterState(): done sending notifs" . "\n";
 
-         if (isset($state['action'])) {
-             $mname = $state['action'];
+         if (isset($state["action"])) {
+             $mname = $state["action"];
              $this->$mname();
          }
      }
@@ -818,7 +836,7 @@ class Table extends APP_GameClass
          if (!is_int($id)) {
              echo "*** stat does not have integer ID\n";
              // XXX: Should add an "internal LocalArena error" exception type.
-             throw new \feException('Stat must have an integer ID.');
+             throw new \feException("Stat must have an integer ID.");
          }
 
          if ($type == "player") {
@@ -974,10 +992,11 @@ class Table extends APP_GameClass
          } else {
              if (!$this->conn->begin_transaction()) {
                  // XXX: Error type
-                 throw new \feException('Unable to begin transaction.');
+                 throw new \feException("Unable to begin transaction.");
              }
              $prev_last_gamelog_id = $this->getUniqueValueFromDB(
-                 'SELECT MAX(gamelog_id) FROM `gamelog`');
+                 "SELECT MAX(gamelog_id) FROM `gamelog`"
+             );
 
              $action = "action_" . $this->getGameName();
              $act = new $action();
@@ -1005,7 +1024,8 @@ class Table extends APP_GameClass
 
      // Sends notifs for gamelog entries with IDs greater than
      // $prev_last_gamelog_id to the appropriate player(s).
-     function sendCommittedNotifs($prev_last_gamelog_id) {
+     function sendCommittedNotifs($prev_last_gamelog_id)
+     {
          if (!isset($this->gameServer)) {
              // XXX: In the existing code, there were guards for
              // `isset($this->gameServer)`.  When would that not be
@@ -1014,15 +1034,25 @@ class Table extends APP_GameClass
          }
 
          $players = $this->loadPlayersBasicInfos();
-         $entries = $this->getCollectionFromDB('SELECT * FROM `gamelog` WHERE `gamelog_id` > ' . $prev_last_gamelog_id . ' ORDER BY `gamelog_id` ASC');
+         $entries = $this->getCollectionFromDB(
+             "SELECT * FROM `gamelog` WHERE `gamelog_id` > " .
+                 $prev_last_gamelog_id .
+                 " ORDER BY `gamelog_id` ASC"
+         );
 
          foreach (array_values($entries) as $entry) {
-             $data = $entry['gamelog_notification'];
-             if ($entry['gamelog_player'] !== null) {
-                 $this->gameServer->notifPlayer($entry['gamelog_player'], $data);
+             $data = $entry["gamelog_notification"];
+             if ($entry["gamelog_player"] !== null) {
+                 $this->gameServer->notifPlayer(
+                     $entry["gamelog_player"],
+                     $data
+                 );
              } else {
                  foreach ($players as $player) {
-                     $this->gameServer->notifPlayer($player['player_id'], $data);
+                     $this->gameServer->notifPlayer(
+                         $player["player_id"],
+                         $data
+                     );
                  }
              }
          }
@@ -1124,3 +1154,4 @@ class Table extends APP_GameClass
          return $gameinfos;
      }
  }
+

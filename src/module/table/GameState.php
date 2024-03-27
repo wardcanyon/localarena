@@ -11,7 +11,8 @@ class GameState
         $this->machinestates = $machinestates;
     }
 
-    private function log($msg) {
+    private function log($msg)
+    {
         $this->game->log($msg);
     }
 
@@ -21,7 +22,9 @@ class GameState
      */
     public function updateMultiactiveOrNextState($str)
     {
-        throw new \feException('updateMultiactiveOrNextState(): not implemented');
+        throw new \feException(
+            "updateMultiactiveOrNextState(): not implemented"
+        );
     }
 
     /**
@@ -64,7 +67,7 @@ class GameState
                 break;
         }
 
-        $this->log('getActivePlayerList(): ' . implode(', ', $actives));
+        $this->log("getActivePlayerList(): " . implode(", ", $actives));
 
         return $actives;
     }
@@ -92,9 +95,7 @@ class GameState
     public function setPlayersMultiactive($players, $next_state)
     {
         $ids = implode(",", $players);
-        $this->game->DbQuery(
-            "UPDATE `player` SET `player_is_multiactive` = 0"
-        );
+        $this->game->DbQuery("UPDATE `player` SET `player_is_multiactive` = 0");
         $this->game->DbQuery(
             "UPDATE `player` SET `player_is_multiactive` = 1 WHERE `player_id` IN (" .
                 $ids .
@@ -120,7 +121,7 @@ class GameState
      */
     public function setPlayerNonMultiactive($player_id, $next_state)
     {
-        $this->log('setPlayerNonMultiactive(): ' . $player_id);
+        $this->log("setPlayerNonMultiactive(): " . $player_id);
 
         // XXX: Should we throw an error if the player is not
         // currently multiactive?
@@ -133,7 +134,9 @@ class GameState
                 "SELECT COUNT(*) FROM `player` WHERE `player_is_multiactive` = 1"
             ) == 0
         ) {
-            $this->log("setPlayerNonMultiactive(): no more multiactive players; transitioning to next state");
+            $this->log(
+                "setPlayerNonMultiactive(): no more multiactive players; transitioning to next state"
+            );
             $this->nextState($next_state);
         } else {
             // TODO: Check behavior of BGA for compatibility:
@@ -192,7 +195,15 @@ class GameState
         $newStateId = $state["transitions"][$transition];
         $this->game->setGameStateValue("currentState", $newStateId);
 
-        $this->log('From state "' . $state['name'] . '", taking transition "'.$transition.'" to state "' . $this->machinestates[$newStateId]['name'] . '".');
+        $this->log(
+            'From state "' .
+                $state["name"] .
+                '", taking transition "' .
+                $transition .
+                '" to state "' .
+                $this->machinestates[$newStateId]["name"] .
+                '".'
+        );
 
         $this->game->enterState();
     }

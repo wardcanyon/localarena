@@ -12,21 +12,20 @@ require_once APP_BASE_PATH . "/module/tablemanager/tablemanager.php";
 $table_id = 1;
 
 // XXX: Un-hardwire.
-    $currentPlayer = 2317679;
+$currentPlayer = 2317679;
 
-    if (DEV_MODE) {
-        if (isset($_GET["testplayer"])) {
-            $currentPlayer = $_GET["testplayer"];
-        }
-
-        // XXX: Either support or remove this.  If we want to keep it,
-        // we'll need to move it lower, once we have $game.
-        //
-        // if (isset($_GET["loadDatabase"])) {
-        //    $view->game->loadDatabase();
-        // }
+if (DEV_MODE) {
+    if (isset($_GET["testplayer"])) {
+        $currentPlayer = $_GET["testplayer"];
     }
 
+    // XXX: Either support or remove this.  If we want to keep it,
+    // we'll need to move it lower, once we have $game.
+    //
+    // if (isset($_GET["loadDatabase"])) {
+    //    $view->game->loadDatabase();
+    // }
+}
 
 // The game-specific view code expects this.
 //
@@ -35,7 +34,8 @@ class GUser
 {
     public int $id;
 
-    public function __construct($id) {
+    public function __construct($id)
+    {
         $this->id = $id;
     }
 
@@ -48,25 +48,25 @@ class GUser
 global $g_user;
 $g_user = new GUser($currentPlayer);
 
-    $table_manager = new TableManager();
+$table_manager = new TableManager();
 
-    $game = $table_manager->getTable($table_id);
-    if (is_null($game)) {
-        $params = new TableParams();
-        $params->game = LOCALARENA_GAME_NAME;
-        $game = $table_manager->createTable($params);
-    }
-    // XXX: If the table is an existing one, check that the current
-    // player is part of the game.
-    $game->currentPlayer = $currentPlayer;
+$game = $table_manager->getTable($table_id);
+if (is_null($game)) {
+    $params = new TableParams();
+    $params->game = LOCALARENA_GAME_NAME;
+    $game = $table_manager->createTable($params);
+}
+// XXX: If the table is an existing one, check that the current
+// player is part of the game.
+$game->currentPlayer = $currentPlayer;
 
-    $game_name = $game->localarenaGetGameName();
+$game_name = $game->localarenaGetGameName();
 
-   require $game_name . "/" . $game_name . ".view.php";
-    $view_class_name = "view_{$game_name}_{$game_name}";
-    $view = new $view_class_name($game);
+require $game_name . "/" . $game_name . ".view.php";
+$view_class_name = "view_{$game_name}_{$game_name}";
+$view = new $view_class_name($game);
 
-    // XXX: Either support this or remove it.
+// XXX: Either support this or remove it.
 if (isset($_GET["replayFrom"])) {
     $view->game->replayFrom = $_GET["replayFrom"];
 }
@@ -89,9 +89,7 @@ if (isset($_GET["replayFrom"])) {
 
 </head>
 <body class="claro">
-    <?php
-     $view->display();
-     ?>
+    <?php $view->display(); ?>
 
     <!-- load Dojo -->
     <script>

@@ -15,7 +15,6 @@ declare const dojo;
 declare const dijit;
 declare type eventhandler = (event?: any) => void;
 
-
 // ----
 // XXX: New stuff added here
 // ----
@@ -23,8 +22,8 @@ declare type eventhandler = (event?: any) => void;
 type PlayerId = number;
 
 type Coords = {
-    x: number;
-    y: number;
-    w: number;
-    h: number;
-}
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+};

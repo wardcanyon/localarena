@@ -1217,10 +1217,12 @@
          $this->DbQuery($sql);
      }
 
-     function activeNextPlayer()
+     // Makes the next player active; returns that player's ID.
+     function activeNextPlayer(): int
      {
          $next = $this->getNextPlayerTable()[$this->getActivePlayerId()];
          $this->setGameStateValue("activePlayerId", $next);
+         return $next;
      }
 
      function getGameinfos()

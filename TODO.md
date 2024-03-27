@@ -5,3 +5,8 @@
 
 - Make player-board DOM elements more realistic, since some (many?)
   games manipulate them.  ("reversi", "burglebrostwo")
+
+- Silence the ServerName warnings that Apache prints on startup; they
+  might confuse people.
+
+- Dockerize the `grunt` build process.

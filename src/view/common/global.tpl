@@ -35,9 +35,9 @@
             </div>
         </div> 
         <div id="bg_game_sidebar">
-        	<div id="bg_game_players">
+        	<div id="player_boards">
 	        	<!-- BEGIN bg_player -->
-	            <div id="bg_player_{PLAYER_ID}" class="bg_game_player d-flex flex-column">
+	            <div id="overall_player_board_{PLAYER_ID}" class="player-board d-flex flex-column" style="height: auto;">
   						<div class="d-flex justify-content-between" style="height: 32px;">
 	  						<div class="">
 	  							  <img src="avatar.png" alt="Avatar" class="avatar position-absolute"/>	

@@ -160,6 +160,9 @@ $ docker volume rm localarena_db-data
 - Image-loading control functions (e.g. `ensure...ImageLoading()`) are
   not supported; they are no-ops.
 
+- Support for preferences is minimal; in particular, there is no UI
+  for changing them.
+
 ## Behavioral differences
 
 - `PHP Fatal error: Uncaught mysqli_sql_exception: Field 'card_order'

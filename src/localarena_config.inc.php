@@ -5,8 +5,9 @@
 
 // State of included games:
 //
-// - "hearts" requires at least 3 players; the game can start, but the
-//   client hangs because "this.prefs" is not available.
+// - "hearts" requires at least 3 players; the game can start, but
+//   runs into an undefined-variable error because there is not yet
+//   support for private state.
 //
 // - "reversi" requires exactly 2 players; the game works!
 //
@@ -17,10 +18,10 @@
 // - "thecrew": status unknown.
 
 
-// const LOCALARENA_GAME_NAME = 'hearts';
-// const LOCALARENA_PLAYER_COUNT = 3;
+const LOCALARENA_GAME_NAME = 'hearts';
+const LOCALARENA_PLAYER_COUNT = 3;
 
-const LOCALARENA_GAME_NAME = 'reversi';
-const LOCALARENA_PLAYER_COUNT = 2;
+// const LOCALARENA_GAME_NAME = 'reversi';
+// const LOCALARENA_PLAYER_COUNT = 2;
 
 const LOCALARENA_PLAYER_NAME_STEM = 'localdev';

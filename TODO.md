@@ -1,7 +1,11 @@
 - Don't allow game to start with an invalid number of players.
 
-- There isn't client-side support for preferences; `this.prefs` is
-  undefined.  ("hearts")
+- "reversi": don't allow a client to play when it's someone else's
+  turn!
+
+- Fix hardwired player name in index.php; fix page title.
+
+- "hearts": no support for private state.
 
 - Make player-board DOM elements more realistic, since some (many?)
   games manipulate them.  We've done enough here to make "reversi"

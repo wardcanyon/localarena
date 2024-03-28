@@ -447,10 +447,7 @@
 
          $ret["id"] = $this->getCurrentStateId();
 
-         if (isset($ret["args"])) {
-             $mname = $ret["args"];
-             $ret["args"] = $this->$mname();
-         }
+         $ret['args'] = $this->renderPrivateData($this->getCurrentPlayerId(), $this->renderStateArgs($ret));
 
          // This is always set, even when we're in a multiactive state
          // and it should have no effect.  The client needs to be
@@ -531,11 +528,47 @@
 
          $ret["players"] = $this->loadPlayersUIInfos();
          $state = $this->gamestate->state();
-         if (isset($state["args"])) {
-             $mname = $state["args"];
-             $ret["args"] = $this->$mname();
-         }
+         $ret['args'] = $this->renderStateArgs($state);
          return $ret;
+     }
+
+     function renderStateArgs($state) {
+         if (!isset($state["args"])) {
+             return null;
+         }
+
+         $mname = $state["args"];
+         $args = $this->$mname();
+
+         if (array_key_exists('_private', $args)) {
+             $private_args = $args['_private'];
+
+             // $private_args may either contain the single key
+             // "active", or may contain player ID strings as keys.
+             // It cannot contain both.
+
+             if (array_key_exists('active', $private_args)) {
+                 if (count($private_args) != 1) {
+                     $this->strictError('If _private args contain the "active" key, that must be the only key.');
+                 }
+                 $args['_private'] = [
+                     $this->getActivePlayerId() => $private_args['active'],
+                 ];
+
+                 // if ($this->getCurrentPlayerId() == $this->getCurrentActiveId()) {
+                 // }
+             } else {
+                 // XXX: Validate that the other keys are all valid
+                 // player IDs as strings here, before we commit the
+                 // message.
+             }
+         }
+
+         return $args;
+     }
+
+     function strictError($msg) {
+         // XXX: no-op; but in strict mode, this should throw an exception
      }
 
      function getFullDatas()
@@ -607,7 +640,6 @@
 
          $players = self::loadPlayersBasicInfos();
          $nextPlayer = self::createNextPlayerTable(array_keys($players));
-
          $current_player = self::getCurrentPlayerId();
 
          if (!isset($nextPlayer[$current_player])) {
@@ -628,7 +660,7 @@
 
      function createNextPlayerTable($players)
      {
-         $sql = "SELECT player_no, player_id FROM player order by player_no";
+         $sql = "SELECT player_no, player_id FROM player ORDER BY player_no";
          $players = $this->getCollectionFromDB($sql);
          $nexts = [];
          foreach ($players as $player) {
@@ -716,9 +748,7 @@
      }
 
      function getPlayerNameById(int $player_id): string {
-         echo 'getPlayerNameById() for player_id=' . $player_id . "\n";
          $row = $this->getPlayerRowById($player_id);
-         echo '  row = ' . print_r($row, true) . "\n";
          return $row['player_name'];
      }
 
@@ -1135,6 +1165,20 @@
          }
      }
 
+     // N.B.: $data may be null.
+     function renderPrivateData($player_id, $data) {
+         if (!is_null($data)) {
+             if (array_key_exists('_private', $data)) {
+                 $private_args = $data['_private'];
+                 unset($data['_private']);
+                 if (array_key_exists($player_id, $private_args)) {
+                     $data['_private'] = $private_args[$player_id];
+                 }
+             }
+         }
+         return $data;
+     }
+
      // Sends notifs for gamelog entries with IDs greater than
      // $prev_last_gamelog_id to the appropriate player(s).
      function sendCommittedNotifs($prev_last_gamelog_id)
@@ -1153,16 +1197,20 @@
                  " ORDER BY `gamelog_id` ASC"
          );
 
+         $sendNotif = function($player_id, $data) {
+             return $this->gameServer->notifPlayer($player_id, $this->renderPrivateData($player_id, $data));
+         };
+
          foreach (array_values($entries) as $entry) {
              $data = $entry["gamelog_notification"];
              if ($entry["gamelog_player"] !== null) {
-                 $this->gameServer->notifPlayer(
+                 $sendNotif(
                      $entry["gamelog_player"],
-                     $data
+                     $data,
                  );
              } else {
                  foreach ($players as $player) {
-                     $this->gameServer->notifPlayer(
+                     $sendNotif(
                          $player["player_id"],
                          $data
                      );
@@ -1204,7 +1252,7 @@
              ",0,NOW(),NULL," .
              $this->getCurrentPlayerId() .
              ',\'' .
-             $data .
+             $this->escapeStringForDb($data) .
              '\')';
          $this->DbQuery($sql);
      }

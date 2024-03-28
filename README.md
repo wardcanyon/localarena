@@ -51,13 +51,21 @@ $ docker compose run --build --rm server php /src/test.php
 
 ### Running a game locally
 
-(Right now, this is hardwired to serve `thecrew`.)
+You can change which game will be launched, how many players will be
+at the table, etc. by editing `src/localarena_config.inc.php`.
 
-You can visit the game itself by visiting http://localhost:9000.
+To start LocalArena, issue
+
+```
+$ grunt
+$ docker compose up --build
+```
+
+Once the containers are running, you can visit the game itself by
+visiting http://localhost:9000.
 
 You can interact with the game's database through phpMyAdmin by
-visiting http://localhost:8080.  It is initialized by
-`Table::initTable()` if the `players` table does not exist.
+visiting http://localhost:8080.
 
 To wipe the database so that it will be reinitialized, issue...
 

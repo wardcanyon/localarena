@@ -8,9 +8,7 @@
 // - "hearts" requires at least 3 players; the game can start, but the
 //   client hangs because "this.prefs" is not available.
 //
-// - "reversi" requires exactly 2 players; the game can start and
-//   moves can be taken, but all discs appear white, and both players
-//   always see "You must play a disc".
+// - "reversi" requires exactly 2 players; the game works!
 //
 // - "burglebrostwo" is an incomplete implementation.  A bug in
 //   "ebg/stock" is visible; player-board interactions are disabled in

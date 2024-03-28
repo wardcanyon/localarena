@@ -4,7 +4,8 @@
   undefined.  ("hearts")
 
 - Make player-board DOM elements more realistic, since some (many?)
-  games manipulate them.  ("reversi", "burglebrostwo")
+  games manipulate them.  We've done enough here to make "reversi"
+  happy, but other games (e.g. "burglebrostwo") may not be.
 
 - Silence the ServerName warnings that Apache prints on startup; they
   might confuse people.

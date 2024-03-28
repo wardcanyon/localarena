@@ -534,8 +534,8 @@
          } else {
              // XXX:
              $ret["alldatas"] = array_merge(
+                 $this->getAllDatas(),
                  $this->getMediumDatas(),
-                 $this->getAllDatas()
              );
          }
 
@@ -558,9 +558,15 @@
 
      private function loadPlayersUIInfos()
      {
-         $sql =
-             "SELECT player_id, player_name, player_color, player_no, player_is_multiactive FROM player order by player_no";
-         return $this->getCollectionFromDB($sql);
+         $ret = $this->getCollectionFromDB("SELECT player_id, player_name, player_color, player_no, player_is_multiactive FROM player ORDER BY player_no");
+         // XXX: The "reversi" example expects the property "color",
+         // not "player_color".  We should inspect actual BGA output.
+         //
+         // XXX: Can we use refs here to mutate $player?
+         foreach ($ret as $player_id => $player) {
+             $ret[$player_id]['color'] = $player['player_color'];
+         }
+         return $ret;
      }
 
      public function loadPlayersBasicInfos()

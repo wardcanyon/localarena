@@ -269,14 +269,18 @@ export class EbgCoreGamegui {
   format_string_recursive(log, args) {
     if (log) {
       for (var key in args) {
-        if (args[key]["log"] === undefined) {
-          log = log.replace("${" + key + "}", args[key]);
+        if (args[key] === null) {
+            log = log.replace("${" + key + "}", '');
         } else {
-          var chg = this.format_string_recursive(
-            args[key]["log"],
-            args[key]["args"],
-          );
-          log = log.replace("${" + key + "}", chg);
+          if (args[key]["log"] === undefined) {
+            log = log.replace("${" + key + "}", args[key]);
+          } else {
+             var chg = this.format_string_recursive(
+               args[key]["log"],
+               args[key]["args"],
+             );
+             log = log.replace("${" + key + "}", chg);
+          }
         }
       }
 

@@ -339,6 +339,8 @@
      public $stats_type;
 
      public $game_options;
+     public $game_preferences;
+     public $custom_only;
 
      function __construct()
      {
@@ -349,6 +351,8 @@
 
          include $this->getGameName() . "/gameoptions.inc.php";
          $this->game_options = $game_options;
+         $this->game_preferences = $game_preferences;
+         $this->custom_only = $custom_only;
 
          include $this->getGameName() . "/material.inc.php";
          include $this->getGameName() . "/states.inc.php";
@@ -473,6 +477,21 @@
          return $ret;
      }
 
+     function getPrefsForClient() {
+         $prefs = $this->game_preferences;
+         $prefs[200] = [
+             'name' => 'Display tooltips',
+             'needReload' => false,
+             'generic' => true,
+             'value'=> 0,
+             'values'=> [
+                 0 => [ 'name'=> 'Enabled' ],
+                 1 => [ 'name'=> 'Disabled' ],
+             ],
+         ];
+         return $prefs;
+     }
+
      function notify_gameStateChange(bool $includeMultiactive)
      {
          echo "Sending notif: gameStateChange" . "\n";
@@ -548,6 +567,12 @@
              /*includeMultiactive=*/ true
          );
 
+         // N.B.: BGA itself renders preferences into the served page
+         // and has code there that directly sets `gameui.prefs`;
+         // we're reusing the gamedatas mechanism here, which is
+         // similar but not identical.
+         $ret['prefs'] = $this->getPrefsForClient();
+
          return $ret;
      }
 
@@ -572,7 +597,7 @@
      public function loadPlayersBasicInfos()
      {
          $sql =
-             "SELECT player_id, player_name, player_color, player_no FROM player order by player_no";
+             "SELECT player_id, player_name, player_color, player_no FROM player ORDER BY player_no";
          return $this->getCollectionFromDB($sql);
      }
 

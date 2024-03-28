@@ -41,8 +41,7 @@ class GUser
 
     public function get_id()
     {
-        // XXX:
-        return 1;
+        return $this->id;
     }
 }
 global $g_user;

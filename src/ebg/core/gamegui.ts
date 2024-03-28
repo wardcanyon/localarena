@@ -45,6 +45,9 @@ export class EbgCoreGamegui {
   // `getStateForClient()`.
   gameState = null;
 
+  // Counters that update the scores shown in player boards.
+  scoreCtrl: {[player_id: PlayerIdString]: Counter} = {};
+
   constructor() {}
 
   setup(gamedatas) {
@@ -79,6 +82,12 @@ export class EbgCoreGamegui {
     this.bgg_states = gamedatas.states;
     this.setup(gamedatas.alldatas);
     this.bRealtime = true;
+
+      for (const player_id in this.bg_game_players) {
+          let scoreCtrl = new ebg.counter();
+          scoreCtrl.create('player_score_' + player_id);
+          this.scoreCtrl[player_id] = scoreCtrl;
+      }
 
     // XXX: Move over code to autoregister notif_* handlers.
     dojo.subscribe("gameStateChange", this, "notif_gameStateChange");

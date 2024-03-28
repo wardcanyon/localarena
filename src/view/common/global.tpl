@@ -46,7 +46,7 @@
 	  						<div class=" font-weight-bold" style="color: #{PLAYER_COLOR}">{PLAYER_NAME}</div>
 	  						<div class=" id="player_status_{PLAYER_ID}">
 	  						<span class="bg_game_score">
-		  						<span id="bg_game_score_{PLAYER_ID}">0</span>
+		  						<span id="player_score_{PLAYER_ID}">0</span>
 		  						<i class="fas fa-star" style="color:orange"></i>
 							</span>
 	  						 <a target="_blank" href="?testplayer={PLAYER_ID}" class="bg_game_debug_user">

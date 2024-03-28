@@ -1,27 +1,43 @@
 import declare from "./declareDecorator";
 
 @declare()
-class EbgCounter {
-  containerId: string = null;
-  value: number = 0;
+export default class EbgCounter {
+    el: HTMLElement = null;
 
-  create(containerId: string): void {
-    this.containerId = containerId;
-    this.value = 0;
-  }
+    // The logical value of the counter.
+    value: number = 0;
 
-  getValue() {
-    return this.value;
-  }
+    // This differs from `value` only when the counter is being animated.
+    displayedValue: number = 0;
 
-  incValue(inc) {
-    this.setValue(this.value + parseInt(inc));
-  }
+    speed: number = 100;
 
-  setValue(val) {
-    this.value = parseInt(val);
-    dojo.byId(this.containerId).innerHTML = this.value;
-  }
+    create(containerId: string): void {
+        this.el = $(containerId);
+    }
+
+    getValue(): number {
+        return this.value;
+    }
+
+    incValue(delta: number): void {
+        this.toValue(this.value + delta);
+    }
+
+    setValue(value: number): void {
+        this.value = value;
+        this.el.innerHTML = '' + this.value;
+    }
+
+    // Like `setValue()`, but animates the counter.
+    toValue(value: number): void {
+        // XXX: For the moment, no animation is supported.
+        this.setValue(value);
+    }
+
+    disable(): void {
+        this.el.innerHTML = '-';
+    }
 }
 
 ebg.counter = EbgCounter;

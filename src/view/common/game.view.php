@@ -39,7 +39,7 @@ class game_view
         $this->tpl["LOAD"] = self::_("Load previously saved game state");
     }
 
-    function begin_block($block, $arrval)
+    function begin_block($template_name, $block_name)
     {
     }
 

@@ -53,3 +53,15 @@ interface Counter {
     // change the counter's current value.
     disable(): void;
 }
+
+interface PreferenceOption {
+    name: string;
+}
+
+interface Preference {
+    name: string;
+    needReload: boolean;
+    generic: boolean;
+    value: number;
+    values: PreferenceOption[];
+}

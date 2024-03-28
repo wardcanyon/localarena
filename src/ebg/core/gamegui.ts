@@ -46,42 +46,37 @@ export class EbgCoreGamegui {
   gameState = null;
 
   // Counters that update the scores shown in player boards.
-  scoreCtrl: {[player_id: PlayerIdString]: Counter} = {};
+    scoreCtrl: {[player_id: PlayerIdString]: Counter} = {};
+
+    prefs: {[pref_id: number]: Preference} = {};
+
+    // This is a generic preference that is available on every table, regardless of game.
+    readonly GAMEPREFERENCE_DISPLAYTOOLTIPS: number = 200;
 
   constructor() {}
 
+    // This is overriden by each game.
   setup(gamedatas) {
-    throw "XXX: This is not being called; remove?";
   }
 
   completesetup(gamename, gamedatas) {
     this.notifqueue = new ebg.core.notificationQueue(this);
-
-    this.socket = new WebSocket("ws://localhost:3000/" + this.player_id);
-
-    this.socket.onopen = function (e) {};
-
-    var gui = this;
-    this.socket.onmessage = function (event) {
-      var event = JSON.parse(event.data);
-      gui.notifqueue.addEvent(event);
-    };
-
-    this.socket.onclose = function (event) {
-      alert("[close] Connection close");
-    };
-
-    this.socket.onerror = function (error) {
-      alert(`[error] ${error.message}`);
-    };
 
     console.log(gamedatas);
     this.bg_game_players = gamedatas.players;
     this.gamedatas = gamedatas.alldatas;
     this.active_player = gamedatas.active_player;
     this.bgg_states = gamedatas.states;
-    this.setup(gamedatas.alldatas);
     this.bRealtime = true;
+      this.prefs = gamedatas.prefs;
+
+      // Call game-specific setup code *after* we've done most of our
+      // own initialization; some games may assume that certain things
+      // (e.g. `this.prefs`, for the "hearts" example) are available.
+      //
+      // N.B.: BGA seems to call this *before* initializing score
+      // controls.
+      this.setup(gamedatas.alldatas);
 
       for (const player_id in this.bg_game_players) {
           let scoreCtrl = new ebg.counter();
@@ -106,6 +101,22 @@ export class EbgCoreGamegui {
 
     dojo.query(".socketButton").connect("onclick", this, "onSocketButton");
 
+      // Open websock to receive notifs.
+      this.socket = new WebSocket("ws://localhost:3000/" + this.player_id);
+      this.socket.onopen = function (e) {};
+      var gui = this;
+      this.socket.onmessage = function (event) {
+          var event = JSON.parse(event.data);
+          gui.notifqueue.addEvent(event);
+      };
+      this.socket.onclose = function (event) {
+          alert("[close] Connection close");
+      };
+      this.socket.onerror = function (error) {
+          alert(`[error] ${error.message}`);
+      };
+
+      // Transition into initial state.
     this.notif_gameStateChange({ args: gamedatas.gameState });
   }
 

@@ -476,6 +476,7 @@
 
      function getPrefsForClient() {
          $prefs = $this->game_preferences;
+
          $prefs[200] = [
              'name' => 'Display tooltips',
              'needReload' => false,
@@ -486,6 +487,13 @@
                  1 => [ 'name'=> 'Disabled' ],
              ],
          ];
+
+         foreach ($prefs as $pref_id => $pref) {
+             if (!array_key_exists('value', $pref)) {
+                 $prefs[$pref_id]['value'] = array_key_first($pref['values']);
+             }
+         }
+
          return $prefs;
      }
 

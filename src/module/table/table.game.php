@@ -537,7 +537,7 @@
 
          $ret["players"] = $this->loadPlayersUIInfos();
          $state = $this->gamestate->state();
-         $ret['args'] = $this->renderStateArgs($state);
+         $ret['args'] = $this->renderPrivateData($this->getCurrentPlayerId(), $this->renderStateArgs($state));
          return $ret;
      }
 
@@ -1177,6 +1177,8 @@
      // N.B.: $data may be null, or may not be an associative array at
      // all; for example, the "hearts" example sends a string.
      function renderPrivateData($player_id, $data) {
+         // echo 'Rendering private data for $player_id=' . $player_id . '; $data=' . print_r($data, true) . "\n";
+
          if (is_array($data)) {
              if (array_key_exists('_private', $data)) {
                  $private_args = $data['_private'];
@@ -1186,6 +1188,8 @@
                  }
              }
          }
+
+         // echo 'Rendered args=' . print_r($data, true) . "\n";
          return $data;
      }
 

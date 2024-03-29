@@ -185,6 +185,11 @@ export class EbgCoreGamegui {
     let state = notifArgs;
 
     this.gameState = state;
+
+      // Some games (e.g. the "hearts" example) depend on this being
+      // available.
+    this.gamedatas.gamestate = state;
+
     this.updateUiForState();
 
     this.onEnteringState(state["name"], state);
@@ -741,6 +746,14 @@ export class EbgCoreGamegui {
   ensureSpecificImageLoading(imageList: string[]): void {}
   ensureSpecificGameImageLoading(imageList: string[]): void {}
   dontPreloadImage(imageName: string): void {}
+
+  // ----------------
+  // Sound
+  // ----------------
+
+  // TODO: These are no-ops for the time being.
+
+    disableNextMoveSound(): void {}
 }
 
 // ebg ??= {};

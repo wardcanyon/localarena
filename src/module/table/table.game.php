@@ -1,5 +1,6 @@
  <?php
  require_once APP_BASE_PATH . "module/table/feException.php";
+ require_once APP_BASE_PATH . "module/table/BgaVisibleSystemException.php";
  require_once APP_BASE_PATH . "module/table/GameState.php";
  require_once APP_BASE_PATH . "module/table/APP_GameAction.php";
  require_once APP_BASE_PATH . "module/table/deck.php";
@@ -1173,9 +1174,10 @@
          }
      }
 
-     // N.B.: $data may be null.
+     // N.B.: $data may be null, or may not be an associative array at
+     // all; for example, the "hearts" example sends a string.
      function renderPrivateData($player_id, $data) {
-         if (!is_null($data)) {
+         if (is_array($data)) {
              if (array_key_exists('_private', $data)) {
                  $private_args = $data['_private'];
                  unset($data['_private']);

@@ -158,6 +158,12 @@ if (isset($_GET["replayFrom"])) {
 
     <script>
      require(["dojo", "dojo/_base/unload","bgagame/<?= "$game_name" ?>", "dojo/domReady!"], function( dojo, baseUnload ) {
+         // XXX: These are not fully supported yet.
+         window.g_replayFrom = -1;
+         window.g_archive_mode = false;
+
+         // Sound is unsupported.  (These stubs were necessary for the "hearts" example.)
+         window.playSound = function() {};
 
          gameui = new bgagame.<?= "$game_name" ?>();
         gameui.player_id = <?= $view->game->currentPlayer ?>;

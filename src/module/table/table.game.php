@@ -862,6 +862,17 @@
          $this->gamestate->nextState("");
      }
 
+     function argGameEnd()
+     {
+         // XXX: Not implemented.
+         return [];
+     }
+
+     function stGameEnd()
+     {
+         // XXX: Not implemented.
+     }
+
      function enterState()
      {
          $state = $this->gamestate->state();

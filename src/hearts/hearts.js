@@ -10,7 +10,7 @@
  * hearts.js
  *
  * Hearts user interface script
- * 
+ *
  * In this file, you are describing the logic of your user interface, in Javascript language.
  *
  */
@@ -46,14 +46,14 @@ function (dojo, declare) {
 
         /*
             setup:
-            
+
             This method must set up the game user interface according to current game situation specified
             in parameter.
-            
+
             The method is called each time the game interface is displayed to a player, ie:
             _ when the game starts
             _ when a player refresh the game page (F5)
-            
+
             "gamedatas" argument contains all data retrieved by your "getAllDatas" PHP method.
         */
 
@@ -117,7 +117,7 @@ function (dojo, declare) {
                     // Change card image style according to the preference option
                     this.playerHand.addItemType(card_type_id, card_type_id, g_gamethemeurl + 'img/cards_' + this.prefs[100].value + '.png', card_type_id);
                 }
-            
+
             // Cards in player's hand
             for (let i in gamedatas.hand) {
                 const card = gamedatas.hand[i];
@@ -125,7 +125,7 @@ function (dojo, declare) {
                 const value = card.type_arg;
                 this.playerHand.addToStockWithId(this.getCardUniqueId(color, value), card.id);
             }
-            
+
             // Cards played on table
             for (let i in gamedatas.cardsontable) {
                 const card = gamedatas.cardsontable[i];
@@ -143,15 +143,15 @@ function (dojo, declare) {
             // Setup game notifications to handle (see "setupNotifications" method below)
             this.setupNotifications();
         },
-      
+
 
         ///////////////////////////////////////////////////
         //// Game & client states
-        
+
         // onEnteringState: this method is called each time we are entering into a new game state.
         //                  You can use this method to perform some user interface changes at this moment.
         //
-        
+
         onEnteringState: function (stateName, args) {
             console.log( 'Entering state: '+stateName );
             switch (stateName) {
@@ -182,7 +182,7 @@ function (dojo, declare) {
 
         // onLeavingState: this method is called each time we are leaving a game state.
         //                 You can use this method to perform some user interface changes at this moment.
-        //        
+        //
         onLeavingState: function (stateName) {
             console.log( 'Leaving state: '+stateName );
             switch (stateName) {
@@ -195,10 +195,10 @@ function (dojo, declare) {
                     break;
             }
         },
-        
+
         // onUpdateActionButtons: in this method you can manage "action buttons" that are displayed in the
         //                        action status bar (ie: the HTML links in the status bar).
-        //                
+        //
         onUpdateActionButtons: function (stateName, args) {
             console.log( 'onUpdateActionButtons: '+stateName );
             if (this.isCurrentPlayerActive()) {
@@ -213,15 +213,15 @@ function (dojo, declare) {
                 }
             }
         },
-        
+
         ///////////////////////////////////////////////////
         //// Utility methods
-        
+
         /*
-        
+
             Here, you can defines some utility methods that you can use everywhere in your javascript
             script.
-        
+
         */
 
         // Color player names in the log
@@ -250,7 +250,7 @@ function (dojo, declare) {
 
             return this.inherited(arguments);
         },
-        
+
         // Get card unique identifier based on its color and value
         getCardUniqueId: function (color, value) {
             return (color - 1) * 13 + (value - 2);
@@ -286,16 +286,16 @@ function (dojo, declare) {
 
         ///////////////////////////////////////////////////
         //// Player's action
-        
+
         /*
-        
-            Here, you are defining methods to handle player's action (ex: results of mouse click on 
+
+            Here, you are defining methods to handle player's action (ex: results of mouse click on
             game objects).
-            
+
             Most of the time, these methods:
             _ check the action is possible at this game state.
             _ make a call to the game server
-        
+
         */
 
         onHandCardSelect: function (control_name, item_id) {
@@ -372,12 +372,12 @@ function (dojo, declare) {
 
         /*
             setupNotifications:
-            
+
             In this method, you associate each of your game notifications with your local method to handle it.
-            
+
             Note: game notification names correspond to your "notifyAllPlayers" and "notifyPlayer" calls in
                   your emptygame.game.php file.
-        
+
         */
 
         setupNotifications: function() {
@@ -391,7 +391,7 @@ function (dojo, declare) {
             this.notifqueue.setSynchronous('takeCards', 500);
             this.notifqueue.setSynchronous('earlyEnd');
         },
-        
+
         // TODO: from this point and below, you can write your game notifications handling methods
         notif_newRound: function (notif) {
             if (this.gamedatas.no_starter_card > 0) {

@@ -30,38 +30,38 @@ type Coords = {
 };
 
 interface Counter {
-    // How fast animations move.
-    speed: number;
+  // How fast animations move.
+  speed: number;
 
-    // Associate the counter with the given DOM element, which must
-    // already exist.
-    create(elId: string): void;
+  // Associate the counter with the given DOM element, which must
+  // already exist.
+  create(elId: string): void;
 
-    // Return the counter's current value.
-    getValue(): number;
+  // Return the counter's current value.
+  getValue(): number;
 
-    // Changes the current value by `delta`; the change is animated.
-    incValue(delta: number): void;
+  // Changes the current value by `delta`; the change is animated.
+  incValue(delta: number): void;
 
-    // Changes the current value to `value` without animation.
-    setValue(value: number): void;
+  // Changes the current value to `value` without animation.
+  setValue(value: number): void;
 
-    // Changes the current value to `value` with animation.
-    toValue(value: number): void;
+  // Changes the current value to `value` with animation.
+  toValue(value: number): void;
 
-    // Makes the counter display "-" instead of a value.  Does not
-    // change the counter's current value.
-    disable(): void;
+  // Makes the counter display "-" instead of a value.  Does not
+  // change the counter's current value.
+  disable(): void;
 }
 
 interface PreferenceOption {
-    name: string;
+  name: string;
 }
 
 interface Preference {
-    name: string;
-    needReload: boolean;
-    generic: boolean;
-    value: number;
-    values: PreferenceOption[];
+  name: string;
+  needReload: boolean;
+  generic: boolean;
+  value: number;
+  values: PreferenceOption[];
 }

@@ -13,8 +13,7 @@
 //   "ebg/stock" is visible; player-board interactions are disabled in
 //   the included copy.
 //
-// - "thecrew": game starts, but runs into a client-side error
-//   ("dojo.fx.easing is undefined").
+// - "thecrew": game starts, but runs into some client-side issues.
 
 // *********
 // It may be convenient to use `git update-index --skip-worktree

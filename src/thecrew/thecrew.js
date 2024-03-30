@@ -18,6 +18,7 @@
 define([
   "dojo",
   "dojo/_base/declare",
+  "dojo/fx/easing",
   "ebg/core/gamegui",
   "ebg/counter",
   "ebg/stock",

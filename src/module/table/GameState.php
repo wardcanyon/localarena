@@ -7,7 +7,7 @@ class GameState
 {
     // XXX: Eliminating dynamic-property deprecation notices; type
     // and document or remove.
-    protected $machinestates;
+    public $machinestates;
     public $game;
 
     function __construct($game, $machinestates)

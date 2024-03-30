@@ -347,11 +347,11 @@
 
      // XXX: Eliminating dynamic-property deprecation notices; type
      // and document or remove.
-     protected $currentPlayer;
-     protected $replayFrom;
+     public $currentPlayer;
+     public $replayFrom;
      public $gameServer = null;
-     protected $gamestate;
-     protected $gameStateLabels;
+     public $gamestate;
+     public $gameStateLabels;
 
      function __construct()
      {

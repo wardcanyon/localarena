@@ -76,9 +76,6 @@ If your game doesn't have a build process like that, you should be
 able to simply mount your sources at `/src/game/<gamename>` and run
 tests directly from there.
 
-TODO: We need to add something here to make LocalArena test fixtures
-visible to the test as it runs (once we have those fixtures).
-
 ### Running a game locally
 
 You can change which game will be launched, how many players will be

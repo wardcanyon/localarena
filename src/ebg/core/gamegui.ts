@@ -162,7 +162,7 @@ export class EbgCoreGamegui {
       this.onLeavingState(state["name"]);
     }
 
-    console.log("*** notif_gameStateChange() notifArgs=");
+    console.log("*** notif_gameStateChange() currentPlayer=" + this.player_id + " notifArgs=");
     console.log(notifArgs);
 
     // XXX: Right now, the server is only supplying whichever one

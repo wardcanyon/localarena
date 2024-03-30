@@ -76,6 +76,15 @@ If your game doesn't have a build process like that, you should be
 able to simply mount your sources at `/src/game/<gamename>` and run
 tests directly from there.
 
+If you are making changes to LocalArena itself, you may want to mount
+parts of it into the container as well, so that you don't need to
+rebuild the container every time.
+
+```
+-v ${LOCALARENA_ROOT}/src/module:/src/localarena/module:ro
+-v ${LOCALARENA_ROOT}/src/view:/src/localarena/view:ro
+```
+
 ### Running a game locally
 
 You can change which game will be launched, how many players will be

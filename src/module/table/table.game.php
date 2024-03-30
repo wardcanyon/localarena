@@ -55,7 +55,11 @@
  {
      public $conn;
 
-     public $gameServer = null;
+     // Database connection information.
+     protected $servername;
+     protected $username;
+     protected $dbname;
+     protected $password;
 
      function __construct()
      {
@@ -69,9 +73,6 @@
          $this->password = trim(
              file_get_contents(getenv("DB_PASSWORD_FILE_PATH"))
          );
-
-         $this->currentPlayer = 0;
-         $this->replayFrom = 0;
 
          // Create connection
          $this->conn = new mysqli(
@@ -344,9 +345,20 @@
      public $game_preferences;
      public $custom_only;
 
+     // XXX: Eliminating dynamic-property deprecation notices; type
+     // and document or remove.
+     protected $currentPlayer;
+     protected $replayFrom;
+     public $gameServer = null;
+     protected $gamestate;
+     protected $gameStateLabels;
+
      function __construct()
      {
          parent::__construct();
+
+         $this->currentPlayer = 0;
+         $this->replayFrom = 0;
 
          include LOCALARENA_GAME_PATH . $this->getGameName() . "/stats.inc.php";
          $this->stats_type = $stats_type;

@@ -353,8 +353,12 @@
 
          include LOCALARENA_GAME_PATH . $this->getGameName() . "/gameoptions.inc.php";
          $this->game_options = $game_options;
-         $this->game_preferences = $game_preferences;
-         $this->custom_only = $custom_only;
+         if (isset($game_preferences)) {
+             $this->game_preferences = $game_preferences;
+         }
+         if (isset($custom_only)) {
+             $this->custom_only = $custom_only;
+         }
 
          include LOCALARENA_GAME_PATH . $this->getGameName() . "/material.inc.php";
          include LOCALARENA_GAME_PATH . $this->getGameName() . "/states.inc.php";

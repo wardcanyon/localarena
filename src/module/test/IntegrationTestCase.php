@@ -39,5 +39,16 @@ require_once APP_GAMEMODULE_PATH . "module/table/table.game.php";
 require_once APP_GAMEMODULE_PATH . "module/tablemanager/tablemanager.php";
 
 class IntegrationTestCase extends \PHPUnit\Framework\TestCase {
+    protected $table;
 
+    protected function setUp(): void {
+        // XXX: Move TableManager et al. into namespaces.
+        $table_manager = new \TableManager();
+
+        $params = new \TableParams();
+        $params->game = $this::LOCALARENA_GAME_NAME;
+        $this->table = $table_manager->createTable($params);
+    }
+
+    // TODO: Clean up the table after successful tests.
 }

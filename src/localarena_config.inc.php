@@ -17,6 +17,11 @@
 //
 // - "thecrew": status unknown.
 
+// *********
+// It may be convenient to use `git update-index --skip-worktree
+// src/localarena_config.inc.php` to make git ignore changes to this
+// file!
+// *********
 
 const LOCALARENA_GAME_NAME = 'hearts';
 const LOCALARENA_PLAYER_COUNT = 3;

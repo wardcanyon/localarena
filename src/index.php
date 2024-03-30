@@ -166,12 +166,12 @@ if (isset($_GET["replayFrom"])) {
          window.playSound = function() {};
 
          gameui = new bgagame.<?= "$game_name" ?>();
-        gameui.player_id = <?= $view->game->currentPlayer ?>;
-        gameui.current_player_name="Mistergos1";
+         gameui.player_id = <?= $view->game->currentPlayer ?>;
+         gameui.current_player_name="Mistergos1";
 	 gameui.completesetup( "<?= "$game_name" ?>", <?= $view->getFullDatasAsJson() ?>);
-		gameui.logAll(<?= json_encode($view->game->getLogs()) ?>);
+	 gameui.logAll(<?= json_encode($view->game->getLogsForClient()) ?>);
 
-		<?php if ($view->game->replayFrom > 0) {
+	 <?php if ($view->game->replayFrom > 0) {
       echo "gameui.replay = true;";
       $logs = $view->game->getReplay();
       foreach ($logs as $log) {

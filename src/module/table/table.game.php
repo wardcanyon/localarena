@@ -98,7 +98,7 @@
      // intended only for internal use.  We should fix its visibility.
      public function log($msg)
      {
-         if ($this->gameServer) {
+         if (php_sapi_name() == "cli") {
              echo $msg . "\n";
          }
      }
@@ -422,7 +422,16 @@
          return $logs;
      }
 
-     function getLogs()
+     // Takes and returns a string representing a JSON-serialized
+     // notif, such as what we store in the `gamelog_notification`
+     // column.
+     function renderPrivateDataInGamelogEntry(string $player_id, $entry) {
+         $notif_args = json_decode($entry, /*associative=*/true);
+         $notif_args['args']['args'] = $this->renderPrivateData($player_id, $notif_args['args']['args']);
+         return json_encode($notif_args);
+     }
+
+     function getLogsForClient()
      {
          $sql =
              "select * from gamelog where (gamelog_player IS NULL or gamelog_player = " .
@@ -433,7 +442,25 @@
          }
          $sql .= "  order by gamelog_id";
          $logs = $this->getObjectListFromDB($sql);
+
+         // Render private data in the logs we're about to show the client.
+         foreach ($logs as $log_id => $log) {
+             $logs[$log_id]['gamelog_notification'] = $this->renderPrivateDataInGamelogEntry(
+                 $this->getCurrentPlayerId(),
+                 $log['gamelog_notification'],
+             );
+         }
+
          return $logs;
+     }
+
+     // Like `getStateForNotif()`, but private data is returned only
+     // for the current player.  This is appropriate when rendering
+     // the state into a webpage as part of the view.
+     function getStateForClient(string $player_id, bool $includeMultiactive) {
+         $ret = $this->getStateForNotif($includeMultiactive);
+         $ret['args'] = $this->renderPrivateData($player_id, $ret['args']);
+         return $ret;
      }
 
      // Returns the state descriptor, plus:
@@ -442,13 +469,23 @@
      // - "reflexion"
      // - args is the result of calling the args function rather than its name
      // - id (the key that the state has in the states.inc.php array)
-     function getStateForClient(bool $includeMultiactive)
+     //
+     // The "args" element contains all private data that the game's
+     // args function returned.  This is appropriate when sending the
+     // state as part of a notif (because the notif system will send
+     // each player only the appropriate private data).
+     function getStateForNotif(bool $includeMultiactive)
      {
          $ret = $this->gamestate->state();
 
          $ret["id"] = $this->getCurrentStateId();
 
-         $ret['args'] = $this->renderPrivateData($this->getCurrentPlayerId(), $this->renderStateArgs($ret));
+         // N.B.: At this stage, if present, the "_private" subarray
+         // is keyed only by player IDs; that's how we record things
+         // in the game-log.  We select the specific private data to
+         // show a particular client when we prepare to send the data
+         // to that client.
+         $ret['args'] = $this->renderStateArgs($ret);
 
          // This is always set, even when we're in a multiactive state
          // and it should have no effect.  The client needs to be
@@ -504,7 +541,7 @@
          $this->notifyAllPlayers(
              "gameStateChange",
              "",
-             $this->getStateForClient($includeMultiactive)
+             $this->getStateForNotif($includeMultiactive)
          );
      }
 
@@ -549,7 +586,10 @@
          $mname = $state["args"];
          $args = $this->$mname();
 
+         $this->log('Raw args for state ' . $state['name'] . ' are: ' . print_r($args, true));
+
          if (array_key_exists('_private', $args)) {
+             $this->log('State args contain private data: '.print_r($args, true));
              $private_args = $args['_private'];
 
              // $private_args may either contain the single key
@@ -561,7 +601,8 @@
                      $this->strictError('If _private args contain the "active" key, that must be the only key.');
                  }
                  $args['_private'] = [
-                     $this->getActivePlayerId() => $private_args['active'],
+                     // XXX: is the problem an int/string thing here? no, does not appear to be
+                     ''.$this->getActivePlayerId() => $private_args['active'],
                  ];
 
                  // if ($this->getCurrentPlayerId() == $this->getCurrentActiveId()) {
@@ -571,6 +612,8 @@
                  // player IDs as strings here, before we commit the
                  // message.
              }
+
+             $this->log('After processing private data, state args are: '.print_r($args, true));
          }
 
          return $args;
@@ -606,6 +649,7 @@
          // bootstrapping call to `completesetup()` on the client,
          // after initial page load.
          $ret["gameState"] = $this->getStateForClient(
+             $this->getCurrentPlayerId(),
              /*includeMultiactive=*/ true
          );
 
@@ -1185,23 +1229,26 @@
          }
      }
 
+     // $data should be the return value of an "args" function, and
+     // not an entire gamelog entry.
+     //
      // N.B.: $data may be null, or may not be an associative array at
      // all; for example, the "hearts" example sends a string.
-     function renderPrivateData($player_id, $data) {
-         // echo 'Rendering private data for $player_id=' . $player_id . '; $data=' . print_r($data, true) . "\n";
+     function renderPrivateData(string $player_id, $args) {
+         // $this->log('Rendering private data for $player_id=' . $player_id . '; $args=' . print_r($args, true));
 
-         if (is_array($data)) {
-             if (array_key_exists('_private', $data)) {
-                 $private_args = $data['_private'];
-                 unset($data['_private']);
+         if (is_array($args)) {
+             if (array_key_exists('_private', $args)) {
+                 $private_args = $args['_private'];
+                 unset($args['_private']);
                  if (array_key_exists($player_id, $private_args)) {
-                     $data['_private'] = $private_args[$player_id];
+                     $args['_private'] = $private_args[$player_id];
                  }
              }
          }
 
-         // echo 'Rendered args=' . print_r($data, true) . "\n";
-         return $data;
+         // $this->log('Rendered args=' . print_r($args, true));
+         return $args;
      }
 
      // Sends notifs for gamelog entries with IDs greater than
@@ -1223,17 +1270,19 @@
          );
 
          $sendNotif = function($player_id, $data) {
-             return $this->gameServer->notifPlayer($player_id, $this->renderPrivateData($player_id, $data));
+             return $this->gameServer->notifPlayer($player_id, $this->renderPrivateDataInGamelogEntry($player_id, $data));
          };
 
          foreach (array_values($entries) as $entry) {
              $data = $entry["gamelog_notification"];
              if ($entry["gamelog_player"] !== null) {
+                 // $this->log('Sending notif only to player ' . $entry['gamelog_player']);
                  $sendNotif(
                      $entry["gamelog_player"],
                      $data,
                  );
              } else {
+                 // $this->log('Sending notif to all players');
                  foreach ($players as $player) {
                      $sendNotif(
                          $player["player_id"],

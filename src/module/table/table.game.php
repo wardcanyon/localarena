@@ -3,6 +3,7 @@
  require_once APP_GAMEMODULE_PATH . "module/LocalArenaContext.php";
  require_once APP_GAMEMODULE_PATH . "module/table/feException.php";
  require_once APP_GAMEMODULE_PATH . "module/table/BgaVisibleSystemException.php";
+ require_once APP_GAMEMODULE_PATH . "module/table/BgaUserException.php";
  require_once APP_GAMEMODULE_PATH . "module/table/GameState.php";
  require_once APP_GAMEMODULE_PATH . "module/table/APP_GameAction.php";
  require_once APP_GAMEMODULE_PATH . "module/table/deck.php";
@@ -1229,22 +1230,23 @@
                  "SELECT MAX(gamelog_id) FROM `gamelog`"
              );
 
-             $action = "action_" . $this->getGameName();
-             $act = new $action();
-             $act->game = $this;
-             $act->params = $params;
-
-             $act->$name();
-
-             $this->setGameStateValue(
-                 "moveId",
-                 $this->getGameStateValue("moveId") + 1
-             );
-             $this->saveState();
-
              try {
+                 $action = "action_" . $this->getGameName();
+                 $act = new $action();
+                 $act->game = $this;
+                 $act->params = $params;
+
+                 $act->$name();
+
+                 $this->setGameStateValue(
+                     "moveId",
+                     $this->getGameStateValue("moveId") + 1
+                 );
+                 $this->saveState();
+
                  $this->conn->commit();
-             } catch (mysqli_sql_exception $e) {
+             } catch (\Exception $e) {
+                 $this->log('Caught exception while handling an action; rolling back transaction.');
                  $this->conn->rollback();
                  throw $e;
              }

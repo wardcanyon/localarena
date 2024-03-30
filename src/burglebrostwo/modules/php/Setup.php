@@ -11,8 +11,6 @@ trait Setup
 {
     protected function setupNewGame($players, $options = [])
     {
-        echo "*** BB2: setupNewGame() call\n";
-
         self::initPlayers($players);
         self::initBoard();
         self::initCards();
@@ -27,8 +25,6 @@ trait Setup
         $this->setGameStateJSON(GAMESTATE_JSON_RESOLVE_VALUE_STACK, []);
         $this->setGameStateJSON(GAMESTATE_JSON_TABLE_STATUSES, []);
 
-        echo "*** BB2: set game json\n";
-
         // XXX: need to replace these
         // Init stats
         self::initStat("player", "discPlayedOnCorner", 0);
@@ -38,9 +34,6 @@ trait Setup
 
         // Active first player
         self::activeNextPlayer();
-
-        echo "*** BB2: setupNewGame() done\n";
-
     }
 
     // N.B.: This sets up information about the human *players*.

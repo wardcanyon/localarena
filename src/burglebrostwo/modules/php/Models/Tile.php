@@ -312,6 +312,7 @@ class CashierCagesTile extends Tile
         //     'diceStr' => implode(', ', $dice),
         // ]);
 
+        $tile = $world->getTileByPos($ctx->pos);
         if ($dice[0] < $world->getCountingCubes($tile)) {
             // XXX: TODO:
             // Cancel move.

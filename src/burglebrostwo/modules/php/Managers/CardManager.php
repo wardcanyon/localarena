@@ -18,7 +18,6 @@ class CardManager extends \APP_DbObject
 
     function __construct($card_location, $card_location_index = null)
     {
-        // XXX: Required, at least temporarily, for LBGA.
         parent::__construct();
 
         $this->card_location = $card_location;

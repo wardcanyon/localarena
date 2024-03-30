@@ -17,8 +17,8 @@ trait GameOptions
 
     function optionSuspicion()
     {
-        $value = $this->getGameStateValue("optionSuspicion");
-        assert(is_int($value) && 1 <= $value && $value <= 10);
+        $value = intval($this->getGameStateValue("optionSuspicion"));
+        assert(is_int($value) && 1 <= $value && $value <= 10, 'Invalid value for optionSuspicion: ' . $value);
         return $value;
     }
 

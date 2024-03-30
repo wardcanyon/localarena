@@ -72,6 +72,10 @@ class action_burglebrostwo extends APP_GameAction
 
     private function parseIntList($name, $mandatory = true)
     {
+        // N.B.: To parse generic AT_numberlist params (which can use
+        // either ; or , as a separator), do...
+        //
+        // return array_map('intval', preg_split('/[;,]$/', $rawVal));
         return array_map(
             "intval",
             explode(",", self::getArg($name, AT_numberlist, $mandatory))

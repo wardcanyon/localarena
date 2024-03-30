@@ -202,56 +202,58 @@ class BurgleBrosTwo extends Table implements BurgleBrosTwo\Interfaces\World
             "onActSelectTile(): pos=" . print_r($pos, /*return=*/ true)
         );
 
-        // switch on state ...
-        switch ($this->gamestate->state()["name"]) {
+        $stateName = $this->gamestate->state()["name"];
+        switch ($stateName) {
             case "stPlaceEntranceTokens":
                 return self::onActSelectTile_stPlaceEntranceTokens($pos);
             case "stPlayerTurnEnterMap":
                 return self::onActSelectTile_stPlayerTurnEnterMap($pos);
             default:
-                throw new feException("Unexpected state.");
+                throw new feException("Unexpected state for `actSelectTile`: " . $stateName);
         }
     }
 
     function onActPlayCard($cardId)
     {
-        // switch on state ...
-        switch ($this->gamestate->state()["name"]) {
+        $stateName = $this->gamestate->state()["name"];
+        switch ($stateName) {
             case "stCharacterSelection":
                 return self::onActPlayCard_stCharacterSelection($cardId);
             default:
-                throw new feException("Unexpected state.");
+                throw new feException("Unexpected state for `actPlayCard`: " . $stateName);
         }
     }
 
     function onActPass()
     {
-        // switch on state ...
-        switch ($this->gamestate->state()["name"]) {
+        $stateName = $this->gamestate->state()["name"];
+        switch ($stateName) {
             case "stCharacterSelection":
                 return self::onActPass_stCharacterSelection();
             default:
-                throw new feException("Unexpected state.");
+                throw new feException("Unexpected state for `actPass`: " . $stateName);
         }
     }
 
     function onActMove(Position $pos)
     {
-        switch ($this->gamestate->state()["name"]) {
+        $stateName = $this->gamestate->state()["name"];
+        switch ($stateName) {
             case "stPlayerTurn":
                 return self::onActMove_stPlayerTurn($pos);
             default:
-                throw new feException("Unexpected state.");
+                throw new feException("Unexpected state for `actMove`: " . $stateName);
         }
     }
 
     function onActPeek(Position $pos)
     {
-        switch ($this->gamestate->state()["name"]) {
+        $stateName = $this->gamestate->state()["name"];
+        switch ($stateName) {
             case "stPlayerTurn":
                 return self::onActPeek_stPlayerTurn($pos);
             default:
-                throw new feException("Unexpected state.");
+                throw new feException("Unexpected state for `actPeek`: " . $stateName);
         }
     }
 

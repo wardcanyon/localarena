@@ -47,7 +47,13 @@ class GameServer implements MessageComponentInterface
         );
         $table_manager = new TableManager();
         $game = $table_manager->getTable($table_id);
-        $game->doAction($this, json_decode($msg, true));
+
+        try {
+            $game->doAction($this, json_decode($msg, true));
+        } catch (\Exception $e) {
+            // TODO: Ship the error to the client for display!
+            echo "An error has occurred while handling an action: " . $e->getMessage();
+        }
     }
 
     public function onClose(ConnectionInterface $conn)

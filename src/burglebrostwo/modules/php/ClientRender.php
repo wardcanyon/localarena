@@ -40,7 +40,7 @@ trait ClientRender
     // Returns a value of the TypeScript `Entity` type.
     private function renderEntityForClient($entity)
     {
-        if (is_null($entity["pos_x"])) {
+          if (is_null($entity["pos_x"])) {
             // Don't show entities that aren't positioned on the board.
             return null;
         }

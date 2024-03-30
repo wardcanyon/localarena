@@ -729,6 +729,7 @@ export class EbgCoreGamegui {
       // the top of the screen; move that logic here.  A lot of that
       // logic is in `updateUiForState()` right now.
 
+      dojo.empty("bg_game_main_buttons");
       this.onUpdateActionButtons(state.name, state.args);
   }
 

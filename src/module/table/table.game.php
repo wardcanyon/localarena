@@ -427,7 +427,9 @@
      // column.
      function renderPrivateDataInGamelogEntry(string $player_id, $entry) {
          $notif_args = json_decode($entry, /*associative=*/true);
-         $notif_args['args']['args'] = $this->renderPrivateData($player_id, $notif_args['args']['args']);
+         if (array_key_exists('args', $notif_args) && array_key_exists('args', $notif_args['args'])) {
+             $notif_args['args']['args'] = $this->renderPrivateData($player_id, $notif_args['args']['args']);
+         }
          return json_encode($notif_args);
      }
 
@@ -586,10 +588,10 @@
          $mname = $state["args"];
          $args = $this->$mname();
 
-         $this->log('Raw args for state ' . $state['name'] . ' are: ' . print_r($args, true));
+         // $this->log('Raw args for state ' . $state['name'] . ' are: ' . print_r($args, true));
 
          if (array_key_exists('_private', $args)) {
-             $this->log('State args contain private data: '.print_r($args, true));
+             // $this->log('State args contain private data: '.print_r($args, true));
              $private_args = $args['_private'];
 
              // $private_args may either contain the single key
@@ -604,16 +606,13 @@
                      // XXX: is the problem an int/string thing here? no, does not appear to be
                      ''.$this->getActivePlayerId() => $private_args['active'],
                  ];
-
-                 // if ($this->getCurrentPlayerId() == $this->getCurrentActiveId()) {
-                 // }
              } else {
                  // XXX: Validate that the other keys are all valid
                  // player IDs as strings here, before we commit the
                  // message.
              }
 
-             $this->log('After processing private data, state args are: '.print_r($args, true));
+             // $this->log('After processing private data, state args are: '.print_r($args, true));
          }
 
          return $args;

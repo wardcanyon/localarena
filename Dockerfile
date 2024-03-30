@@ -13,7 +13,7 @@
 # most recent version of that tag when you build your Dockerfile.
 # If reproducability is important, consider using a specific digest SHA, like
 # php@sha256:99cede493dfd88720b610eb8077c8688d3cca50003d76d1d539b0efc8cca72b4.
-FROM php:8.2-apache
+FROM php:8.2-apache AS server
 
 # Your PHP application may require additional PHP extensions to be installed
 # manually. For detailed instructions for installing extensions can be found, see
@@ -64,3 +64,25 @@ RUN chmod -R 755 /src
 # Switch to a non-privileged user (defined in the base image) that the app will run under.
 # See https://docs.docker.com/go/dockerfile-user-best-practices/
 USER www-data
+
+FROM php:8.2-cli AS testenv
+
+# Install PHP mysqli extension
+RUN docker-php-ext-install mysqli && docker-php-ext-enable mysqli
+
+COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
+# `7z` is required for `composer` to install things.
+RUN apt-get update && apt-get dist-upgrade && apt-get install --no-install-recommends --yes p7zip-full
+
+RUN composer require --dev phpunit/phpunit ^11
+ENV PATH="$PATH:/vendor/bin"
+
+ENV DB_HOST=db
+ENV DB_USER=root
+ENV DB_PASSWORD_FILE_PATH=/run/secrets/db-password
+
+COPY ./src/localarena_config.inc.php /src/localarena/localarena_config.inc.php
+COPY ./src/module /src/localarena/module
+COPY ./src/view /src/localarena/view
+RUN chown -R www-data: /src
+RUN chmod -R 755 /src

@@ -11,6 +11,8 @@ services:
   server:
     build:
       context: .
+      dockerfile: Dockerfile
+      target: server
     ports:
       - 9000:80
     depends_on:
@@ -21,11 +23,12 @@ services:
     environment:
       - DB_PASSWORD_FILE_PATH=/run/secrets/db-password
       - DB_HOST=db
-      - DB_NAME=example
       - DB_USER=root
   websock:
     build:
       context: .
+      dockerfile: Dockerfile
+      target: server
     ports:
       - 3000:3000
     depends_on:
@@ -36,7 +39,6 @@ services:
     environment:
       - DB_PASSWORD_FILE_PATH=/run/secrets/db-password
       - DB_HOST=db
-      - DB_NAME=example
       - DB_USER=root
     entrypoint: ["php", "/src/GameServer.php"]
   db:

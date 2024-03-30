@@ -1,7 +1,7 @@
 <?php
 
-require_once APP_GAMEMODULE_PATH . "view/common/util.php";
-require_once APP_GAMEMODULE_PATH . "view/common/template.php";
+require_once APP_BASE_PATH . "view/common/util.php";
+require_once APP_BASE_PATH . "view/common/template.php";
 require_once APP_GAMEMODULE_PATH . "module/tablemanager/tablemanager.php";
 
 class game_view

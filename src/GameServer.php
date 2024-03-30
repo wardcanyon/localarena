@@ -8,13 +8,14 @@ use Ratchet\MessageComponentInterface;
 
 define("APP_BASE_PATH", "/src/");
 define("APP_GAMEMODULE_PATH", "/src/");
+define("LOCALARENA_GAME_PATH", "/src/");
 
 set_include_path(get_include_path() . PATH_SEPARATOR . APP_GAMEMODULE_PATH);
 
-require_once APP_BASE_PATH . "/localarena_config.inc.php";
-require_once APP_BASE_PATH . "/vendor/autoload.php";
+require_once APP_GAMEMODULE_PATH . "/localarena_config.inc.php";
+require_once APP_GAMEMODULE_PATH . "/vendor/autoload.php";
 
-require_once APP_BASE_PATH . "/module/tablemanager/tablemanager.php";
+require_once APP_GAMEMODULE_PATH . "/module/tablemanager/tablemanager.php";
 
 class GameServer implements MessageComponentInterface
 {

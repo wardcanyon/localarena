@@ -33,21 +33,51 @@ LocalArena is written in TypeScript and type-annotated PHP.
 TODO: Add instructions on local machine setup necessary to get the
 `grunt` build to work.
 
-### Running tests
+### Writing integration tests for a game
 
-(Right now, this is hardwired to serve `emppty`.)
+TODO: Finish fleshing this out; explain what needs to be added to the
+project repository.
 
-In one tab, start services with...
-
-```
-$ docker compose up --build
-```
-
-And then, in another, run the "test.php" script with...
+First, build and tag the `testenv` container.  This contains a PHP
+interpreter with the appropriate plugins and PHPUnit.
 
 ```
-$ docker compose run --build --rm server php /src/test.php
+$ cd localarena
+$ docker build -t wardcanyon/localarena-testenv:latest --target=testenv .
 ```
+
+Then, after starting LocalArena (with `docker compose up --build`),
+run your tests.
+
+`bga-burglebrostwo` is an example of a game with these kinds of tests
+in place.  Here's how they're run.
+
+```
+$ export LOCALARENA_ROOT=/path/to/localarena
+$ cd bga-yourgame
+$ docker run -it --rm --network localarena_default \
+  -v ${LOCALARENA_ROOT}/db/password.txt:/run/secrets/db-password:ro \
+  -v $PWD/build:/src/game/burglebrostwo \
+  -v $PWD/server:/src/server \
+  wardcanyon/localarena-testenv:latest \
+  phpunit --configuration /src/server/modules/Test/phpunit.xml \
+  /src/server/modules/StateTransitionTest.php
+```
+
+Notice that we mount two different things into the container:
+`/src/game/burglebrostwo` and `/src/server`.  `bga-burglebrostwo` has
+a build process that assembles the files that need to be uploaded to
+BGA and puts them in the `build` subdirectory; this needs to be
+mounted in a subdirectory of `/src/game`.  This build output doesn't
+include tests, however, so we also mount the server sources at
+`/src/server` so that we can run the tests.
+
+If your game doesn't have a build process like that, you should be
+able to simply mount your sources at `/src/game/<gamename>` and run
+tests directly from there.
+
+TODO: We need to add something here to make LocalArena test fixtures
+visible to the test as it runs (once we have those fixtures).
 
 ### Running a game locally
 

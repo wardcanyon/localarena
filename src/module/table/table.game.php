@@ -1,11 +1,12 @@
  <?php
- require_once APP_BASE_PATH . "module/table/feException.php";
- require_once APP_BASE_PATH . "module/table/BgaVisibleSystemException.php";
- require_once APP_BASE_PATH . "module/table/GameState.php";
- require_once APP_BASE_PATH . "module/table/APP_GameAction.php";
- require_once APP_BASE_PATH . "module/table/deck.php";
+
+ require_once APP_GAMEMODULE_PATH . "module/LocalArenaContext.php";
+ require_once APP_GAMEMODULE_PATH . "module/table/feException.php";
+ require_once APP_GAMEMODULE_PATH . "module/table/BgaVisibleSystemException.php";
+ require_once APP_GAMEMODULE_PATH . "module/table/GameState.php";
+ require_once APP_GAMEMODULE_PATH . "module/table/APP_GameAction.php";
+ require_once APP_GAMEMODULE_PATH . "module/table/deck.php";
  require_once APP_BASE_PATH . "view/common/util.php";
- require_once APP_BASE_PATH . "module/LocalArenaContext.php";
 
  class APP_Object
  {
@@ -347,17 +348,17 @@
      {
          parent::__construct();
 
-         include $this->getGameName() . "/stats.inc.php";
+         include LOCALARENA_GAME_PATH . $this->getGameName() . "/stats.inc.php";
          $this->stats_type = $stats_type;
 
-         include $this->getGameName() . "/gameoptions.inc.php";
+         include LOCALARENA_GAME_PATH . $this->getGameName() . "/gameoptions.inc.php";
          $this->game_options = $game_options;
          $this->game_preferences = $game_preferences;
          $this->custom_only = $custom_only;
 
-         include $this->getGameName() . "/material.inc.php";
-         include $this->getGameName() . "/states.inc.php";
-         include_once $this->getGameName() .
+         include LOCALARENA_GAME_PATH . $this->getGameName() . "/material.inc.php";
+         include LOCALARENA_GAME_PATH . $this->getGameName() . "/states.inc.php";
+         include_once LOCALARENA_GAME_PATH . $this->getGameName() .
              "/" .
              $this->getGameName() .
              ".action.php";
@@ -959,10 +960,10 @@
                  echo "*** Initializing database...\n";
              }
              $this->loadFile(
-                 APP_BASE_PATH . "/module/table/empty_database.sql"
+                 APP_GAMEMODULE_PATH . "/module/table/empty_database.sql"
              );
              $this->loadFile(
-                 APP_BASE_PATH . "/" . $this->getGameName() . "/dbmodel.sql"
+                 LOCALARENA_GAME_PATH . "/" . $this->getGameName() . "/dbmodel.sql"
              );
              $this->setGameStateInitialValue("activePlayerId", 0);
              $this->setGameStateInitialValue("moveId", 1);

@@ -1,7 +1,7 @@
 <?php
 
-require_once "/src/localarena_config.inc.php";
-require_once APP_BASE_PATH . "module/LocalArenaContext.php";
+require_once APP_GAMEMODULE_PATH . "localarena_config.inc.php";
+require_once APP_GAMEMODULE_PATH . "module/LocalArenaContext.php";
 
 class TableParams
 {
@@ -24,7 +24,7 @@ class TableManager
             if (php_sapi_name() == "cli") {
                 echo "*** LocalArena metadata database requires initialization...\n";
             }
-            $this->loadFile(APP_BASE_PATH . "/module/tablemanager/schema.sql");
+            $this->loadFile(APP_GAMEMODULE_PATH . "/module/tablemanager/schema.sql");
         }
     }
 
@@ -107,7 +107,7 @@ class TableManager
         // We need to do this before instantiating the game class.
         LocalArenaContext::get()->table_id = $table_id;
 
-        require_once APP_GAMEMODULE_PATH .
+        require_once LOCALARENA_GAME_PATH .
             $row["table_game"] .
             "/" .
             $row["table_game"] .

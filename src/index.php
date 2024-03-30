@@ -4,9 +4,10 @@ define("DEV_MODE", 1);
 
 define("APP_BASE_PATH", "/src/");
 define("APP_GAMEMODULE_PATH", "/src/");
+define("LOCALARENA_GAME_PATH", "/src/");
 
-require_once APP_BASE_PATH . "/localarena_config.inc.php";
-require_once APP_BASE_PATH . "/module/tablemanager/tablemanager.php";
+require_once APP_GAMEMODULE_PATH . "/localarena_config.inc.php";
+require_once APP_GAMEMODULE_PATH . "/module/tablemanager/tablemanager.php";
 
 // XXX: Un-hardwire.  In particular, at the moment we'll create a new table if this table_id does not exist; but it'll have the sequentially-next table ID, not this one.
 $table_id = 1;
@@ -61,7 +62,7 @@ $game->currentPlayer = $currentPlayer;
 
 $game_name = $game->localarenaGetGameName();
 
-require $game_name . "/" . $game_name . ".view.php";
+require LOCALARENA_GAME_PATH . $game_name . "/" . $game_name . ".view.php";
 $view_class_name = "view_{$game_name}_{$game_name}";
 $view = new $view_class_name($game);
 

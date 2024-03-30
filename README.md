@@ -163,6 +163,14 @@ $ docker volume rm localarena_db-data
 - Support for preferences is minimal; in particular, there is no UI
   for changing them.
 
+- Game-end functionality is missing; there is no score display.
+
+## Tips
+
+- When you get an unexpected "connection closed" on the client, look
+  at log output from the websock server ("GameServer.php"); sometimes
+  that means that it crashed because of an unexpected error.
+
 ## Behavioral differences
 
 - `PHP Fatal error: Uncaught mysqli_sql_exception: Field 'card_order'

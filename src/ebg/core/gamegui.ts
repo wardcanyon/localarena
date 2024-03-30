@@ -298,7 +298,7 @@ export class EbgCoreGamegui {
   }
 
   divYou() {
-    var color = this.bg_game_players[this.player_id].player_color;
+    var color = this.bg_game_players[this.player_id].color;
     var color_bg = "";
     if (
       this.gamedatas.players[this.player_id] &&
@@ -323,8 +323,8 @@ export class EbgCoreGamegui {
   replacePlayerName(log) {
     for (var key in this.bg_game_players) {
       var player = this.bg_game_players[key];
-      var color = player.player_color;
-      var name = player.player_name;
+      var color = player.color;
+      var name = player.name;
       var color_bg = "";
       if (player.color_back) {
         color_bg = "background-color:#" + player.color_back + ";";
@@ -346,8 +346,8 @@ export class EbgCoreGamegui {
   divActPlayer() {
     let player_id = this.active_player;
 
-    var color = this.bg_game_players[player_id].player_color;
-    var name = this.bg_game_players[player_id].player_name;
+    var color = this.bg_game_players[player_id].color;
+    var name = this.bg_game_players[player_id].name;
     var color_bg = "";
     if (
       this.gamedatas.players[player_id] &&

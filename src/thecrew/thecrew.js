@@ -212,14 +212,14 @@ define([
 
     /*
             setup:
-            
+
             This method must set up the game user interface according to current game situation specified
             in parameters.
-            
+
             The method is called each time the game interface is displayed to a player, ie:
             _ when the game starts
             _ when a player refreshes the game page (F5)
-            
+
             "gamedatas" argument contains all datas retrieved by your "getAllDatas" PHP method.
         */
 
@@ -328,9 +328,9 @@ define([
           }),
         );
 
-        dojo.removeClass("radio_" + player["id"]);
-        dojo.addClass("radio_" + player["id"], "radio");
-        dojo.addClass("radio_" + player["id"], player["comm_token"]);
+        dojo.removeClass("radio_" + player_id);
+        dojo.addClass("radio_" + player_id, "radio");
+        dojo.addClass("radio_" + player_id, player["comm_token"]);
 
         this.addTooltipHtml(
           "radio_" + player_id,
@@ -1006,14 +1006,14 @@ define([
     //// Player's action
 
     /*
-        
-            Here, you are defining methods to handle player's action (ex: results of mouse click on 
+
+            Here, you are defining methods to handle player's action (ex: results of mouse click on
             game objects).
-            
+
             Most of the time, these methods:
             _ check the action is possible at this game state.
             _ make a call to the game server
-        
+
         */
 
     ///////////////////////////////////////////////////
@@ -1021,12 +1021,12 @@ define([
 
     /*
             setupNotifications:
-            
+
             In this method, you associate each of your game notifications with your local method to handle it.
-            
+
             Note: game notification names correspond to "notifyAllPlayers" and "notifyPlayer" calls in
                   your thecrew.game.php file.
-        
+
         */
     setupNotifications: function () {
       dojo.subscribe("cleanUp", this, "notif_cleanUp");

@@ -19,3 +19,5 @@
   might confuse people.
 
 - Dockerize the `grunt` build process.
+
+- Make `getUniqueValueFromDB()`, `DbQuery()` static again.

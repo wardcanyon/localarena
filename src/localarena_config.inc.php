@@ -5,17 +5,16 @@
 
 // State of included games:
 //
-// - "hearts" requires at least 3 players; the game can start, but
-//   runs into an undefined-variable error because there is not yet
-//   support for private state.
-//
+// - "hearts" requires at least 3 players; the game works!
+
 // - "reversi" requires exactly 2 players; the game works!
 //
 // - "burglebrostwo" is an incomplete implementation.  A bug in
 //   "ebg/stock" is visible; player-board interactions are disabled in
 //   the included copy.
 //
-// - "thecrew": status unknown.
+// - "thecrew": game starts, but runs into a client-side error
+//   ("dojo.fx.easing is undefined").
 
 // *********
 // It may be convenient to use `git update-index --skip-worktree
@@ -28,5 +27,8 @@ const LOCALARENA_PLAYER_COUNT = 3;
 
 // const LOCALARENA_GAME_NAME = 'reversi';
 // const LOCALARENA_PLAYER_COUNT = 2;
+
+// const LOCALARENA_GAME_NAME = 'thecrew';
+// const LOCALARENA_PLAYER_COUNT = 3;
 
 const LOCALARENA_PLAYER_NAME_STEM = 'localdev';

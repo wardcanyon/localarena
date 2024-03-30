@@ -668,13 +668,21 @@
 
      private function loadPlayersUIInfos()
      {
-         $ret = $this->getCollectionFromDB("SELECT player_id, player_name, player_color, player_no, player_is_multiactive FROM player ORDER BY player_no");
-         // XXX: The "reversi" example expects the property "color",
-         // not "player_color".  We should inspect actual BGA output.
-         //
-         // XXX: Can we use refs here to mutate $player?
-         foreach ($ret as $player_id => $player) {
-             $ret[$player_id]['color'] = $player['player_color'];
+         $rows = $this->getCollectionFromDB("SELECT player_id, player_name, player_color, player_no, player_is_multiactive FROM player ORDER BY player_no");
+
+         $ret = [];
+         foreach ($rows as $player_id => $row) {
+             $ret[$player_id] = [
+                 'ack' => 'ack',
+                 'avatar' => '000000',
+                 'beginner' => false,
+                 'color' => $row['player_color'],
+                 'color_back' => null,
+                 'eliminated' => 0,
+                 'is_ai' => '0',
+                 'name' => $row['player_name'],
+                 'zombie' => 0,
+             ];
          }
          return $ret;
      }

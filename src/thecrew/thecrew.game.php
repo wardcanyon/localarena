@@ -307,12 +307,14 @@ class thecrew extends Table
         return parent::getObjectFromDB($sql, $low_priority_select);
     }
 
-    static function getUniqueValueFromDB($sql, $low_priority_select = false)
+    // XXX: Needs to be static.
+    function getUniqueValueFromDB($sql, $low_priority_select = false)
     {
         return parent::getUniqueValueFromDB($sql, $low_priority_select);
     }
 
-    static function DbQuery($sql, $specific_db = null, $bMulti = false)
+    // XXX: Needs to be static.
+    function DbQuery($sql, $specific_db = null, $bMulti = false)
     {
         return parent::DbQuery($sql, $specific_db, $bMulti);
     }

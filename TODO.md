@@ -1,3 +1,7 @@
+- Right now, the websock server will drop clients if an exception is
+  thrown.  We should instead send the client-side framework code a
+  message about the error.
+
 - Don't allow game to start with an invalid number of players.
 
 - "reversi": don't allow a client to play when it's someone else's

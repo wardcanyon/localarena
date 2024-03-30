@@ -719,6 +719,19 @@ export class EbgCoreGamegui {
     dojo.query("#" + id).connect("onclick", this, method);
   }
 
+    // N.B.: Some games (e.g. "burglebrostwo") call this without a parameter to refresh
+    // the action buttons.
+    updatePageTitle(state = null) {
+      // XXX: Should we use this everywhere and remove `this.gameState`?
+      state ??= this.gamedatas.gamestate;
+
+      // TODO: This should also update the state message displayed at
+      // the top of the screen; move that logic here.  A lot of that
+      // logic is in `updateUiForState()` right now.
+
+      this.onUpdateActionButtons(state.name, state.args);
+  }
+
   /**
    * Communication
    */

@@ -684,9 +684,13 @@
          $this->conn->close();
      }
 
+     public function rawGetPlayers() {
+         return $this->getCollectionFromDB("SELECT player_id, player_name, player_color, player_no, player_is_multiactive FROM player ORDER BY player_no");
+     }
+
      private function loadPlayersUIInfos()
      {
-         $rows = $this->getCollectionFromDB("SELECT player_id, player_name, player_color, player_no, player_is_multiactive FROM player ORDER BY player_no");
+         $rows = $this->rawGetPlayers();
 
          $ret = [];
          foreach ($rows as $player_id => $row) {

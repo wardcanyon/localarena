@@ -6,6 +6,7 @@ require_once APP_GAMEMODULE_PATH . "module/LocalArenaContext.php";
 class TableParams
 {
     public string $game;
+    public int $playerCount;
 }
 
 class TableManager

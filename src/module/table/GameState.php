@@ -99,19 +99,26 @@ class GameState
      */
     public function setPlayersMultiactive($players, $next_state)
     {
-        $ids = implode(",", $players);
+        // TODO: TESTING: Cover this function; we were previously
+        // running the query in this conditional even when $players
+        // was empty, and that caused a MySQL syntax error.
         $this->game->DbQuery("UPDATE `player` SET `player_is_multiactive` = 0");
-        $this->game->DbQuery(
-            "UPDATE `player` SET `player_is_multiactive` = 1 WHERE `player_id` IN (" .
-                $ids .
-                ")"
-        );
+        if (count($players) > 0) {
+            // echo 'setPlayersMultiactive() called with non-empty list of players; setting some multiactive again' . "\n";
+            $ids = implode(",", $players);
+            $this->game->DbQuery(
+                "UPDATE `player` SET `player_is_multiactive` = 1 WHERE `player_id` IN (" .
+                    $ids .
+                    ")"
+            );
+        }
 
         // TODO: Check behavior against BGA.  Here, we send an update
         // notif even if $players is empty.
         $this->game->notify_gameStateMultipleActiveUpdate();
 
         if (count($players) == 0) {
+            // echo 'setPlayersMultiactive() called with empty list of players; taking transition "' . $next_state . '"' . "\n";
             $this->nextState($next_state);
         }
     }

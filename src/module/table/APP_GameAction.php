@@ -19,6 +19,11 @@ define('AT_json', 10); // a JSON stringified string (SECURITY WARNING**)
  */
 class APP_GameAction
 {
+    // XXX: Adding these to get rid of "creation of dynamic property"
+    // warnings; need to type and document.
+    public $params;
+    public $game;
+
     /**
      * @param string $arg
      * @return bool

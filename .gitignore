@@ -4,3 +4,5 @@
 
 # XXX: Temporary, until we have the TypeScript and JavaScript better separated out.
 src/ebg/**/*.js
+
+src/phan.analysis.txt

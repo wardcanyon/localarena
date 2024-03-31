@@ -67,14 +67,20 @@ USER www-data
 
 FROM php:8.2-cli AS testenv
 
+# Install `php-ast` from PECL (required for `phan`)
+RUN pecl install ast && docker-php-ext-enable ast
+
 # Install PHP mysqli extension
 RUN docker-php-ext-install mysqli && docker-php-ext-enable mysqli
 
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 # `7z` is required for `composer` to install things.
-RUN apt-get update && apt-get dist-upgrade && apt-get install --no-install-recommends --yes p7zip-full
+RUN apt-get update -y && apt-get dist-upgrade -y \
+    && apt-get install --no-install-recommends --yes p7zip-full \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN composer require --dev phpunit/phpunit ^11
+RUN composer require --dev phan/phan
 ENV PATH="$PATH:/vendor/bin"
 
 ENV DB_HOST=db

@@ -26,12 +26,16 @@ If you notice differences in behavior, please report them here as bugs
 after reading through the "Limitations" section below.  Please **do
 not** ask BGA staff for support for LocalArena.
 
-### Developing LocalArena
+### Building and running LocalArena
 
 LocalArena is written in TypeScript and type-annotated PHP.
 
-TODO: Add instructions on local machine setup necessary to get the
-`grunt` build to work.
+You will need to have Node installed to build LocalArena; this part of
+the project is not yet Dockerized.  The author is using v20.11.0.
+
+Run `npm install` to install Node packages, and then `grunt` to build
+LocalArena.  Once the `grunt` build succeeds, you are ready to build
+and run Docker images.
 
 ### Writing integration tests for a game
 

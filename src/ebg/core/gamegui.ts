@@ -506,8 +506,8 @@ export class EbgCoreGamegui {
 
   fadeOutAndDestroy(node, duration, delay) {
     var animation = dojo.fadeOut({
-      duration: duration,
-      delay: delay,
+      duration: duration ?? 500,
+      delay: delay ?? 0,
       node: node,
     });
     (animation.onEnd = dojo.partial(function (tnode) {

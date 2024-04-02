@@ -1250,7 +1250,7 @@
 
                  $this->conn->commit();
              } catch (\Exception $e) {
-                 $this->log('Caught exception while handling an action; rolling back transaction.');
+                 $this->log('Caught exception while handling an action; rolling back transaction.  Exception: ' . $e->getMessage());
                  $this->conn->rollback();
                  throw $e;
              }

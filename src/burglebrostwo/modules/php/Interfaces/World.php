@@ -47,7 +47,7 @@ interface World
     // Entities
 
     function jumpEntity(Entity $entity, Position $pos): void;
-    function discardEntity(Entity $entity): void;
+    function despawnEntity(Entity $entity): void;
     // function createEntity();
     function getEntity(int $entity_id): Entity;
     function getEntitiesByPos(Position $pos, ?string $entity_class = null); // Returns `Entity[]`.

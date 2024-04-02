@@ -192,6 +192,18 @@ trait CharacterSelection
             );
         }
 
+        // Players can't pass before at least the minimum number of
+        // characters have been selected.
+        if (
+            count(
+                self::getCollectionFromDB("SELECT * FROM character_player WHERE TRUE")
+            ) < MIN_CHARACTERS
+        ) {
+            throw new \BgaUserException(
+                self::_("Cannot pass before the minimum number of characters have been selected.")
+            );
+        }
+
         self::DbQuery(
             "UPDATE player SET player_selection_passed = TRUE WHERE player_id = " .
                 self::getCurrentPlayerId()

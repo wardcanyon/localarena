@@ -9,7 +9,13 @@ use BurgleBrosTwo\Models\EffectContext;
 abstract class Entity
 {
     public int $id;
-    public Position $pos;
+    public string $state;
+
+    // N.B.: This is null only when the entity is despawned (not on the board).
+    public ?Position $pos;
+
+    // XXX: The raw database row.
+    public $row;
 
     // XXX: Right now, these aren't implemented super consistently;
     // they're triggered when NPCs are entering a tile, or when PCs

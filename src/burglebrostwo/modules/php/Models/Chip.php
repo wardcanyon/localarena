@@ -43,7 +43,7 @@ class DrunkChip extends Chip
     public function onReveal(World $world, EffectContext $ctx)
     {
         if ($ctx->triggeringAction == "PEEK") {
-            $world->discardEntity($this);
+            $world->despawnEntity($this);
         }
     }
 }
@@ -69,7 +69,7 @@ class SaleswomanChip extends Chip
     public function onReveal(World $world, EffectContext $ctx)
     {
         if ($ctx->triggeringAction == "PEEK") {
-            $world->discardEntity($this);
+            $world->despawnEntity($this);
         }
     }
 }
@@ -82,7 +82,7 @@ class PrimaDonnaChip extends Chip
     {
         throw new \feException("no impl");
         // (normal)
-        $world->discardEntity($this);
+        $world->despawnEntity($this);
 
         // (CTJ variant) lose one action
     }
@@ -92,7 +92,7 @@ class PrimaDonnaChip extends Chip
         // (normal) Jump the PC to the chip's tile and discard this
         // chip.
         $world->jumpEntity($ctx->getPcEntity(), $this->pos);
-        $world->discardEntity($this);
+        $world->despawnEntity($this);
     }
 }
 
@@ -104,7 +104,7 @@ class UndercoverChip extends Chip
     {
         throw new \feException("no impl");
         // (normal)
-        $world->discardEntity($this);
+        $world->despawnEntity($this);
 
         // (CTJ) if there is a bouncer in the same row or column as
         // the undercover chip, the PC gains 2 heat
@@ -117,7 +117,7 @@ class UndercoverChip extends Chip
         if ($ctx->triggeringAction == "PEEK") {
             // foreach bouncer on this floor...
             // $this->world->jumpEntity(...);
-            $this->world->discardEntity($this);
+            $world->despawnEntity($this);
         }
     }
 }

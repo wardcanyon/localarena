@@ -31,16 +31,16 @@ trait WorldImpl
         );
     }
 
-    function discardEntity(Entity $entity): void
+    function despawnEntity(Entity $entity, string $msg = ''): void
     {
-        throw new \feException("no impl for discardEntity");
+        $this->log('Despawning entity with ID=' . $entity->id);
         $entity->pos = null;
         $this->updateEntity($entity->id, [
             "pos_x" => null,
             "pos_y" => null,
             "pos_z" => null,
         ]);
-        // XXX: send notif
+        $this->notifyEntityDespawns($entity->id, $msg);
     }
 
     function getPlayerCharacters()

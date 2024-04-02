@@ -298,6 +298,8 @@ class BurgleBrosTwo extends Table implements BurgleBrosTwo\Interfaces\World
     // N.B.: When $msg is empty, no entry appears in the client-side
     // log, which can be useful for avoiding spam when sending a
     // number of notifications.
+    //
+    // XXX: Update this so that $entity is an Entity and not a raw row.
     function notifyEntitySpawns($entity, $msg, $silent = false)
     {
         self::notifyAllPlayers("entitySpawns", clienttranslate($msg), [
@@ -306,6 +308,7 @@ class BurgleBrosTwo extends Table implements BurgleBrosTwo\Interfaces\World
         ]);
     }
 
+    // XXX: Update this so that $entity is an Entity and not a raw row.
     function notifyEntityUpdates($entity, $msg)
     {
         self::notifyAllPlayers("entityUpdates", clienttranslate($msg), [
@@ -313,6 +316,15 @@ class BurgleBrosTwo extends Table implements BurgleBrosTwo\Interfaces\World
         ]);
     }
 
+    // XXX: Update this so that $entity is an Entity and not a raw row.
+    function notifyEntityDespawns(int $entity_id, string $msg)
+    {
+        self::notifyAllPlayers("entityDespawns", clienttranslate($msg), [
+            "entityId" => intval($entity_id),
+        ]);
+    }
+
+    // XXX: Update this so that $entity is an Entity and not a raw row.
     function notifyTileUpdates($tile, $msg)
     {
         self::notifyAllPlayers("tileUpdates", clienttranslate($msg), [
@@ -320,6 +332,7 @@ class BurgleBrosTwo extends Table implements BurgleBrosTwo\Interfaces\World
         ]);
     }
 
+    // XXX: Update this so that $entity is an Entity and not a raw row.
     function notifyWallSpawns($wall, $msg, $silent = false)
     {
         self::notifyAllPlayers("wallSpawns", clienttranslate($msg), [

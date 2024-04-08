@@ -58,7 +58,7 @@ class IntegrationTestCase extends \PHPUnit\Framework\TestCase {
     }
 
     private function deferredInit(): void {
-        echo '** deferredInit() call' ."\n";
+        // echo '** deferredInit() call' ."\n";
         if (is_null($this->table_)) {
             // XXX: Move TableManager et al. into namespaces.
             $this->initTable($this->defaultTableParams());
@@ -66,7 +66,7 @@ class IntegrationTestCase extends \PHPUnit\Framework\TestCase {
     }
 
     protected function initTable(\TableParams $tableParams): void {
-        echo '** initTable() call' ."\n";
+        // echo '** initTable() call' ."\n";
         if (!is_null($this->table_)) {
             throw new \Exception('Table has already been initialized!');
         }

@@ -316,7 +316,6 @@ class BurgleBrosTwo extends Table implements BurgleBrosTwo\Interfaces\World
         ]);
     }
 
-    // XXX: Update this so that $entity is an Entity and not a raw row.
     function notifyEntityDespawns(int $entity_id, string $msg)
     {
         self::notifyAllPlayers("entityDespawns", clienttranslate($msg), [

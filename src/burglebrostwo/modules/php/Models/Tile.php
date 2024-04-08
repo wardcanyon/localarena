@@ -83,6 +83,13 @@ trait TileManager
     }
 }
 
+// This is a tile type that has no special behavior at all; it's used
+// only for testing.
+class NoopTile extends Tile
+{
+    const TILE_TYPE = TILETYPE_NOOP;
+}
+
 // This is the logic shared between the "pool" and "lounge" tiles
 // (both of which make you draw an event card from their respective
 // decks).

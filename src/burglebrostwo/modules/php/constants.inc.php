@@ -205,6 +205,9 @@ const TILETYPE_ESCALATOR = "ESCALATOR";
 const TILETYPE_OWNERS_OFFICE = "OWNERS-OFFICE";
 const TILETYPE_SAFE = "SAFE";
 
+// Test-only.
+const TILETYPE_NOOP = "NOOP";
+
 /* Constants for the Deck component */
 
 // actual supply decks; the deck vs. discard; character hands

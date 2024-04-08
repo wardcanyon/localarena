@@ -12,7 +12,7 @@ module.exports = function(grunt) {
                 configFile: './prettierrc.json',
             },
             files: {
-                'dest/default_options': [
+                src: [
                     'src/*.php',
                     'src/module/**/*.php',
                     'src/view/**/*.php',

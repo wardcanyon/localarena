@@ -14,15 +14,15 @@
 // a different active context per thread.
 class LocalArenaContext
 {
-    public int $table_id;
+  public int $table_id;
 
-    public static function get(): LocalArenaContext
-    {
-        global $localarena_context;
-        if (is_null($localarena_context)) {
-            $localarena_context = new LocalArenaContext();
-            $localarena_context->table_id = -1;
-        }
-        return $localarena_context;
+  public static function get(): LocalArenaContext
+  {
+    global $localarena_context;
+    if (is_null($localarena_context)) {
+      $localarena_context = new LocalArenaContext();
+      $localarena_context->table_id = -1;
     }
+    return $localarena_context;
+  }
 }

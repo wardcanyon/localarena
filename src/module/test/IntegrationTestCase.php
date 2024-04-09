@@ -1,16 +1,16 @@
 <?php declare(strict_types=1);
 namespace LocalArena\Test;
 
-define("DEV_MODE", 1);
+define('DEV_MODE', 1);
 
 // These need to be set so that games can include
 // APP_GAMEMODULE_PATH.'module/table/table.game.php' and
 // APP_BASE_PATH.''view/common/game.view.php'.
-define("APP_BASE_PATH", "/src/localarena/");
-define("APP_GAMEMODULE_PATH", "/src/localarena/");
+define('APP_BASE_PATH', '/src/localarena/');
+define('APP_GAMEMODULE_PATH', '/src/localarena/');
 
 // Each game should be in a subdirectory of this one.
-define("LOCALARENA_GAME_PATH", "/src/game/");
+define('LOCALARENA_GAME_PATH', '/src/game/');
 
 // The game-specific view code expects this.
 //
@@ -20,143 +20,239 @@ define("LOCALARENA_GAME_PATH", "/src/game/");
 $currentPlayer = 12345;
 class GUser
 {
-    public int $id;
+  public int $id;
 
-    public function __construct($id)
-    {
-        $this->id = $id;
-    }
+  public function __construct($id)
+  {
+    $this->id = $id;
+  }
 
-    public function get_id()
-    {
-        return $this->id;
-    }
+  public function get_id()
+  {
+    return $this->id;
+  }
 }
 global $g_user;
 $g_user = new GUser($currentPlayer);
 
+require_once APP_GAMEMODULE_PATH . 'module/table/table.game.php';
+require_once APP_GAMEMODULE_PATH . 'module/tablemanager/tablemanager.php';
 
-require_once APP_GAMEMODULE_PATH . "module/table/table.game.php";
-require_once APP_GAMEMODULE_PATH . "module/tablemanager/tablemanager.php";
+class IntegrationTestCase extends \PHPUnit\Framework\TestCase
+{
+  private $table_ = null;
 
+  protected function setUp(): void
+  {
+    // $this->table_ = null;
+    // $this->gamedatas_ = null;
+  }
 
-class IntegrationTestCase extends \PHPUnit\Framework\TestCase {
-    private $table_ = null;
+  // Individual test suites can override this to customize table
+  // setup.
+  protected function defaultTableParams(): \TableParams
+  {
+    $params = new \TableParams();
+    $params->game = $this::LOCALARENA_GAME_NAME;
+    $params->playerCount = 2;
+    return $params;
+  }
 
-    protected function setUp(): void {
-        // $this->table_ = null;
-        // $this->gamedatas_ = null;
+  private function deferredInit(): void
+  {
+    // echo '** deferredInit() call' ."\n";
+    if (is_null($this->table_)) {
+      // XXX: Move TableManager et al. into namespaces.
+      $this->initTable($this->defaultTableParams());
+    }
+  }
+
+  protected function initTable(\TableParams $tableParams): void
+  {
+    // echo '** initTable() call' ."\n";
+    if (!is_null($this->table_)) {
+      throw new \Exception('Table has already been initialized!');
     }
 
-    // Individual test suites can override this to customize table
-    // setup.
-    protected function defaultTableParams(): \TableParams {
-        $params = new \TableParams();
-        $params->game = $this::LOCALARENA_GAME_NAME;
-        $params->playerCount = 2;
-        return $params;
+    $tableParams->game = $this::LOCALARENA_GAME_NAME;
+
+    $table_manager = new \TableManager();
+    $this->table_ = $table_manager->createTable($tableParams);
+
+    // XXX: This is a problem; a lot of our code assumes that that
+    // there is always a current player.  That's not really true
+    // in general in these integration tests; it'll also cause
+    // problems for supporting spectators, I imagine.
+    $this->table_->currentPlayer = $this->playerByIndex(0)->id();
+  }
+
+  // Returns an array of `PlayerPeer`.
+  protected function players()
+  {
+    $this->deferredInit();
+
+    $players = [];
+    $rows = $this->table()->getCollectionFromDB('SELECT * FROM `player` WHERE TRUE');
+    foreach ($rows as $player_id => $row) {
+      $players[] = new PlayerPeer($this, $row);
     }
 
-    private function deferredInit(): void {
-        // echo '** deferredInit() call' ."\n";
-        if (is_null($this->table_)) {
-            // XXX: Move TableManager et al. into namespaces.
-            $this->initTable($this->defaultTableParams());
-        }
-    }
+    return $players;
+  }
 
-    protected function initTable(\TableParams $tableParams): void {
-        // echo '** initTable() call' ."\n";
-        if (!is_null($this->table_)) {
-            throw new \Exception('Table has already been initialized!');
-        }
+  // Returns a `PlayerPeer` for the active player.  Throws an
+  // exception unless the table is in an "activeplayer" state.
+  //
+  // XXX: This does not actually throw an exception yet; it'll
+  // happily return whoever the *last* active player was.
+  protected function activePlayer(): PlayerPeer
+  {
+    $this->deferredInit();
+    return $this->playerById($this->table()->getActivePlayerId());
+  }
 
-        $tableParams->game = $this::LOCALARENA_GAME_NAME;
+  // TODO: Add a helper `multiactivePlayers()` that returns all
+  // active players when the game is in a multiactive state.
 
-        $table_manager = new \TableManager();
-        $this->table_ = $table_manager->createTable($tableParams);
+  protected function playerByIndex(int $index): PlayerPeer
+  {
+    $this->deferredInit();
+    $row = $this->table()->getObjectFromDB('SELECT * FROM `player` WHERE TRUE ORDER BY `player_id` ASC LIMIT 1');
+    return new PlayerPeer($this, $row);
+  }
 
-        // XXX: This is a problem; a lot of our code assumes that that
-        // there is always a current player.  That's not really true
-        // in general in these integration tests; it'll also cause
-        // problems for supporting spectators, I imagine.
-        $this->table_->currentPlayer = $this->playerByIndex(0)->id();
-    }
+  protected function playerById(string $player_id): PlayerPeer
+  {
+    $this->deferredInit();
+    $row = $this->table()->getObjectFromDB('SELECT * FROM `player` WHERE `player_id` = ' . $player_id);
+    return new PlayerPeer($this, $row);
+  }
 
-    // Returns an array of `PlayerPeer`.
-    protected function players() {
-        $this->deferredInit();
+  // XXX: Returns Table.
+  public function table()
+  {
+    $this->deferredInit();
+    return $this->table_;
+  }
 
-        $players = [];
-        $rows = $this->table()->getCollectionFromDB('SELECT * FROM `player` WHERE TRUE');
-        foreach ($rows as $player_id => $row) {
-            $players[] = new PlayerPeer($this, $row);
-        }
+  protected function gamedatas()
+  {
+    $this->deferredInit();
 
-        return $players;
-    }
+    // XXX: This depends on the current player.
+    return $this->table()->getFullDatas();
+  }
 
-    protected function playerByIndex(int $index): PlayerPeer {
-        $row = $this->table()->getObjectFromDB('SELECT * FROM `player` WHERE TRUE ORDER BY `player_id` ASC LIMIT 1');
-        return new PlayerPeer($this, $row);
-    }
+  // XXX: Deprecate/remove in favor of `state()`?
+  protected function gamestate()
+  {
+    $this->deferredInit();
+    return $this->gamedatas()['gameState'];
+  }
 
-    // XXX: Returns Table.
-    public function table() {
-        $this->deferredInit();
-        return $this->table_;
-    }
+  public function state(): GameStateInfo
+  {
+    $state = $this->table()->getStateForNotif(/*includeMultiactive=*/ true);
+    return new GameStateInfo($state);
+  }
 
-    protected function gamedatas() {
-        $this->deferredInit();
+  // XXX: How will we get notifs routed back to the test fix fixtures?
 
-        // XXX: This depends on the current player.
-        return $this->table()->getFullDatas();
-    }
-
-    protected function gamestate() {
-        $this->deferredInit();
-        return $this->gamedatas()['gameState'];
-    }
-
-    // XXX: How will we get notifs routed back to the test fix fixtures?
-
-    // TODO: Clean up the table after successful tests.
+  // TODO: Clean up the table after successful tests.
 }
 
 // class TablePeer {
 //     private Table $table_;
 // }
 
-class PlayerPeer {
-    private IntegrationTestCase $itc_;
+class PlayerPeer
+{
+  private IntegrationTestCase $itc_;
 
-    // XXX: Should this be PlayerIdString?
-    private string $id_;
+  // XXX: Should this be PlayerIdString?
+  private string $id_;
 
-    private function table() {
-        return $this->itc_->table();
+  private function table()
+  {
+    return $this->itc_->table();
+  }
+
+  public function __construct($itc, $row)
+  {
+    $this->itc_ = $itc;
+    $this->id_ = $row['player_id'];
+  }
+
+  // XXX: Should this be PlayerIdString?
+  public function id(): string
+  {
+    return $this->id_;
+  }
+
+  // XXX: This is duplicated with `CharacterPeer::act()`; do we need
+  // to consolidate them?
+  public function act(string $action_name, $action_args = []): void
+  {
+    echo 'Player ' . $this->id() . ' performing action "' . $action_name . '"...' . "\n";
+
+    // For AT_json args.
+    foreach ($action_args as $k => $v) {
+      if (is_array($action_args[$k])) {
+        $action_args[$k] = json_encode($action_args[$k]);
+      }
     }
 
-    public function __construct($itc, $row) {
-        $this->itc_ = $itc;
-        $this->id_ = $row['player_id'];
-    }
+    $this->table()->doAction(
+      $this->table()->gameServer,
+      array_merge($action_args, [
+        'bgg_actionName' => $action_name,
+        'bgg_player_id' => $this->id(),
+      ])
+    );
+  }
 
-    // XXX: Should this be PlayerIdString?
-    public function id(): string {
-        return $this->id_;
-    }
+  public function gamedatas()
+  {
+    // XXX: This needs to call getFullDatas() with *this player*
+    // as the current player.
+    return $this->table()->getFullDatas();
+  }
 
-    public function act(string $action_name, $action_args = []): void {
-        echo 'Player ' . $this->id() . ' performing action "' . $action_name . '"...' . "\n";
+  public function state(): GameStateInfo
+  {
+    $state = $this->table()->getStateForClient($this->id(), /*includeMultiactive=*/ true);
+    return new GameStateInfo($state);
+  }
+  // TODO: Add accessors for things like "is this player active?"
+}
 
-        $this->table()->doAction(
-            $this->table()->gameServer,
-            array_merge($action_args,
-                        [
-                            'bgg_actionName' => $action_name,
-                            'bgg_player_id' => $this->id(),
-                        ]));
-    }
+// TODO: Should we use this in the implementation of LocalArena as well?
+class GameStateInfo
+{
+  private $state_;
+
+  // $state is an associative array, such as that returned by
+  // `table()->getStateForClient()` (that is, with any args function
+  // called, and with private data only for one player) or
+  // `table->getStateForNotif()` (with any args function called but
+  // private data for all players).
+  public function __construct($state)
+  {
+    $this->state_ = $state;
+  }
+
+  public function name(): string
+  {
+    return $this->state_['name'];
+  }
+
+  public function type(): string
+  {
+    return $this->state_['type'];
+  }
+
+  public function args()
+  {
+    return $this->state_['args'];
+  }
 }

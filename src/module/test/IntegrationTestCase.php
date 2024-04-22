@@ -156,6 +156,28 @@ class IntegrationTestCase extends \PHPUnit\Framework\TestCase
     return new GameStateInfo($state);
   }
 
+  // Asserts that the game's state machine is in the $expected_state_id state.
+  public function assertGameState(int $expected_state_id): void
+  {
+    $expected_state_name = $this->table()->gamestate->machinestates[$expected_state_id]['name'];
+    $actual_state_name = $this->table()->gamestate->state()['name'];
+    $actual_state_id = $this->table()->getCurrentStateId();
+
+    $this->assertEquals(
+      $expected_state_id,
+      $actual_state_id,
+      'Expected the game to be in state "' .
+        $expected_state_name .
+        '" (' .
+        $expected_state_id .
+        ') but it is in state "' .
+        $actual_state_name .
+        '" (' .
+        $actual_state_id .
+        ') instead.'
+    );
+  }
+
   // XXX: How will we get notifs routed back to the test fix fixtures?
 
   // TODO: Clean up the table after successful tests.

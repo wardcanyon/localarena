@@ -87,7 +87,7 @@ class IntegrationTestCase extends \PHPUnit\Framework\TestCase
   }
 
   // Returns an array of `PlayerPeer`.
-  protected function players()
+  public function players()
   {
     $this->deferredInit();
 
@@ -105,7 +105,7 @@ class IntegrationTestCase extends \PHPUnit\Framework\TestCase
   //
   // XXX: This does not actually throw an exception yet; it'll
   // happily return whoever the *last* active player was.
-  protected function activePlayer(): PlayerPeer
+  public function activePlayer(): PlayerPeer
   {
     $this->deferredInit();
     return $this->playerById($this->table()->getActivePlayerId());
@@ -114,14 +114,14 @@ class IntegrationTestCase extends \PHPUnit\Framework\TestCase
   // TODO: Add a helper `multiactivePlayers()` that returns all
   // active players when the game is in a multiactive state.
 
-  protected function playerByIndex(int $index): PlayerPeer
+  public function playerByIndex(int $index): PlayerPeer
   {
     $this->deferredInit();
     $row = $this->table()->getObjectFromDB('SELECT * FROM `player` WHERE TRUE ORDER BY `player_id` ASC LIMIT 1');
     return new PlayerPeer($this, $row);
   }
 
-  protected function playerById(string $player_id): PlayerPeer
+  public function playerById(string $player_id): PlayerPeer
   {
     $this->deferredInit();
     $row = $this->table()->getObjectFromDB('SELECT * FROM `player` WHERE `player_id` = ' . $player_id);
@@ -221,6 +221,9 @@ class PlayerPeer
     foreach ($action_args as $k => $v) {
       if (is_array($action_args[$k])) {
         $action_args[$k] = json_encode($action_args[$k]);
+      }
+      if (is_bool($action_args[$k])) {
+          $action_args[$k] = ($action_args[$k] ? "true" : "false");
       }
     }
 

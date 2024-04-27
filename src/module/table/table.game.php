@@ -1155,6 +1155,14 @@
      $this->gameServer = $gameServer;
      $this->currentPlayer = intval($params['bgg_player_id']);
 
+     // Check that the given player ID is participating in the table.
+     {
+         $player = self::getObjectFromDB("SELECT * FROM `player` WHERE `player_id` = " . $this->currentPlayer);
+         if ($player === null) {
+             throw new \BgaUserException('Player is not participating in this table: ID ' . $this->currentPlayer);
+         }
+     }
+
      $name = $params['bgg_actionName'];
      if ($name == 'bg_game_debugsave') {
        $this->saveDatabase();
@@ -1327,4 +1335,3 @@
      return $gameinfos;
    }
  }
-

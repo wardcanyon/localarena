@@ -55,7 +55,9 @@
  {
    public $conn;
 
-   // Database connection information.
+     public static $static_conn_;
+
+   // database connection information.
    protected $servername;
    protected $username;
    protected $dbname;
@@ -63,30 +65,33 @@
 
    function __construct()
    {
-     $la_ctx = LocalArenaContext::get();
+     $la_ctx = localarenacontext::get();
      $dbname = 'table_' . $la_ctx->table_id;
 
-     // These are provided by Docker Compose; see "compose.yaml".
-     $this->servername = getenv('DB_HOST');
-     $this->username = getenv('DB_USER');
-     $this->dbname = $dbname;
-     $this->password = trim(file_get_contents(getenv('DB_PASSWORD_FILE_PATH')));
+     if (self::$static_conn_ === null) {
+         // These are provided by Docker Compose; see "compose.yaml".
+         $this->servername = getenv('DB_HOST');
+         $this->username = getenv('DB_USER');
+         $this->dbname = $dbname;
+         $this->password = trim(file_get_contents(getenv('DB_PASSWORD_FILE_PATH')));
 
-     // Create connection
-     $this->conn = new mysqli($this->servername, $this->username, $this->password, $this->dbname);
+         // Create connection
+         self::$static_conn_ = new mysqli($this->servername, $this->username, $this->password, $this->dbname);
 
-     // Check connection
-     if ($this->conn->connect_error) {
-       die('Connection failed: ' . $this->conn->connect_error);
+         // Check connection
+         if (self::$static_conn_->connect_error) {
+             die('Connection failed: ' . self::$static_conn_->connect_error);
+         }
+
+         /* Activation du reporting */
+         $driver = new mysqli_driver();
+         $driver->report_mode = MYSQLI_REPORT_ALL ^ MYSQLI_REPORT_INDEX;
+
+         // Set transaction isolation level so that we can read back
+         // changes later in the same transaction.
+         self::$static_conn_->query('SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED');
      }
-
-     /* Activation du reporting */
-     $driver = new mysqli_driver();
-     $driver->report_mode = MYSQLI_REPORT_ALL ^ MYSQLI_REPORT_INDEX;
-
-     // Set transaction isolation level so that we can read back
-     // changes later in the same transaction.
-     $this->conn->query('SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED');
+     $this->conn = self::$static_conn_;
    }
 
    // XXX: This is part of the LOCALARENA API, not the BGA API; it is

@@ -48,6 +48,14 @@ class IntegrationTestCase extends \PHPUnit\Framework\TestCase
     // $this->gamedatas_ = null;
   }
 
+    protected function tearDown(): void
+    {
+        // if (APP_DbObject::$static_conn_ !== null) {
+        //     APP_DbObject::$static_conn_->close();
+        //     APP_DbObject::$static_conn_ = null;
+        // }
+    }
+
   // Individual test suites can override this to customize table
   // setup.
   protected function defaultTableParams(): \TableParams

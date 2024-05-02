@@ -855,7 +855,7 @@
      return false;
    }
 
-   function getCurrentStateId()
+   function getCurrentStateId(): int
    {
      return $this->getGameStateValue('currentState');
    }

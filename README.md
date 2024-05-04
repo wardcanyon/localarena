@@ -205,6 +205,9 @@ $ docker volume rm localarena_db-data
 
 - Game-end functionality is missing; there is no score display.
 
+- [Legacy game functionality](https://en.doc.boardgamearena.com/Main_game_logic:_yourgamename.game.php#Legacy_games_API)
+  is not supported.
+
 ## Tips
 
 - When you get an unexpected "connection closed" on the client, look

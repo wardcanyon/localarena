@@ -44,17 +44,12 @@ class IntegrationTestCase extends \PHPUnit\Framework\TestCase
 
   protected function setUp(): void
   {
-    // $this->table_ = null;
-    // $this->gamedatas_ = null;
   }
 
-    protected function tearDown(): void
-    {
-        // if (APP_DbObject::$static_conn_ !== null) {
-        //     APP_DbObject::$static_conn_->close();
-        //     APP_DbObject::$static_conn_ = null;
-        // }
-    }
+  protected function tearDown(): void
+  {
+    $this->table()->closeDbConnection();
+  }
 
   // Individual test suites can override this to customize table
   // setup.
@@ -165,7 +160,7 @@ class IntegrationTestCase extends \PHPUnit\Framework\TestCase
   }
 
   // Asserts that the game's state machine is in the $expected_state_id state.
-  public function assertGameState(int $expected_state_id): void
+  public function assertGameState(int $expected_state_id, ?string $message = null): void
   {
     $expected_state_name = $this->table()->gamestate->machinestates[$expected_state_id]['name'];
     $actual_state_name = $this->table()->gamestate->state()['name'];
@@ -182,7 +177,8 @@ class IntegrationTestCase extends \PHPUnit\Framework\TestCase
         $actual_state_name .
         '" (' .
         $actual_state_id .
-        ') instead.'
+        ') instead.' .
+        ($message === null ? '' : '  ' . $message)
     );
   }
 
@@ -231,7 +227,7 @@ class PlayerPeer
         $action_args[$k] = json_encode($action_args[$k]);
       }
       if (is_bool($action_args[$k])) {
-          $action_args[$k] = ($action_args[$k] ? "true" : "false");
+        $action_args[$k] = $action_args[$k] ? 'true' : 'false';
       }
     }
 

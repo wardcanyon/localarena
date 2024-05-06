@@ -55,7 +55,7 @@
  {
    public $conn;
 
-     public static $static_conn_ = [];
+   public static $static_conn_ = [];
 
    // database connection information.
    protected $servername;
@@ -70,40 +70,50 @@
      $this->dbname = $dbname;
 
      if (!array_key_exists($dbname, self::$static_conn_)) {
-         // These are provided by Docker Compose; see "compose.yaml".
-         $this->servername = getenv('DB_HOST');
-         $this->username = getenv('DB_USER');
-         $this->password = trim(file_get_contents(getenv('DB_PASSWORD_FILE_PATH')));
+       // These are provided by Docker Compose; see "compose.yaml".
+       $this->servername = getenv('DB_HOST');
+       $this->username = getenv('DB_USER');
+       $this->password = trim(file_get_contents(getenv('DB_PASSWORD_FILE_PATH')));
 
-         // Create connection
-         $conn = new mysqli($this->servername, $this->username, $this->password, $this->dbname);
+       // Create connection
+       $conn = new mysqli($this->servername, $this->username, $this->password, $this->dbname);
 
-         // Check connection
-         if ($conn->connect_error) {
-             die('Connection failed: ' . $conn->connect_error);
-         }
+       // Check connection
+       if ($conn->connect_error) {
+         die('Connection failed: ' . $conn->connect_error);
+       }
 
-         /* Activation du reporting */
-         $driver = new mysqli_driver();
-         $driver->report_mode = MYSQLI_REPORT_ALL ^ MYSQLI_REPORT_INDEX;
+       /* Activation du reporting */
+       $driver = new mysqli_driver();
+       $driver->report_mode = MYSQLI_REPORT_ALL ^ MYSQLI_REPORT_INDEX;
 
-         // Set transaction isolation level so that we can read back
-         // changes later in the same transaction.
-         $conn->query('SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED');
+       // Set transaction isolation level so that we can read back
+       // changes later in the same transaction.
+       $conn->query('SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED');
 
-         self::$static_conn_[$dbname] = $conn;
+       self::$static_conn_[$dbname] = $conn;
      }
      $this->conn = self::$static_conn_[$dbname];
    }
 
-     public function __destruct()
-     {
-         // XXX: We want to do this only once, not once per class.
-         //
-         // $this->conn->close();
-     }
+   public function __destruct()
+   {
+     // XXX: We want to do this only once, not once per class.
+     //
+     // $this->conn->close();
+   }
 
-   // XXX: This is part of the LOCALARENA API, not the BGA API; it is
+   // XXX: This is part of the LocalArena API, not the BGA API; it is
+   // intended only for internal use.  We should fix its visibility.
+   public function closeDbConnection()
+   {
+     if (array_key_exists($this->dbname, self::$static_conn_)) {
+       self::$static_conn_[$this->dbname]->close();
+       unset(self::$static_conn_[$this->dbname]);
+     }
+   }
+
+   // XXX: This is part of the LocalArena API, not the BGA API; it is
    // intended only for internal use.  We should fix its visibility.
    public function log($msg)
    {
@@ -1165,11 +1175,9 @@
      $this->currentPlayer = intval($params['bgg_player_id']);
 
      // Check that the given player ID is participating in the table.
-     {
-         $player = self::getObjectFromDB("SELECT * FROM `player` WHERE `player_id` = " . $this->currentPlayer);
-         if ($player === null) {
-             throw new \BgaUserException('Player is not participating in this table: ID ' . $this->currentPlayer);
-         }
+     $player = self::getObjectFromDB('SELECT * FROM `player` WHERE `player_id` = ' . $this->currentPlayer);
+     if ($player === null) {
+       throw new \BgaUserException('Player is not participating in this table: ID ' . $this->currentPlayer);
      }
 
      $name = $params['bgg_actionName'];
@@ -1344,3 +1352,4 @@
      return $gameinfos;
    }
  }
+

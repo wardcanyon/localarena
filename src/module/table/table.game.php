@@ -69,7 +69,11 @@
      $dbname = 'table_' . $la_ctx->table_id;
      $this->dbname = $dbname;
 
+     // echo '*** LocalArena table constructor...' . "\n";
+
      if (!array_key_exists($dbname, self::$static_conn_)) {
+         // echo '*** LocalArena table constructor: setting up new connection' . "\n";
+
        // These are provided by Docker Compose; see "compose.yaml".
        $this->servername = getenv('DB_HOST');
        $this->username = getenv('DB_USER');
@@ -89,6 +93,8 @@
 
        // Set transaction isolation level so that we can read back
        // changes later in the same transaction.
+       //
+       // echo '*** set txn isolation level'."\n";
        $conn->query('SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED');
 
        self::$static_conn_[$dbname] = $conn;
@@ -313,6 +319,12 @@
      return $this->conn->insert_id;
    }
 
+     // Returns the number of rows affected by the last operation.
+     public function DbAffectedRow(): int
+   {
+       return $this->conn->affected_rows;
+   }
+
    // XXX: This isn't part of the interface of this class; it's
    // something added in LOCALARENA.
    private function saveDatabase()
@@ -399,7 +411,8 @@
    function localarenaSetDefaultOptions()
    {
      foreach ($this->game_options as $option_id => $option_desc) {
-       echo '** set default options; id = ' . $option_id . ' and desc = ' . print_r($option_desc, true) . "\n";
+       // echo '** set default options; id = ' . $option_id . ' and desc = ' . print_r($option_desc, true) . "\n";
+         //
        // N.B.: "default" is optional; if not given, the first
        // option listed is the default.
        $this->localarenaSetGameStateInitialValue(
@@ -805,7 +818,7 @@
      return $this->getGameStateValue('activePlayerId');
    }
 
-   function getPlayersNumber()
+   function getPlayersNumber(): int
    {
      $sql = 'SELECT count(*) FROM player';
      return $this->getUniqueValueFromDB($sql);
@@ -950,6 +963,7 @@
 
    function initTable()
    {
+       echo '*** initTable()' . "\n";
      $result = $this->conn->query("SHOW TABLES LIKE 'player'");
      if ($result->num_rows > 0) {
        if (php_sapi_name() == 'cli') {
@@ -978,7 +992,7 @@
      $this->gameStateLabels = array_merge($this->gameStateLabels, $array);
    }
 
-   function reattributeColorsBasedOnPreferences()
+     function reattributeColorsBasedOnPreferences($players, $colors)
    {
    }
 
@@ -1352,4 +1366,3 @@
      return $gameinfos;
    }
  }
-

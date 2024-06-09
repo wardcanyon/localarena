@@ -30,7 +30,10 @@
 // const LOCALARENA_GAME_NAME = 'thecrew';
 // const LOCALARENA_PLAYER_COUNT = 3;
 
-const LOCALARENA_GAME_NAME = 'burglebrostwo';
-const LOCALARENA_PLAYER_COUNT = 1;
+// const LOCALARENA_GAME_NAME = 'burglebrostwo';
+// const LOCALARENA_PLAYER_COUNT = 1;
+
+const LOCALARENA_GAME_NAME = 'effortlesswc';
+const LOCALARENA_PLAYER_COUNT = 2;
 
 const LOCALARENA_PLAYER_NAME_STEM = 'localdev';

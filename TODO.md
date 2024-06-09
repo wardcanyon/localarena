@@ -22,6 +22,8 @@
 
 ### For testing
 
+- Add test fixtures for notifs.
+
 - A missing validation check in "burglebrostwo" made the game's state
   machine run in a tight loop.  Should we have a limit on the number
   of state transitions that can happen in response to one action

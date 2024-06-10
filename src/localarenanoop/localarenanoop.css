@@ -1,0 +1,775 @@
+/**
+ *------
+ * BGA framework: © Gregory Isabelli <gisabelli@boardgamearena.com> & Emmanuel Colin <ecolin@boardgamearena.com>
+ * Chakra implementation : © Nicolas Gocel <nicolas.gocel@gmail.com>
+ *
+ * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
+ * See http://en.boardgamearena.com/#!doc/Studio for more information.
+ * -----
+ *
+ * chakra.css
+ *
+ * Chakra stylesheet
+ *
+ */
+
+/********* You can start writing your CSS below this line: **********/
+
+@font-face {
+  font-family: "Connie";
+  src: url("img/Connie-Regular.ttf");
+}
+
+.leftside {
+  width: 288px;
+  float: left;
+  height: 625px;
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  margin: 0 auto;
+}
+
+#table {
+  align-items: center;
+  flex-wrap: wrap;
+  display: flex;
+}
+
+.playertable {
+  width: 288px;
+  height: 625px;
+  display: inline-block;
+  padding: 10px;
+  margin: 0 auto;
+}
+
+.playertablename {
+  position: absolute;
+  top: 8px;
+  left: 0px;
+  width: 170px;
+  height: 25px;
+  text-align: center;
+  font-family: "Connie";
+}
+
+.board {
+  position: relative;
+  width: 288px;
+  height: 600px;
+  background-size: 400%;
+  background-image: url("img/boards.png");
+  background-position-x: 33.33%;
+  background-position-y: 0%;
+  filter: drop-shadow(3px 3px 3px #333);
+  -webkit-filter: drop-shadow(3px 3px 3px #333);
+}
+
+.firstPlayer1 {
+  position: absolute;
+  bottom: 20px;
+  left: 50px;
+  width: 80px;
+  height: 64px;
+  background-image: url("img/1stplayer.png");
+  background-size: cover;
+  filter: drop-shadow(3px 3px 3px #333);
+  -webkit-filter: drop-shadow(3px 3px 3px #333);
+}
+
+.firstPlayerPanel {
+  position: relative;
+  display: inline-block;
+  width: 22px;
+  height: 18px;
+  background-image: url("img/1stplayer.png");
+  background-size: cover;
+  margin-left: 8px;
+  transform: scale(1.3);
+  filter: drop-shadow(0px 0px 0px #000);
+  -webkit-filter: drop-shadow(0px 0px 0px #000);
+}
+
+.maya {
+  position: relative;
+  width: 256px;
+  height: 400px;
+  margin-left: 16px;
+  background-image: url("img/maya.png");
+  background-size: cover;
+  flex-shrink: 1;
+  filter: drop-shadow(3px 3px 3px #333);
+  -webkit-filter: drop-shadow(3px 3px 3px #333);
+}
+
+.board_back_1 {
+  background-position-x: 0%;
+}
+.board_back_2 {
+  background-position-x: 66.66%;
+}
+.board_back_3 {
+  background-position-x: 100%;
+}
+
+.colors,
+.meditations {
+  display: flex;
+  justify-content: space-evenly;
+  margin-top: 10px;
+}
+
+.colors {
+  transform: scale(0);
+}
+
+.meditation {
+  width: 30px;
+  height: 30px;
+  background-image: url("img/sprites.png");
+  background-size: 1100%;
+  background-position-x: 0%;
+  background-position-y: 50%;
+  filter: drop-shadow(2px 2px 2px #333);
+  -webkit-filter: drop-shadow(2px 2px 2px #333);
+  display: inline-block;
+}
+
+.color {
+  width: 22px;
+  height: 22px;
+  background-image: url("img/sprites.png");
+  background-size: 1100%;
+  background-position-x: 0%;
+  background-position-y: 0%;
+  filter: drop-shadow(2px 2px 2px #333);
+  -webkit-filter: drop-shadow(2px 2px 2px #333);
+  display: inline-block;
+}
+
+.logIcon {
+  width: 12px;
+  height: 12px;
+  display: inline-block;
+  position: relative;
+  margin: 0px;
+  background-image: url("img/sprites.png");
+  background-size: 1100%;
+  transform: scale(1.5);
+  margin-left: 8px;
+}
+
+.logIcon.meditation {
+  filter: drop-shadow(0px 0px 0px #333);
+  -webkit-filter: drop-shadow(0px 0px 0px #333);
+}
+
+.ichannel {
+  background-position: 0% 100%;
+  transform: scale(2);
+}
+.imeditate {
+  background-position: 10% 100%;
+  transform: scale(3);
+}
+.imeditatemedit {
+  width: 30px;
+  height: 30px;
+  border-radius: 25px;
+  background-color: white;
+  background-image: url("img/sprites.png");
+  background-size: 1100%;
+  background-position: 10% 100%;
+  filter: drop-shadow(0px 0px 2px black);
+  -webkit-filter: drop-shadow(0px 0px 2px black);
+}
+
+.red {
+  background-position-x: 0%;
+}
+.darkblue {
+  background-position-x: 10%;
+}
+.yellow {
+  background-position-x: 20%;
+}
+.green {
+  background-position-x: 30%;
+}
+.blue {
+  background-position-x: 40%;
+}
+.purple {
+  background-position-x: 50%;
+}
+.orange {
+  background-position-x: 60%;
+}
+.black {
+  background-position-x: 70%;
+}
+
+.plenitude {
+  position: absolute;
+  width: 43px;
+  height: 43px;
+  background-image: url("img/sprites.png");
+  background-size: 1100%;
+  background-position: 90% 50%;
+  filter: drop-shadow(2px 2px 2px #333);
+  -webkit-filter: drop-shadow(2px 2px 2px #333);
+}
+
+.plenitude.val1 {
+  background-position: 80% 0% !important;
+}
+.plenitude.val2 {
+  background-position: 90% 0% !important;
+}
+.plenitude.val3 {
+  background-position: 100% 0% !important;
+}
+.plenitude.val4 {
+  background-position: 80% 50% !important;
+}
+
+#plenitude_purple {
+  top: 156px;
+  left: 49px;
+}
+#plenitude_red {
+  top: 156px;
+  left: 165px;
+}
+#plenitude_darkblue {
+  top: 103px;
+  left: 25px;
+}
+#plenitude_orange {
+  top: 103px;
+  left: 185px;
+}
+#plenitude_blue {
+  top: 52px;
+  left: 55px;
+}
+#plenitude_yellow {
+  top: 52px;
+  left: 158px;
+}
+#plenitude_green {
+  top: 29px;
+  left: 105px;
+}
+
+.inspiration {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  top: 0px;
+  left: 0px;
+  background-image: url("img/sprites.png");
+  background-size: 1100%;
+  background-position: 70% 50%;
+  filter: drop-shadow(2px 2px 2px #333);
+  -webkit-filter: drop-shadow(2px 2px 2px #333);
+  z-index: 2;
+}
+
+.placeholder {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  top: 0px;
+  left: 0px;
+  border-radius: 25px;
+}
+
+.placeholder.energy {
+  width: 25px;
+  height: 25px;
+}
+
+.placeholder.selectable {
+  opacity: 0.2;
+  background-color: yellow;
+  box-shadow: 0px 0px 5px 3px yellow;
+  -webkit-animation: colorpulse 8s infinite;
+  animation: colorpulse 8s infinite;
+  drop-shadow: 0px 0px 0px 0px yellow;
+}
+
+@-webkit-keyframes colorpulse {
+  0% {
+    background-color: yellow;
+    box-shadow: 0px 0px 5px 3px yellow;
+  }
+  20% {
+    background-color: yellow;
+    box-shadow: 0px 0px 5px 3px yellow;
+  }
+  45% {
+    background-color: blue;
+    box-shadow: 0px 0px 5px 3px blue;
+  }
+  55% {
+    background-color: blue;
+    box-shadow: 0px 0px 5px 3px blue;
+  }
+  70% {
+    background-color: yellow;
+    box-shadow: 0px 0px 5px 3px yellow;
+  }
+}
+
+@keyframes colorpulse {
+  0% {
+    background-color: yellow;
+    box-shadow: 0px 0px 5px 3px yellow;
+  }
+  20% {
+    background-color: yellow;
+    box-shadow: 0px 0px 5px 3px yellow;
+  }
+  45% {
+    background-color: blue;
+    box-shadow: 0px 0px 5px 3px blue;
+  }
+  55% {
+    background-color: blue;
+    box-shadow: 0px 0px 5px 3px blue;
+  }
+  70% {
+    background-color: yellow;
+    box-shadow: 0px 0px 5px 3px yellow;
+  }
+}
+
+.chakra_1 {
+  left: 270px;
+  top: 72px;
+}
+.chakra_2 {
+  left: 270px;
+  top: 140px;
+}
+.chakra_3 {
+  left: 270px;
+  top: 208px;
+}
+.chakra_4 {
+  left: 270px;
+  top: 277px;
+}
+.chakra_5 {
+  left: 270px;
+  top: 346.25px;
+}
+.chakra_6 {
+  left: 270px;
+  top: 414px;
+}
+.chakra_7 {
+  left: 270px;
+  top: 483px;
+}
+
+.board_1 {
+  left: 5px;
+  top: 555px;
+}
+.board_2 {
+  left: 5px;
+  top: 520px;
+}
+.board_3 {
+  left: 5px;
+  top: 485px;
+}
+.board_4 {
+  left: 5px;
+  top: 450px;
+}
+.board_5 {
+  left: 5px;
+  top: 415px;
+}
+
+.channel_1 {
+  left: 74px;
+  top: 40px;
+}
+.channel_2 {
+  left: 52px;
+  top: 78px;
+}
+.channel_3 {
+  left: 96px;
+  top: 78px;
+}
+.channel_4 {
+  left: 52px;
+  top: 120px;
+}
+.channel_5 {
+  left: 96px;
+  top: 120px;
+}
+.channel_6 {
+  left: 52px;
+  top: 164px;
+}
+.channel_7 {
+  left: 96px;
+  top: 164px;
+}
+.channel_8 {
+  left: 74px;
+  top: 203px;
+}
+
+.energyph {
+  width: 22px;
+  height: 22px;
+}
+
+.energy {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  top: 0px;
+  left: 0px;
+  background-position-y: 0%;
+  background-image: url("img/sprites.png");
+  background-size: 1100%;
+  filter: drop-shadow(2px 2px 2px #333);
+  -webkit-filter: drop-shadow(2px 2px 2px #333);
+}
+
+.selectable {
+  cursor: pointer;
+  -webkit-animation: colorpulsedrop 6s infinite;
+  animation: colorpulsedrop 6s infinite;
+  -webkit-filter: drop-shadow(0px 0px 4px yellow);
+  filter: drop-shadow(0px 0px 4px yellow);
+}
+
+@-webkit-keyframes colorpulsedrop {
+  0% {
+    -webkit-filter: drop-shadow(0px 0px 4px yellow);
+  }
+  20% {
+    -webkit-filter: drop-shadow(0px 0px 4px yellow);
+  }
+  45% {
+    -webkit-filter: drop-shadow(0px 0px 4px blue);
+  }
+  55% {
+    -webkit-filter: drop-shadow(0px 0px 4px blue);
+  }
+  70% {
+    -webkit-filter: drop-shadow(0px 0px 4px yellow);
+  }
+}
+
+@keyframes colorpulsedrop {
+  0% {
+    filter: drop-shadow(0px 0px 4px yellow);
+  }
+  20% {
+    filter: drop-shadow(0px 0px 4px yellow);
+  }
+  45% {
+    filter: drop-shadow(0px 0px 4px blue);
+  }
+  55% {
+    filter: drop-shadow(0px 0px 4px blue);
+  }
+  70% {
+    filter: drop-shadow(0px 0px 4px yellow);
+  }
+}
+
+.selected {
+  -webkit-animation: zoom 0.2s forwards;
+  animation: zoom 0.2s forwards;
+}
+
+.selected.purple {
+  filter: drop-shadow(2px 2px 2px #8d428e);
+  -webkit-filter: drop-shadow(2px 2px 2px #8d428e);
+}
+.selected.darkblue {
+  filter: drop-shadow(0px 0px 5px #0063a8);
+  -webkit-filter: drop-shadow(0px 0px 5px #0063a8);
+}
+.selected.blue {
+  filter: drop-shadow(0px 0px 5px #6abfec);
+  -webkit-filter: drop-shadow(0px 0px 5px #6abfec);
+}
+.selected.green {
+  filter: drop-shadow(0px 0px 5px #94b322);
+  -webkit-filter: drop-shadow(0px 0px 5px #94b322);
+}
+.selected.yellow {
+  filter: drop-shadow(0px 0px 5px #ffec3a);
+  -webkit-filter: drop-shadow(0px 0px 5px #ffec3a);
+}
+.selected.orange {
+  filter: drop-shadow(0px 0px 5px #f59b13);
+  -webkit-filter: drop-shadow(0px 0px 5px #f59b13);
+}
+.selected.red {
+  filter: drop-shadow(0px 0px 5px #e5211e);
+  -webkit-filter: drop-shadow(0px 0px 5px #e5211e);
+}
+.selected.black {
+  filter: drop-shadow(0px 0px 5px #000);
+  -webkit-filter: drop-shadow(0px 0px 5px #000);
+}
+
+.board .col1 {
+  left: 195px;
+}
+.board .col2 {
+  left: 220px;
+}
+.board .col3 {
+  left: 207px;
+}
+
+.board .row1.col1 {
+  top: 20.5px;
+  left: 171.5px;
+}
+.board .row1.col2 {
+  top: 26px;
+  left: 207px;
+}
+.board .row1.col3 {
+  top: 20.5px;
+  left: 242px;
+}
+
+.board .row2.col1 {
+  top: 70px;
+}
+.board .row2.col2 {
+  top: 70px;
+}
+.board .row2.col3 {
+  top: 92px;
+}
+
+.board .row3.col1 {
+  top: 138px;
+}
+.board .row3.col2 {
+  top: 138px;
+}
+.board .row3.col3 {
+  top: 160px;
+}
+
+.board .row4.col1 {
+  top: 205px;
+}
+.board .row4.col2 {
+  top: 205px;
+}
+.board .row4.col3 {
+  top: 229px;
+}
+
+.board .row5.col1 {
+  top: 275px;
+}
+.board .row5.col2 {
+  top: 275px;
+}
+.board .row5.col3 {
+  top: 297px;
+}
+
+.board .row6.col1 {
+  top: 343px;
+}
+.board .row6.col2 {
+  top: 343px;
+}
+.board .row6.col3 {
+  top: 365px;
+}
+
+.board .row7.col1 {
+  top: 410px;
+}
+.board .row7.col2 {
+  top: 410px;
+}
+.board .row7.col3 {
+  top: 432px;
+}
+
+.board .row8.col1 {
+  top: 478px;
+}
+.board .row8.col2 {
+  top: 478px;
+}
+.board .row8.col3 {
+  top: 500px;
+}
+
+.board .row9.selectable {
+  opacity: 0.6;
+}
+.board .row9.col1 {
+  top: 534px;
+  left: 195px;
+}
+.board .row9.col2 {
+  top: 534px;
+  left: 220px;
+}
+.board .row9.col3 {
+  top: 556px;
+  left: 195px;
+}
+.board .row9.col4 {
+  top: 556px;
+  left: 220px;
+}
+.board .row9.col5 {
+  top: 534px;
+  left: 171px;
+}
+.board .row9.col6 {
+  top: 556px;
+  left: 171px;
+}
+.board .row9.col7 {
+  top: 534px;
+  left: 245px;
+}
+.board .row9.col8 {
+  top: 556px;
+  left: 245px;
+}
+
+.board .meditation {
+  position: absolute;
+  left: 150px;
+}
+
+.board .meditation.purple {
+  top: 75px;
+}
+.board .meditation.darkblue {
+  top: 141px;
+}
+.board .meditation.blue {
+  top: 209px;
+}
+.board .meditation.green {
+  top: 277px;
+}
+.board .meditation.yellow {
+  top: 346px;
+}
+.board .meditation.orange {
+  top: 414px;
+}
+.board .meditation.red {
+  top: 483px;
+}
+
+.maya .col1 {
+  left: 49px;
+}
+.maya .col2 {
+  left: 118px;
+}
+.maya .col3 {
+  left: 188px;
+}
+.maya .row1 {
+  top: 232px;
+}
+.maya .row2 {
+  top: 268px;
+}
+.maya .row3 {
+  top: 306px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.selectable:hover {
+  transform: scale(1.1);
+  transition: transform 1s;
+  z-index: 10;
+}
+
+.currentInspiration {
+  border-radius: 25px;
+  filter: drop-shadow(0px 0px 5px yellow);
+  -webkit-filter: drop-shadow(0px 0px 5px yellow);
+}
+
+.currentInspiration:hover {
+  opacity: 0.1;
+}
+
+.appears {
+  -webkit-animation: appears 0.5s forwards;
+  animation: appears 0.5s forwards;
+}
+
+@-webkit-keyframes "zoom" {
+  0% {
+    -webkit-transform: scale(1);
+  }
+  100% {
+    -webkit-transform: scale(1.5);
+  }
+}
+@keyframes "zoom" {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.5);
+  }
+}
+
+@-webkit-keyframes "appears" {
+  0% {
+    -webkit-transform: scale(0);
+  }
+  100% {
+    -webkit-transform: scale(1);
+  }
+}
+@keyframes "appears" {
+  0% {
+    transform: scale(0);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.tooltip-message {
+  display: block;
+  vertical-align: top;
+  width: 240px;
+}
+
+.tooltip-title {
+  font-weight: bold;
+  font-size: 110%;
+}

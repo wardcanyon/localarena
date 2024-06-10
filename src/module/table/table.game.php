@@ -443,10 +443,12 @@
 
    protected function setupNewGame($players, $options = [])
    {
+       throw new \BgaVisibleSystemException('The game has not overridden Table::setupNewGame().');
    }
 
    protected function getAllDatas()
    {
+       throw new \BgaVisibleSystemException('The game has not overridden Table::getAllDatas().');
    }
 
    function getReplay()
@@ -883,30 +885,36 @@
      return $this->getGameStateValue('currentState');
    }
 
+     function localarenaApplySchema($lines) {
+         // Temporary variable, used to store current query
+         $templine = '';
+
+         // Loop through each line
+         foreach ($lines as $line) {
+             // Skip it if it's a comment
+             if (substr($line, 0, 2) == '--' || $line == '') {
+                 continue;
+             }
+
+             // Add this line to the current segment
+             $templine .= $line;
+             // If it has a semicolon at the end, it's the end of the query
+             if (substr(trim($line), -1, 1) == ';') {
+                 // Perform the query
+                 $this->conn->query($templine) or
+                     (print 'Error performing query \'<strong>' . $templine . '\': ' . $this->conn->error . '<br /><br />');
+                 // Reset temp variable to empty
+                 $templine = '';
+             }
+         }
+     }
+
    function loadFile($filename)
    {
-     // Temporary variable, used to store current query
-     $templine = '';
      // Read in entire file
      $lines = file($filename);
-     // Loop through each line
-     foreach ($lines as $line) {
-       // Skip it if it's a comment
-       if (substr($line, 0, 2) == '--' || $line == '') {
-         continue;
-       }
 
-       // Add this line to the current segment
-       $templine .= $line;
-       // If it has a semicolon at the end, it's the end of the query
-       if (substr(trim($line), -1, 1) == ';') {
-         // Perform the query
-         $this->conn->query($templine) or
-           (print 'Error performing query \'<strong>' . $templine . '\': ' . $this->conn->error . '<br /><br />');
-         // Reset temp variable to empty
-         $templine = '';
-       }
-     }
+     $this->localarenaApplySchema($lines);
    }
 
    function stGameSetup()
@@ -961,7 +969,9 @@
      }
    }
 
-   function initTable()
+     // N.B.: The $load_schema parameter is for test use.
+     // // XXX: Do we still need that parameter, or is using "localarenanoop" good enough?
+     function initTable(bool $load_schema_file = true)
    {
        echo '*** initTable()' . "\n";
      $result = $this->conn->query("SHOW TABLES LIKE 'player'");
@@ -974,7 +984,13 @@
          echo "*** Initializing database...\n";
        }
        $this->loadFile(APP_GAMEMODULE_PATH . '/module/table/empty_database.sql');
-       $this->loadFile(LOCALARENA_GAME_PATH . '/' . $this->getGameName() . '/dbmodel.sql');
+       if ($load_schema_file) {
+           $this->loadFile(LOCALARENA_GAME_PATH . '/' . $this->getGameName() . '/dbmodel.sql');
+       } else {
+           if (php_sapi_name() == 'cli') {
+               echo "*** Per test configuration, not applying game-specific schema file.\n";
+           }
+       }
        $this->setGameStateInitialValue('activePlayerId', 0);
        $this->setGameStateInitialValue('moveId', 1);
        $this->setGameStateInitialValue('currentState', 1);

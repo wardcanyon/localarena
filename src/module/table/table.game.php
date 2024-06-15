@@ -1167,7 +1167,7 @@
          ',' .
          $this->getCurrentPlayerId() .
          ',\'' .
-         json_encode($this->getAllDatas()) .
+           $this->escapeStringForDb(json_encode($this->getAllDatas())) .
          '\')';
        $this->DbQuery($sql);
      }
@@ -1364,5 +1364,14 @@
      $gameinfos = [];
      $gameinfos['player_colors'] = ['ff0000', '008000', '0000ff', 'ffa500', '773300'];
      return $gameinfos;
+   }
+
+   // On BGA itself, this returns either "studio" in BGA Studio
+   // "prod" for the production environment.
+   //
+   // XXX: Should we have different values for LocalArena tests, the
+   // LocalArena web frontend, etc.?
+   public function getBgaEnvironment(): string {
+       return 'localarena';
    }
  }

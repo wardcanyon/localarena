@@ -11,6 +11,8 @@ class deck
     // table.game.php:430 makes that tricky.
     public $game;
 
+    private string $column_prefix_ = 'card';
+
   /*
    * Initializing
    */
@@ -22,7 +24,7 @@ class deck
 
   function createCards($cards, $location = 'deck', $location_arg = null)
   {
-    $sql = "INSERT INTO {$this->tableName} ({$this->tableName}_type, {$this->tableName}_type_arg, {$this->tableName}_location, {$this->tableName}_location_arg) VALUES ";
+    $sql = "INSERT INTO {$this->tableName} ({$this->column_prefix_}_type, {$this->column_prefix_}_type_arg, {$this->column_prefix_}_location, {$this->column_prefix_}_location_arg) VALUES ";
     $values = [];
     if (is_null($location_arg)) {
       $loc_arg = 1;
@@ -97,7 +99,7 @@ class deck
    */
   function moveCard($card_id, $location, $location_arg = 0)
   {
-    $sql = "update {$this->tableName} set {$this->tableName}_location = '{$location}', {$this->tableName}_location_arg = {$location_arg}  where {$this->tableName}_id = {$card_id}";
+    $sql = "update {$this->tableName} set {$this->column_prefix_}_location = '{$location}', {$this->column_prefix_}_location_arg = {$location_arg}  where {$this->column_prefix_}_id = {$card_id}";
     $this->game->DbQuery($sql);
   }
 
@@ -105,7 +107,7 @@ class deck
   {
     if (count($cards) > 0) {
       $cardIds = implode(',', $cards);
-      $sql = "update {$this->tableName} set {$this->tableName}_location = '{$location}', {$this->tableName}_location_arg = {$location_arg}  where {$this->tableName}_id in ({$cardIds})";
+      $sql = "update {$this->tableName} set {$this->column_prefix_}_location = '{$location}', {$this->column_prefix_}_location_arg = {$location_arg}  where {$this->column_prefix_}_id in ({$cardIds})";
       $this->game->DbQuery($sql);
     }
   }
@@ -114,10 +116,10 @@ class deck
   {
     if (
       $this->game->DbQuery(
-        "select count(*) from {$this->tableName} where {$this->tableName}_location = '{$location}' and {$this->tableName}_location_arg={$location_arg}"
+        "select count(*) from {$this->tableName} where {$this->column_prefix_}_location = '{$location}' and {$this->column_prefix_}_location_arg={$location_arg}"
       ) == 0
     ) {
-      $sql = "update {$this->tableName} set {$this->tableName}_location_arg = {$this->tableName}_location_arg + 1  where {$this->tableName}_location  = '{$location}' and {$this->tableName}_location_arg>={$location_arg}";
+      $sql = "update {$this->tableName} set {$this->column_prefix_}_location_arg = {$this->column_prefix_}_location_arg + 1  where {$this->column_prefix_}_location  = '{$location}' and {$this->column_prefix_}_location_arg>={$location_arg}";
       $this->game->DbQuery($sql);
     }
     $this->moveCard($card_id, $location, $location_arg);
@@ -128,7 +130,7 @@ class deck
     $location_arg = 1;
     if ($bOnTop) {
       $location_arg = $this->game->getUniqueValueFromDB(
-        "select max({$this->tableName}_location_arg)+1 from {$this->tableName} where {$this->tableName}_location = {$location}"
+        "select max({$this->column_prefix_}_location_arg)+1 from {$this->tableName} where {$this->column_prefix_}_location = {$location}"
       );
     }
     $this->insertCard($card_id, $location, $location_arg);
@@ -136,16 +138,16 @@ class deck
 
   function moveAllCardsInLocation($from_location, $to_location, $from_location_arg = null, $to_location_arg = 0)
   {
-    $sql = "update {$this->tableName} set {$this->tableName}_location = '{$to_location}', {$this->tableName}_location_arg = {$to_location_arg} where {$this->tableName}_location = '{$from_location}'";
+    $sql = "update {$this->tableName} set {$this->column_prefix_}_location = '{$to_location}', {$this->column_prefix_}_location_arg = {$to_location_arg} where {$this->column_prefix_}_location = '{$from_location}'";
     if (!is_null($from_location_arg)) {
-      $sql .= " and {$this->tableName}_location_arg= {$from_location_arg}";
+      $sql .= " and {$this->column_prefix_}_location_arg= {$from_location_arg}";
     }
     $this->game->DbQuery($sql);
   }
 
   function moveAllCardsInLocationKeepOrder($from_location, $to_location)
   {
-    $sql = "update {$this->tableName} set {$this->tableName}_location = '{$to_location}' where {$this->tableName}_location = '{$from_location}'";
+    $sql = "update {$this->tableName} set {$this->column_prefix_}_location = '{$to_location}' where {$this->column_prefix_}_location = '{$from_location}'";
     $this->game->DbQuery($sql);
   }
 
@@ -159,22 +161,22 @@ class deck
    */
   function getCard($card_id)
   {
-    $sql = "select {$this->tableName}_id id, {$this->tableName}_type type, {$this->tableName}_type_arg type_arg, {$this->tableName}_location location, {$this->tableName}_location_arg location_arg from {$this->tableName} where {$this->tableName}_id = {$card_id}";
+    $sql = "select {$this->column_prefix_}_id id, {$this->column_prefix_}_type type, {$this->column_prefix_}_type_arg type_arg, {$this->column_prefix_}_location location, {$this->column_prefix_}_location_arg location_arg from {$this->tableName} where {$this->column_prefix_}_id = {$card_id}";
     return $this->game->getObjectFromDB($sql);
   }
 
   function getCards($cards_array)
   {
     $cardIds = implode(',', $cards_array);
-    $sql = "select {$this->tableName}_id id, {$this->tableName}_type type, {$this->tableName}_type_arg type_arg, {$this->tableName}_location location, {$this->tableName}_location_arg location_arg from {$this->tableName} where {$this->tableName}_id in ({$cardIds})";
+    $sql = "select {$this->column_prefix_}_id id, {$this->column_prefix_}_type type, {$this->column_prefix_}_type_arg type_arg, {$this->column_prefix_}_location location, {$this->column_prefix_}_location_arg location_arg from {$this->tableName} where {$this->column_prefix_}_id in ({$cardIds})";
     return $this->game->getCollectionFromDB($sql);
   }
 
   function getCardsInLocation($location, $location_arg = null, $order_by = null)
   {
-    $sql = "select {$this->tableName}_id id, {$this->tableName}_type type, {$this->tableName}_type_arg type_arg, {$this->tableName}_location location, {$this->tableName}_location_arg location_arg from {$this->tableName} where {$this->tableName}_location = '{$location}'";
+    $sql = "select {$this->column_prefix_}_id id, {$this->column_prefix_}_type type, {$this->column_prefix_}_type_arg type_arg, {$this->column_prefix_}_location location, {$this->column_prefix_}_location_arg location_arg from {$this->tableName} where {$this->column_prefix_}_location = '{$location}'";
     if (!is_null($location_arg)) {
-      $sql .= " and {$this->tableName}_location_arg = {$location_arg}";
+      $sql .= " and {$this->column_prefix_}_location_arg = {$location_arg}";
     }
     if (!is_null($order_by)) {
       $sql .= " order by {$order_by}";
@@ -184,16 +186,16 @@ class deck
 
   function countCardInLocation($location, $location_arg = null)
   {
-    $sql = "select count(*) from {$this->tableName} where {$this->tableName}_location = '{$location}'";
+    $sql = "select count(*) from {$this->tableName} where {$this->column_prefix_}_location = '{$location}'";
     if (!is_null($location_arg)) {
-      $sql .= " and {$this->tableName}_location_arg = {$location_arg}";
+      $sql .= " and {$this->column_prefix_}_location_arg = {$location_arg}";
     }
     return $this->game->getUniqueValueFromDB($sql);
   }
 
   function countCardsInLocations()
   {
-    $sql = "select {$this->tableName}_location location, count(*) nb from {$this->tableName} group by {$this->tableName}_location";
+    $sql = "select {$this->column_prefix_}_location location, count(*) nb from {$this->tableName} group by {$this->column_prefix_}_location";
     $list = $this->game->getObjectListFromDB($sql);
     $ret = [];
     foreach ($list as $row) {
@@ -204,7 +206,7 @@ class deck
 
   function countCardsByLocationArgs($location)
   {
-    $sql = "select {$this->tableName}_location_arg location, count(*) nb from {$this->tableName} where {$this->tableName}_location={$location} group by {$this->tableName}_location_arg";
+    $sql = "select {$this->column_prefix_}_location_arg location, count(*) nb from {$this->tableName} where {$this->column_prefix_}_location={$location} group by {$this->column_prefix_}_location_arg";
     $list = $this->game->getObjectListFromDB($sql);
     $ret = [];
     foreach ($list as $row) {
@@ -220,7 +222,7 @@ class deck
 
   function getCardOnTop($location)
   {
-    $sql = "select {$this->tableName}_id id, {$this->tableName}_type type, {$this->tableName}_type_arg type_arg, {$this->tableName}_location location, {$this->tableName}_location_arg location_arg from {$this->tableName} where {$this->tableName}_location = '{$location}' order by {$this->tableName}_location_arg desc limit 1";
+    $sql = "select {$this->column_prefix_}_id id, {$this->column_prefix_}_type type, {$this->column_prefix_}_type_arg type_arg, {$this->column_prefix_}_location location, {$this->column_prefix_}_location_arg location_arg from {$this->tableName} where {$this->column_prefix_}_location = '{$location}' order by {$this->column_prefix_}_location_arg desc limit 1";
     $card = $this->game->getObjectFromDB($sql);
     return $card;
   }
@@ -228,7 +230,7 @@ class deck
   function getCardsOnTop($nbr, $location)
   {
     $sql =
-      "select {$this->tableName}_id from {$this->tableName} where {$this->tableName}_location = '{$location}' order by {$this->tableName}_location_arg desc limit " .
+      "select {$this->column_prefix_}_id from {$this->tableName} where {$this->column_prefix_}_location = '{$location}' order by {$this->column_prefix_}_location_arg desc limit " .
       $nbr;
     $cards = $this->game->getObjectListFromDB($sql, true);
     return $cards;
@@ -237,28 +239,28 @@ class deck
   function getExtremePosition($bGetMax, $location)
   {
     $order = $bGetMax ? 'desc' : 'asc';
-    $sql = "select {$this->tableName}_id id, {$this->tableName}_type type, {$this->tableName}_type_arg type_arg, {$this->tableName}_location location, {$this->tableName}_location_arg location_arg from {$this->tableName} where {$this->tableName}_location = '{$location}' order by {$this->tableName}_location_arg {$order} limit 1";
+    $sql = "select {$this->column_prefix_}_id id, {$this->column_prefix_}_type type, {$this->column_prefix_}_type_arg type_arg, {$this->column_prefix_}_location location, {$this->column_prefix_}_location_arg location_arg from {$this->tableName} where {$this->column_prefix_}_location = '{$location}' order by {$this->column_prefix_}_location_arg {$order} limit 1";
     $card = $this->game->getObjectFromDB($sql);
     return $card;
   }
 
   function getCardsOfType($type, $type_arg = null)
   {
-    $sql = "select {$this->tableName}_id id, {$this->tableName}_type type, {$this->tableName}_type_arg type_arg, {$this->tableName}_location location, {$this->tableName}_location_arg location_arg from {$this->tableName} where {$this->tableName}_type = '{$type}'";
+    $sql = "select {$this->column_prefix_}_id id, {$this->column_prefix_}_type type, {$this->column_prefix_}_type_arg type_arg, {$this->column_prefix_}_location location, {$this->column_prefix_}_location_arg location_arg from {$this->tableName} where {$this->column_prefix_}_type = '{$type}'";
     if (!is_null($type_arg)) {
-      $sql .= " and {$this->tableName}_type_arg = {$type_arg}";
+      $sql .= " and {$this->column_prefix_}_type_arg = {$type_arg}";
     }
     return $this->game->getCollectionFromDB($sql);
   }
 
   function getCardsOfTypeInLocation($type, $type_arg, $location, $location_arg = null)
   {
-    $sql = "select {$this->tableName}_id id, {$this->tableName}_type type, {$this->tableName}_type_arg type_arg, {$this->tableName}_location location, {$this->tableName}_location_arg location_arg from {$this->tableName} where  {$this->tableName}_type = '{$type}' and {$this->tableName}_location = '{$location}'";
+    $sql = "select {$this->column_prefix_}_id id, {$this->column_prefix_}_type type, {$this->column_prefix_}_type_arg type_arg, {$this->column_prefix_}_location location, {$this->column_prefix_}_location_arg location_arg from {$this->tableName} where  {$this->column_prefix_}_type = '{$type}' and {$this->column_prefix_}_location = '{$location}'";
     if (!is_null($location_arg)) {
-      $sql .= " and {$this->tableName}_location_arg = {$location_arg}";
+      $sql .= " and {$this->column_prefix_}_location_arg = {$location_arg}";
     }
     if (!is_null($type_arg)) {
-      $sql .= " and {$this->tableName}_type_arg = {$type_arg}";
+      $sql .= " and {$this->column_prefix_}_type_arg = {$type_arg}";
     }
     return $this->game->getCollectionFromDB($sql);
   }
@@ -293,7 +295,7 @@ class deck
     for ($i = 1; $i <= $cnt; $i++) {
       $card = array_shift($cards);
       $narg = array_shift($nargs);
-      $sql = "update {$this->tableName} set {$this->tableName}_location_arg={$narg} where {$this->tableName}_id={$card['id']}";
+      $sql = "update {$this->tableName} set {$this->column_prefix_}_location_arg={$narg} where {$this->column_prefix_}_id={$card['id']}";
       $this->game->DbQuery($sql);
     }
   }

@@ -7,28 +7,11 @@ class TableParams
 {
   public string $game;
   public int $playerCount;
-
-    // Iff true, the "dbmodel.sql" file will be loaded at table
-    // creation.  Setting this false is sometimes useful in test
-    // situations.
-    public bool $load_schema_file = true;
-
-    // Iff set, these schema changes will be applied after the schema file(s) are applied.
-    public string $schema_changes = '';
-
-    // Iff set, LocalArena will instantiate the table using
-    // $table_class rather than by reading files from disk based on
-    // the $game name.
-    //
-    // This mechanism is intended only for PHPUnit tests.
-    public $table_class = null;
 }
 
 class TableManager
 {
   private $conn;
-
-    private $test_table_classes = [];
 
   public function __construct()
   {
@@ -119,16 +102,9 @@ class TableManager
     // We need to do this before instantiating the game class.
     LocalArenaContext::get()->table_id = $table_id;
 
-    if (array_key_exists($table_id, $this->test_table_classes)) {
-        $table_class = $this->test_table_classes[$table_id];
-        $game = new $table_class($dbname);
-    } else {
-        require_once LOCALARENA_GAME_PATH . $row['table_game'] . '/' . $row['table_game'] . '.game.php';
-        $classname = $this::getGameClassName($row['table_game']);
-        $game = new $classname($dbname);
-    }
-
-    echo '*** XXX: instantiated table: ' . print_r($game,true) . "\n";
+    require_once LOCALARENA_GAME_PATH . $row['table_game'] . '/' . $row['table_game'] . '.game.php';
+    $classname = $this::getGameClassName($row['table_game']);
+    $game = new $classname($dbname);
 
     return $game;
   }
@@ -147,17 +123,8 @@ class TableManager
     $this->conn->query('CREATE DATABASE ' . $dbname);
     $this->conn->query('UPDATE `table` SET `table_database` = "' . $dbname . '" WHERE `table_id` = ' . $table_id);
 
-    if ($params->table_class !== null) {
-        $this->test_table_classes[$table_id] = $params->table_class;
-    }
-
     $game = $this->getTable($table_id);
-    $game->initTable($params->load_schema_file);
-
-    if ($params->schema_changes !== '') {
-        $game->localarenaApplySchema(explode('\n',$params->schema_changes));
-    }
-
+    $game->initTable();
     return $game;
   }
 }

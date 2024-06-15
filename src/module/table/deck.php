@@ -2,16 +2,22 @@
 
 class deck
 {
+    public string $tableName;
+    public bool $autoreshuffle = false;
+    public $autoreshuffle_trigger = null;
+    public $autoreshuffle_custom = ['deck' => 'discard'];
+
+    // N.B.: This shouldn't be public, but the LocalArena code at
+    // table.game.php:430 makes that tricky.
+    public $game;
+
   /*
    * Initializing
    */
 
-  function init($tableName)
+  function init(string $tableName)
   {
     $this->tableName = $tableName;
-    $this->autoreshuffle = false;
-    $this->autoreshuffle_trigger = null;
-    $this->autoreshuffle_custom = ['deck' => 'discard'];
   }
 
   function createCards($cards, $location = 'deck', $location_arg = null)
@@ -231,7 +237,7 @@ class deck
   function getExtremePosition($bGetMax, $location)
   {
     $order = $bGetMax ? 'desc' : 'asc';
-    $sql = "select {$this->tableName}_id id, {$this->tableName}_type type, {$this->tableName}_type_arg type_arg, {$this->tableName}_location location, {$this->tableName}_location_arg location_arg from {$this->tableName} where {$this->tableName}_location = '{$location}' order by {$this->tableName}_location_arg ${order} limit 1";
+    $sql = "select {$this->tableName}_id id, {$this->tableName}_type type, {$this->tableName}_type_arg type_arg, {$this->tableName}_location location, {$this->tableName}_location_arg location_arg from {$this->tableName} where {$this->tableName}_location = '{$location}' order by {$this->tableName}_location_arg {$order} limit 1";
     $card = $this->game->getObjectFromDB($sql);
     return $card;
   }
@@ -245,7 +251,7 @@ class deck
     return $this->game->getCollectionFromDB($sql);
   }
 
-  function getCardsOfTypeInLocation($type, $type_arg = null, $location, $location_arg = null)
+  function getCardsOfTypeInLocation($type, $type_arg, $location, $location_arg = null)
   {
     $sql = "select {$this->tableName}_id id, {$this->tableName}_type type, {$this->tableName}_type_arg type_arg, {$this->tableName}_location location, {$this->tableName}_location_arg location_arg from {$this->tableName} where  {$this->tableName}_type = '{$type}' and {$this->tableName}_location = '{$location}'";
     if (!is_null($location_arg)) {

@@ -130,7 +130,7 @@ class deck
     $location_arg = 1;
     if ($bOnTop) {
       $location_arg = $this->game->getUniqueValueFromDB(
-        "select max({$this->column_prefix_}_location_arg)+1 from {$this->tableName} where {$this->column_prefix_}_location = {$location}"
+        "select max({$this->column_prefix_}_location_arg)+1 from {$this->tableName} where {$this->column_prefix_}_location = '{$location}'"
       );
     }
     $this->insertCard($card_id, $location, $location_arg);

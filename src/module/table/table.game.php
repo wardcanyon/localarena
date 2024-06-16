@@ -627,7 +627,9 @@
 
      // $this->log('Raw args for state ' . $state['name'] . ' are: ' . print_r($args, true));
 
-     if (array_key_exists('_private', $args)) {
+     // N.B.: The `is_array()` check is here mostly to avoid errors
+     // when $args === null, which BGA doesn't complain about.
+     if (is_array($args) && array_key_exists('_private', $args)) {
        // $this->log('State args contain private data: '.print_r($args, true));
        $private_args = $args['_private'];
 

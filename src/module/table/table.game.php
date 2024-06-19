@@ -53,9 +53,7 @@
 
  class APP_DbObject extends APP_Object
  {
-   public $conn;
-
-   public static $static_conn_ = [];
+   public static $static_conn_ = null;
 
    // database connection information.
    protected $servername;
@@ -63,16 +61,21 @@
    protected $dbname;
    protected $password;
 
+     private static function conn_() {
+
+     }
+
    function __construct()
    {
      $la_ctx = LocalArenaContext::get();
      $dbname = 'table_' . $la_ctx->table_id;
      $this->dbname = $dbname;
 
-     // echo '*** LocalArena table constructor...' . "\n";
+     echo '*** LocalArena table constructor...' . "\n";
 
-     if (!array_key_exists($dbname, self::$static_conn_)) {
-         // echo '*** LocalArena table constructor: setting up new connection' . "\n";
+     // echo '*** XXXX: self::$static_conn_ = ' . print_r(self::$static_conn_, true) . "\n";
+     if (self::$static_conn_ === null) {
+         echo '*** LocalArena table constructor: setting up new connection' . "\n";
 
        // These are provided by Docker Compose; see "compose.yaml".
        $this->servername = getenv('DB_HOST');
@@ -97,27 +100,35 @@
        // echo '*** set txn isolation level'."\n";
        $conn->query('SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED');
 
-       self::$static_conn_[$dbname] = $conn;
+       self::$static_conn_ = $conn;
      }
-     $this->conn = self::$static_conn_[$dbname];
+     // $this->conn = self::$static_conn_;
+     // echo '*** self = ' . self::class . "\n";
+     // echo '*** XXX: $this->conn = ' . print_r($this->conn(), true) . "\n";
    }
 
    public function __destruct()
    {
      // XXX: We want to do this only once, not once per class.
      //
-     // $this->conn->close();
+     // $this->conn()->close();
    }
 
    // XXX: This is part of the LocalArena API, not the BGA API; it is
    // intended only for internal use.  We should fix its visibility.
    public function closeDbConnection()
    {
-     if (array_key_exists($this->dbname, self::$static_conn_)) {
-       self::$static_conn_[$this->dbname]->close();
-       unset(self::$static_conn_[$this->dbname]);
-     }
+       $conn = $this->conn();
+       if ($conn !== null) {
+           $conn->close();
+           get_called_class()::$static_conn_ = null;
+       }
    }
+
+     // XXX: This is part of the LocalArena API, not the BGA API.
+     public static function conn() {
+         return get_called_class()::$static_conn_;
+     }
 
    // XXX: This is part of the LocalArena API, not the BGA API; it is
    // intended only for internal use.  We should fix its visibility.
@@ -132,8 +143,8 @@
    {
      $ret = [];
      try {
-       if (!($data = $this->conn->query($sql))) {
-         var_dump($this->conn->error);
+       if (!($data = $this->conn()->query($sql))) {
+         var_dump($this->conn()->error);
        }
        $fetch = mysqli_fetch_all($data, MYSQLI_ASSOC);
 
@@ -159,8 +170,8 @@
    {
      $ret = [];
      try {
-       if (!($data = $this->conn->query($sql))) {
-         var_dump($this->conn->error);
+       if (!($data = $this->conn()->query($sql))) {
+         var_dump($this->conn()->error);
        }
        $fetch = mysqli_fetch_all($data, MYSQLI_ASSOC);
 
@@ -189,8 +200,8 @@
    {
      $ret = [];
      try {
-       if (!($data = $this->conn->query($sql))) {
-         var_dump($this->conn->error);
+       if (!($data = $this->conn()->query($sql))) {
+         var_dump($this->conn()->error);
        }
        $fetch = mysqli_fetch_all($data, MYSQLI_ASSOC);
 
@@ -221,8 +232,8 @@
    {
      $ret = [];
      try {
-       if (!($data = $this->conn->query($sql))) {
-         var_dump($this->conn->error);
+       if (!($data = $this->conn()->query($sql))) {
+         var_dump($this->conn()->error);
        }
        $ret = mysqli_fetch_assoc($data);
      } catch (Exception $e) {
@@ -236,8 +247,8 @@
    {
      $ret = [];
      try {
-       if (!($data = $this->conn->query($sql))) {
-         var_dump($this->conn->error);
+       if (!($data = $this->conn()->query($sql))) {
+         var_dump($this->conn()->error);
        }
 
        if ($data->num_rows == 0) {
@@ -252,12 +263,12 @@
      return $ret;
    }
 
-   function getUniqueValueFromDB($sql, $low_priority_select = false)
+   static function getUniqueValueFromDB($sql, $low_priority_select = false)
    {
      $ret = '';
      try {
-       if (!($data = $this->conn->query($sql))) {
-         var_dump($this->conn->error);
+       if (!($data = self::conn()->query($sql))) {
+         var_dump(self::conn()->error);
        }
        if ($data->num_rows > 1) {
          throw new feException('too many results');
@@ -273,12 +284,12 @@
      return $ret;
    }
 
-   function getObjectListFromDB($sql, $bUniqueValue = false)
+   static function getObjectListFromDB($sql, $bUniqueValue = false)
    {
      $ret = [];
      try {
-       if (!($data = $this->conn->query($sql))) {
-         var_dump($this->conn->error);
+       if (!($data = self::conn()->query($sql))) {
+         var_dump(self::conn()->error);
        }
        if ($bUniqueValue) {
          $fetch = mysqli_fetch_all($data, MYSQLI_ASSOC);
@@ -298,31 +309,32 @@
 
    // N.B.: The "reversi" example uses `mysql_fetch_assoc()` on the
    // return value of this function.
-   function DbQuery($sql, $specific_db = null, $bMulti = false)
+   static function DbQuery($sql, $specific_db = null, $bMulti = false)
    {
      //  var_dump($sql);
      try {
-       return $this->conn->query($sql, $bMulti ? MYSQLI_USE_RESULT : MYSQLI_STORE_RESULT);
+         return self::conn()->query($sql, $bMulti ? MYSQLI_USE_RESULT : MYSQLI_STORE_RESULT);
      } catch (Exception $e) {
+         echo '*** Query caused exception:' . "\n";
        var_dump($sql);
        throw $e;
      }
    }
 
-   function escapeStringForDB($string)
+   static function escapeStringForDB($string)
    {
-     return $this->conn->real_escape_string($string);
+       return self::conn()->real_escape_string($string);
    }
 
-   function DbGetLastId()
+   static function DbGetLastId()
    {
-     return $this->conn->insert_id;
+       return self::conn()->insert_id;
    }
 
      // Returns the number of rows affected by the last operation.
-     public function DbAffectedRow(): int
+     public static function DbAffectedRow(): int
    {
-       return $this->conn->affected_rows;
+       return self::conn()->affected_rows;
    }
 
    // XXX: This isn't part of the interface of this class; it's
@@ -695,12 +707,12 @@
      return $ret;
    }
 
-   public function rawGetPlayers()
-   {
-     return $this->getCollectionFromDB(
-       'SELECT player_id, player_name, player_color, player_no, player_is_multiactive FROM player ORDER BY player_no'
-     );
-   }
+     public function rawGetPlayers()
+     {
+         return $this->getCollectionFromDB(
+             'SELECT player_id, player_name, player_color, player_no, player_is_multiactive FROM player ORDER BY player_no'
+         );
+     }
 
    private function loadPlayersUIInfos()
    {
@@ -903,8 +915,8 @@
        // If it has a semicolon at the end, it's the end of the query
        if (substr(trim($line), -1, 1) == ';') {
          // Perform the query
-         $this->conn->query($templine) or
-           (print 'Error performing query \'<strong>' . $templine . '\': ' . $this->conn->error . '<br /><br />');
+         $this->conn()->query($templine) or
+           (print 'Error performing query \'<strong>' . $templine . '\': ' . $this->conn()->error . '<br /><br />');
          // Reset temp variable to empty
          $templine = '';
        }
@@ -966,7 +978,7 @@
    function initTable()
    {
        echo '*** initTable()' . "\n";
-     $result = $this->conn->query("SHOW TABLES LIKE 'player'");
+     $result = $this->conn()->query("SHOW TABLES LIKE 'player'");
      if ($result->num_rows > 0) {
        if (php_sapi_name() == 'cli') {
          echo "*** Skipping database initialization...\n";
@@ -1200,7 +1212,7 @@
      if ($name == 'bg_game_debugsave') {
        $this->saveDatabase();
      } else {
-       if (!$this->conn->begin_transaction()) {
+       if (!$this->conn()->begin_transaction()) {
          // XXX: Error type
          throw new \feException('Unable to begin transaction.');
        }
@@ -1217,12 +1229,12 @@
          $this->setGameStateValue('moveId', $this->getGameStateValue('moveId') + 1);
          $this->saveState();
 
-         $this->conn->commit();
+         $this->conn()->commit();
        } catch (\Exception $e) {
          $this->log(
            'Caught exception while handling an action; rolling back transaction.  Exception: ' . $e->getMessage()
          );
-         $this->conn->rollback();
+         $this->conn()->rollback();
          throw $e;
        }
 

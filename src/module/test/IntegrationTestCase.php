@@ -75,7 +75,7 @@ class IntegrationTestCase extends \PHPUnit\Framework\TestCase
     }
   }
 
-  protected function initTable(\TableParams $tableParams): void
+  protected function initTable(TableParams $tableParams): void
   {
     // echo '** initTable() call' ."\n";
     if (!is_null($this->table_)) {

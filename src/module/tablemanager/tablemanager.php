@@ -9,6 +9,8 @@ class TableManager
 {
   private $conn;
 
+    private $test_table_classes = [];
+
   public function __construct()
   {
     // Open the `localarena` database, which is created by the
@@ -98,9 +100,14 @@ class TableManager
     // We need to do this before instantiating the game class.
     LocalArenaContext::get()->table_id = $table_id;
 
-    require_once LOCALARENA_GAME_PATH . $row['table_game'] . '/' . $row['table_game'] . '.game.php';
-    $classname = $this::getGameClassName($row['table_game']);
-    $game = new $classname($dbname);
+    if (array_key_exists($table_id, $this->test_table_classes)) {
+        $table_class = $this->test_table_classes[$table_id];
+        $game = new $table_class($dbname);
+    } else {
+        require_once LOCALARENA_GAME_PATH . $row['table_game'] . '/' . $row['table_game'] . '.game.php';
+        $classname = $this::getGameClassName($row['table_game']);
+        $game = new $classname($dbname);
+    }
 
     return $game;
   }
@@ -119,8 +126,17 @@ class TableManager
     $this->conn->query('CREATE DATABASE ' . $dbname);
     $this->conn->query('UPDATE `table` SET `table_database` = "' . $dbname . '" WHERE `table_id` = ' . $table_id);
 
+    if ($params->table_class !== null) {
+        $this->test_table_classes[$table_id] = $params->table_class;
+    }
+
     $game = $this->getTable($table_id);
-    $game->initTable();
+    $game->initTable($params->load_schema_file);
+
+    if ($params->schema_changes !== '') {
+        $game->localarenaApplySchema(explode('\n',$params->schema_changes));
+    }
+
     return $game;
   }
 }

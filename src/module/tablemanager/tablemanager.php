@@ -5,6 +5,8 @@ require_once APP_GAMEMODULE_PATH . 'module/LocalArenaContext.php';
 
 require_once 'TableParams.php';
 
+use \LocalArena\TableParams;
+
 class TableManager
 {
   private $conn;

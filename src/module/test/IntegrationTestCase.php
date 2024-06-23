@@ -2,7 +2,7 @@
 
 namespace LocalArena\Test;
 
-require_once '../tablemanager/TableParams.php';
+require_once '/src/localarena/module/tablemanager/TableParams.php';
 
 define('DEV_MODE', 1);
 

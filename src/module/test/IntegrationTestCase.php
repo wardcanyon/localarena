@@ -1,5 +1,8 @@
 <?php declare(strict_types=1);
+
 namespace LocalArena\Test;
+
+require_once '../tablemanager/TableParams.php';
 
 define('DEV_MODE', 1);
 
@@ -11,6 +14,8 @@ define('APP_GAMEMODULE_PATH', '/src/localarena/');
 
 // Each game should be in a subdirectory of this one.
 define('LOCALARENA_GAME_PATH', '/src/game/');
+
+use \LocalArena\TableParams;
 
 // The game-specific view code expects this.
 //
@@ -53,9 +58,9 @@ class IntegrationTestCase extends \PHPUnit\Framework\TestCase
 
   // Individual test suites can override this to customize table
   // setup.
-  protected function defaultTableParams(): \TableParams
+  protected function defaultTableParams(): TableParams
   {
-    $params = new \TableParams();
+    $params = new TableParams();
     $params->game = $this::LOCALARENA_GAME_NAME;
     $params->playerCount = 2;
     return $params;

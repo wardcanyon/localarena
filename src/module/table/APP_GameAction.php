@@ -42,7 +42,7 @@ class APP_GameAction
 
   /**
    * @param string $arg
-   * @param string $type
+   * @param int $type
    * @param bool $required
    *
    * TODO: This is a great candidate for unit testing!  I'm also not

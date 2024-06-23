@@ -332,7 +332,9 @@
    }
 
      // Returns the number of rows affected by the last operation.
-     public static function DbAffectedRow(): int
+     //
+     // @returns int
+   public static function DbAffectedRow()
    {
        return self::conn()->affected_rows;
    }

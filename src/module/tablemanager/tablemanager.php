@@ -3,11 +3,7 @@
 require_once APP_GAMEMODULE_PATH . 'localarena_config.inc.php';
 require_once APP_GAMEMODULE_PATH . 'module/LocalArenaContext.php';
 
-class TableParams
-{
-  public string $game;
-  public int $playerCount;
-}
+require_once 'TableParams.php';
 
 class TableManager
 {

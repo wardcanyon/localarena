@@ -1,0 +1,8 @@
+{
+  "config": {
+    "vendor-dir": "src/vendor"
+  },
+  "require": {
+    "cboden/ratchet": "0.4.3"
+  }
+}

@@ -47,7 +47,7 @@ class File extends \SplFileInfo
      * This method uses the mime type as guessed by getMimeType()
      * to guess the file extension.
      *
-     * @return string|null The guessed extension or null if it cannot be guessed
+     * @return string|null
      *
      * @see MimeTypes
      * @see getMimeType()
@@ -68,7 +68,7 @@ class File extends \SplFileInfo
      * which uses finfo_file() then the "file" system binary,
      * depending on which of those are available.
      *
-     * @return string|null The guessed mime type (e.g. "application/pdf")
+     * @return string|null
      *
      * @see MimeTypes
      */
@@ -84,17 +84,20 @@ class File extends \SplFileInfo
     /**
      * Moves the file to a new location.
      *
-     * @return self A File object representing the new file
+     * @return self
      *
      * @throws FileException if the target file could not be created
      */
-    public function move(string $directory, string $name = null)
+    public function move(string $directory, ?string $name = null)
     {
         $target = $this->getTargetFile($directory, $name);
 
         set_error_handler(function ($type, $msg) use (&$error) { $error = $msg; });
-        $renamed = rename($this->getPathname(), $target);
-        restore_error_handler();
+        try {
+            $renamed = rename($this->getPathname(), $target);
+        } finally {
+            restore_error_handler();
+        }
         if (!$renamed) {
             throw new FileException(sprintf('Could not move the file "%s" to "%s" (%s).', $this->getPathname(), $target, strip_tags($error)));
         }
@@ -104,10 +107,21 @@ class File extends \SplFileInfo
         return $target;
     }
 
+    public function getContent(): string
+    {
+        $content = file_get_contents($this->getPathname());
+
+        if (false === $content) {
+            throw new FileException(sprintf('Could not get the content of the file "%s".', $this->getPathname()));
+        }
+
+        return $content;
+    }
+
     /**
      * @return self
      */
-    protected function getTargetFile(string $directory, string $name = null)
+    protected function getTargetFile(string $directory, ?string $name = null)
     {
         if (!is_dir($directory)) {
             if (false === @mkdir($directory, 0777, true) && !is_dir($directory)) {

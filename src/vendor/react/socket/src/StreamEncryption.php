@@ -44,11 +44,20 @@ class StreamEncryption
         }
     }
 
+    /**
+     * @param Connection $stream
+     * @return \React\Promise\PromiseInterface<Connection>
+     */
     public function enable(Connection $stream)
     {
         return $this->toggle($stream, true);
     }
 
+    /**
+     * @param Connection $stream
+     * @param bool $toggle
+     * @return \React\Promise\PromiseInterface<Connection>
+     */
     public function toggle(Connection $stream, $toggle)
     {
         // pause actual stream instance to continue operation on raw stream socket
@@ -57,7 +66,9 @@ class StreamEncryption
         // TODO: add write() event to make sure we're not sending any excessive data
 
         // cancelling this leaves this stream in an inconsistent state…
-        $deferred = new Deferred();
+        $deferred = new Deferred(function () {
+            throw new \RuntimeException();
+        });
 
         // get actual stream socket from stream instance
         $socket = $stream->stream;
@@ -96,6 +107,14 @@ class StreamEncryption
         });
     }
 
+    /**
+     * @internal
+     * @param resource $socket
+     * @param Deferred<null> $deferred
+     * @param bool $toggle
+     * @param int $method
+     * @return void
+     */
     public function toggleCrypto($socket, Deferred $deferred, $toggle, $method)
     {
         $error = null;
@@ -113,7 +132,7 @@ class StreamEncryption
         \restore_error_handler();
 
         if (true === $result) {
-            $deferred->resolve();
+            $deferred->resolve(null);
         } else if (false === $result) {
             // overwrite callback arguments for PHP7+ only, so they do not show
             // up in the Exception trace and do not cause a possible cyclic reference.
@@ -123,13 +142,13 @@ class StreamEncryption
             if (\feof($socket) || $error === null) {
                 // EOF or failed without error => connection closed during handshake
                 $d->reject(new \UnexpectedValueException(
-                    'Connection lost during TLS handshake',
-                    \defined('SOCKET_ECONNRESET') ? \SOCKET_ECONNRESET : 0
+                    'Connection lost during TLS handshake (ECONNRESET)',
+                    \defined('SOCKET_ECONNRESET') ? \SOCKET_ECONNRESET : 104
                 ));
             } else {
                 // handshake failed with error message
                 $d->reject(new \UnexpectedValueException(
-                    'Unable to complete TLS handshake: ' . $error
+                    $error
                 ));
             }
         } else {

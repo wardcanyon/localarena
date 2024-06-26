@@ -3,6 +3,9 @@
 require_once APP_GAMEMODULE_PATH . 'localarena_config.inc.php';
 require_once APP_GAMEMODULE_PATH . 'module/LocalArenaContext.php';
 
+echo '*** XXX: requiring load_game_hooks.php...' . "\n";
+require_once APP_GAMEMODULE_PATH . 'module/gameconfig/load_game_hooks.php';
+
 require_once 'TableParams.php';
 
 use \LocalArena\TableParams;
@@ -109,6 +112,16 @@ class TableManager
         require_once LOCALARENA_GAME_PATH . $row['table_game'] . '/' . $row['table_game'] . '.game.php';
         $classname = $this::getGameClassName($row['table_game']);
         $game = new $classname($dbname);
+
+        {
+            $localarena_config_path = LOCALARENA_GAME_PATH . $row['table_game'] . '/localarena_config.inc.php';
+            if (file_exists($localarena_config_path)) {
+                echo '*** Loading game hooks...' . "\n";
+                localarenaLoadGameHooks($localarena_config_path);
+            } else {
+                echo '*** Skipping game hooks (file not found: '.$localarena_config_path.')...' . "\n";
+            }
+        }
     }
 
     return $game;

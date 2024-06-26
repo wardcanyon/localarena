@@ -90,5 +90,6 @@ ENV DB_PASSWORD_FILE_PATH=/run/secrets/db-password
 COPY ./src/localarena_config.inc.php /src/localarena/localarena_config.inc.php
 COPY ./src/module /src/localarena/module
 COPY ./src/view /src/localarena/view
+COPY ./src/vendor /src/localarena/vendor
 RUN chown -R www-data: /src
 RUN chmod -R 755 /src

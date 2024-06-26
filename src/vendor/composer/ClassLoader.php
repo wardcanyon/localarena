@@ -386,6 +386,7 @@ class ClassLoader
      */
     public function register($prepend = false)
     {
+        echo '*** composer autoloader: registering main loader...' . "\n";
         spl_autoload_register(array($this, 'loadClass'), true, $prepend);
 
         if (null === $this->vendorDir) {
@@ -422,13 +423,17 @@ class ClassLoader
      */
     public function loadClass($class)
     {
+        echo '*** composer autoloader class: loadClass() with $class=' . $class . "\n";
+
         if ($file = $this->findFile($class)) {
+            echo '  *** composer autoloader found import:' . $file . "\n";
             $includeFile = self::$includeFile;
             $includeFile($file);
 
             return true;
         }
 
+        echo '  *** composer autoloader cannot find import' . "\n";
         return null;
     }
 

@@ -3,6 +3,7 @@
     "vendor-dir": "src/vendor"
   },
   "require": {
-    "cboden/ratchet": "0.4.3"
+    "cboden/ratchet": "0.4.3",
+    "opis/json-schema": "^2.3"
   }
 }

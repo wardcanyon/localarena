@@ -520,8 +520,15 @@
    // the state into a webpage as part of the view.
    function getStateForClient(string $player_id, bool $includeMultiactive)
    {
-     $ret = $this->getStateForNotif($includeMultiactive);
+     $ret = $this->getStateForNotifInner($includeMultiactive);
      $ret['args'] = $this->renderPrivateData($player_id, $ret['args']);
+
+     $this->localarena_game_config_->validateArgs(
+         $this->gamestate->state(),
+         $ret,
+         $player_id,
+     );
+
      return $ret;
    }
 
@@ -537,6 +544,19 @@
    // state as part of a notif (because the notif system will send
    // each player only the appropriate private data).
    function getStateForNotif(bool $includeMultiactive)
+    {
+        $ret = $this->getStateForNotifInner($includeMultiactive);
+
+        $this->localarena_game_config_->validateArgs(
+            $this->gamestate->state(),
+            $ret,
+            /*player_id=*/null,
+        );
+
+        return $ret;
+    }
+
+   function getStateForNotifInner(bool $includeMultiactive)
    {
      $ret = $this->gamestate->state();
 
@@ -1351,6 +1371,8 @@
      $notif['gamelog_move_id'] = $this->getGameStateValue('moveId');
      $data = json_encode($notif);
 
+     // $this->localarena_game_config_->validateNotif($notification_type, $notification_args, /*player_id=*/null);
+
      $sql =
        'INSERT INTO `gamelog`(`gamelog_move_id`, `gamelog_private`,`gamelog_time`,`gamelog_player`,`gamelog_current_player`,`gamelog_notification` ) VALUES (' .
        $this->getGameStateValue('moveId') .
@@ -1381,6 +1403,8 @@
      $notif['notification_type'] = $notification_type;
      $notif['notification_log'] = $notification_log;
      $data = json_encode($notif);
+
+     // $this->localarena_game_config_->validateNotif($notification_type, $notification_args, $player_id);
 
      $sql =
        'INSERT INTO `gamelog`(`gamelog_move_id`, `gamelog_private`,`gamelog_time`,`gamelog_player`,`gamelog_current_player`,`gamelog_notification` ) VALUES (' .

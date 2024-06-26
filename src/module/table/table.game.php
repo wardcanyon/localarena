@@ -1439,7 +1439,8 @@
    //
    // XXX: Should we have different values for LocalArena tests, the
    // LocalArena web frontend, etc.?
-   public function getBgaEnvironment(): string {
+     /** @return string */
+   public static function getBgaEnvironment() {
        return 'localarena';
    }
  }

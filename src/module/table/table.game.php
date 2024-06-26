@@ -7,6 +7,7 @@
  require_once APP_GAMEMODULE_PATH . 'module/table/APP_GameAction.php';
  require_once APP_GAMEMODULE_PATH . 'module/table/deck.php';
  require_once APP_BASE_PATH . 'view/common/util.php';
+ require_once APP_GAMEMODULE_PATH . 'module/gameconfig/LocalArenaGameConfig.php';
 
  class APP_Object
  {
@@ -61,12 +62,16 @@
    protected $dbname;
    protected $password;
 
+     public $localarena_game_config_ = null;
+
      private static function conn_() {
 
      }
 
    function __construct()
    {
+       $this->localarena_game_config_ = new LocalArenaGameConfig();
+
      $la_ctx = LocalArenaContext::get();
      $dbname = 'table_' . $la_ctx->table_id;
      $this->dbname = $dbname;
@@ -692,7 +697,7 @@
        $ret['alldatas'] = json_decode($data);
      } else {
        // XXX:
-       $ret['alldatas'] = array_merge($this->getAllDatas(), $this->getMediumDatas());
+       $ret['alldatas'] = array_merge($this->getAllDatasValidated(), $this->getMediumDatas());
      }
 
      $ret['states'] = $this->gamestate->machinestates;
@@ -710,6 +715,12 @@
 
      return $ret;
    }
+
+     private function getAllDatasValidated() {
+         $alldatas = $this->getAllDatas();
+         $this->localarena_game_config_->validateAllDatas($alldatas);
+         return $alldatas;
+     }
 
      public function rawGetPlayers()
      {

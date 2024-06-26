@@ -117,7 +117,7 @@ class TableManager
             $localarena_config_path = LOCALARENA_GAME_PATH . $row['table_game'] . '/localarena_config.inc.php';
             if (file_exists($localarena_config_path)) {
                 echo '*** Loading game hooks...' . "\n";
-                localarenaLoadGameHooks($localarena_config_path);
+                localarenaLoadGameHooks($game->localarena_game_config_, $localarena_config_path);
             } else {
                 echo '*** Skipping game hooks (file not found: '.$localarena_config_path.')...' . "\n";
             }

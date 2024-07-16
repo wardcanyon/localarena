@@ -1064,7 +1064,8 @@
    {
    }
 
-   function getGameStateValue($key)
+     // XXX: $default is ignored.
+   function getGameStateValue($key, $default=0)
    {
      $keyint = $this->gameStateLabels[$key];
      return $this->getUniqueValueFromDB('select global_value from global where global_id = ' . $keyint);

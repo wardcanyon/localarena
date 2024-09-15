@@ -406,13 +406,24 @@
      include LOCALARENA_GAME_PATH . $this->getGameName() . '/stats.inc.php';
      $this->stats_type = $stats_type;
 
-     include LOCALARENA_GAME_PATH . $this->getGameName() . '/gameoptions.inc.php';
-     $this->game_options = $game_options;
-     if (isset($game_preferences)) {
-       $this->game_preferences = $game_preferences;
-     }
-     if (isset($custom_only)) {
-       $this->custom_only = $custom_only;
+     $gameoptions_json_path = LOCALARENA_GAME_PATH . $this->getGameName() . '/gameoptions.json';
+     $gamepreferences_json_path = LOCALARENA_GAME_PATH . $this->getGameName() . '/gamepreferences.json';
+     if (file_exists($gameoptions_json_path)) {
+         $this->game_options = json_decode(file_get_contents($gameoptions_json_path), /*associative=*/true);
+         if (file_exists($gamepreferences_json_path)) {
+             $this->game_preferences = json_decode(file_get_contents($gamepreferences_json_path), /*associative=*/true);
+         }
+     } else {
+         // Load legacy "gameoptions.inc.php" file.  As of
+         // ~2024-09-01, this was not working for me on BGA Studio.
+         include LOCALARENA_GAME_PATH . $this->getGameName() . '/gameoptions.inc.php';
+         $this->game_options = $game_options;
+         if (isset($game_preferences)) {
+             $this->game_preferences = $game_preferences;
+         }
+         if (isset($custom_only)) {
+             $this->custom_only = $custom_only;
+         }
      }
 
      include LOCALARENA_GAME_PATH . $this->getGameName() . '/material.inc.php';

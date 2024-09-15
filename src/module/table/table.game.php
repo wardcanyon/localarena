@@ -386,6 +386,7 @@
 
    public $game_options;
    public $game_preferences;
+   public $game_infos;
    public $custom_only;
 
    // XXX: Eliminating dynamic-property deprecation notices; type
@@ -425,6 +426,9 @@
              $this->custom_only = $custom_only;
          }
      }
+
+     include LOCALARENA_GAME_PATH . $this->getGameName() . '/gameinfos.inc.php';
+     $this->game_infos = $gameinfos;
 
      include LOCALARENA_GAME_PATH . $this->getGameName() . '/material.inc.php';
      include LOCALARENA_GAME_PATH . $this->getGameName() . '/states.inc.php';
@@ -1441,9 +1445,13 @@
 
    function getGameinfos()
    {
-     $gameinfos = [];
-     $gameinfos['player_colors'] = ['ff0000', '008000', '0000ff', 'ffa500', '773300'];
-     return $gameinfos;
+       // Previously, this only returned the following hard-wired
+       // values.  Do we need some behavior here that sets defaults if
+       // these things are not defined by a game?
+       //
+       // return ['player_colors' => ['ff0000', '008000', '0000ff', 'ffa500', '773300']];
+
+       return $this->game_infos;
    }
 
    // On BGA itself, this returns either "studio" in BGA Studio

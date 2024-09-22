@@ -56,6 +56,16 @@ class IntegrationTestCase extends \PHPUnit\Framework\TestCase
     $this->table()->closeDbConnection();
   }
 
+    public function onNotSuccessfulTest(\Throwable $exc): never {
+        // XXX: This does work, but it doesn't leave a nice message at
+        // the bottom as part of the failure summary, which is what I
+        // was going for.  Maybe something like
+        // https://stackoverflow.com/questions/29979636/how-to-add-string-to-phpunit-failure-message-universally
+        // would work?
+        echo "\n*** LocalArena table ID: " . $this->table_->localarena_table_id . "\n\n";
+        parent::onNotSuccessfulTest($exc);
+  }
+
   // Individual test suites can override this to customize table
   // setup.
   protected function defaultTableParams(): TableParams

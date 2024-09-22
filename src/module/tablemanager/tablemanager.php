@@ -124,6 +124,8 @@ class TableManager
         }
     }
 
+    $game->localarena_table_id = $table_id;
+
     return $game;
   }
 

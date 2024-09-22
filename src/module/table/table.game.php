@@ -397,6 +397,8 @@
    public $gamestate;
    public $gameStateLabels;
 
+     public int $localarena_table_id;
+
    function __construct()
    {
      parent::__construct();

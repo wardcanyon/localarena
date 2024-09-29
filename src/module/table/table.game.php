@@ -144,12 +144,12 @@
      }
    }
 
-   function getCollectionFromDB($sql, $bSingleValue = false, $low_priority_select = false)
+   public static function getCollectionFromDB($sql, $bSingleValue = false, $low_priority_select = false)
    {
      $ret = [];
      try {
-       if (!($data = $this->conn()->query($sql))) {
-         var_dump($this->conn()->error);
+         if (!($data = self::conn()->query($sql))) {
+             var_dump(self::conn()->error);
        }
        $fetch = mysqli_fetch_all($data, MYSQLI_ASSOC);
 

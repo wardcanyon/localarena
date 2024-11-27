@@ -1256,7 +1256,7 @@
      $this->currentPlayer = $prevCurrentPlayerId;
    }
 
-   function _($text)
+   public static function _($text)
    {
      return $text;
    }

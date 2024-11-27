@@ -135,8 +135,11 @@ class IntegrationTestCase extends \PHPUnit\Framework\TestCase
   public function playerByIndex(int $index): PlayerPeer
   {
     $this->deferredInit();
-    $row = $this->table()->getObjectFromDB('SELECT * FROM `player` WHERE TRUE ORDER BY `player_id` ASC LIMIT 1');
-    return new PlayerPeer($this, $row);
+    $rows = array_values($this->table()->getCollectionFromDB('SELECT * FROM `player` WHERE TRUE ORDER BY `player_id` ASC'));
+    if (!array_key_exists($index, $rows)) {
+        throw new \Exception('Player index is out of range: ' . $index);
+    }
+    return new PlayerPeer($this, $rows[$index]);
   }
 
   public function playerById(string $player_id): PlayerPeer

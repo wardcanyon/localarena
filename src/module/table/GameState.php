@@ -202,7 +202,15 @@ class GameState
    */
   public function state()
   {
-    $state_id = $this->game->getGameStateValue('currentState');
+      $state_id = $this->state_id();
     return $this->machinestates[$state_id];
   }
+
+    /**
+      @return int
+    */
+    public function state_id()
+    {
+        return $this->game->getGameStateValue('currentState');
+    }
 }

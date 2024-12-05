@@ -9,6 +9,8 @@ define("LOCALARENA_GAME_PATH", "/src/");
 require_once APP_GAMEMODULE_PATH . "/localarena_config.inc.php";
 require_once APP_GAMEMODULE_PATH . "/module/tablemanager/tablemanager.php";
 
+use LocalArena\TableParams;
+
 // XXX: Un-hardwire.  In particular, at the moment we'll create a new table if this table_id does not exist; but it'll have the sequentially-next table ID, not this one.
 $table_id = 1;
 

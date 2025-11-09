@@ -87,16 +87,25 @@ class GameState
   }
 
   /**
-   * Make a specific list of players active during a multiactive gamestate.
-   * Bare in mind it doesn't deactivate other previously active players.
-   * "players" is the array of player id that should be made active.
-   * In case "players" is empty, the method trigger the "next_state" transition to go to the next game state.
+   * Activate each of the players in $players.
+   *
+   * If `!$bExclusive`, any players not in $players will be deactivated.
+   *
+   * If no players are active afterwards, the state transition
+   * $next_state will be taken.
    *
    * @param $players
    * @param $next_state
+   * @param $bExclusive
    */
-  public function setPlayersMultiactive($players, $next_state)
-  {
+   public function setPlayersMultiactive($players, $next_state, bool $bExclusive = false)
+   {
+       if ($bExclusive) {
+           // If set, previously-active players should be deactivated
+           // (unless they're in $players).
+           throw new \BgaVisibleSystemException('XXX: setPlayersMultiactive($bExclusive=true) unsupported');
+       }
+
     // TODO: TESTING: Cover this function; we were previously
     // running the query in this conditional even when $players
     // was empty, and that caused a MySQL syntax error.

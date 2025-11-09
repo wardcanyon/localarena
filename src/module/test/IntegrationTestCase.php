@@ -215,6 +215,7 @@ class PlayerPeer
 
   // XXX: Should this be PlayerIdString?
   private string $id_;
+    private int $no_;
 
   private function table()
   {
@@ -225,6 +226,7 @@ class PlayerPeer
   {
     $this->itc_ = $itc;
     $this->id_ = $row['player_id'];
+    $this->no_ = intval($row['player_no']);
   }
 
   // XXX: Should this be PlayerIdString?
@@ -232,6 +234,11 @@ class PlayerPeer
   {
     return $this->id_;
   }
+
+    public function no(): int
+    {
+        return $this->no_;
+    }
 
   // XXX: This is duplicated with `CharacterPeer::act()`; do we need
   // to consolidate them?

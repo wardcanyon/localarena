@@ -1256,7 +1256,7 @@
      $this->currentPlayer = $prevCurrentPlayerId;
    }
 
-   public static function _($text)
+   public function _($text)
    {
      return $text;
    }
@@ -1438,11 +1438,18 @@
    }
 
    // Makes the next player active; returns that player's ID.
-   function activeNextPlayer(): int
+   public function activeNextPlayer()
    {
      $next = $this->getNextPlayerTable()[$this->getActivePlayerId()];
-     $this->setGameStateValue('activePlayerId', $next);
+     $this->changeActivePlayer($next);
      return $next;
+   }
+
+     /**
+       @override
+     */
+     public function changeActivePlayer(int $player_id): void {
+       $this->setGameStateValue('activePlayerId', $player_id);
    }
 
    function getGameinfos()

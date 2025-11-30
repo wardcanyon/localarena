@@ -36,7 +36,7 @@ class GameState
    *
    * @param $player_id
    */
-  public function changeActivePlayer($player_id)
+  public function changeActivePlayer(int $player_id): void
   {
     $this->game->setGameStateValue('activePlayerId', $player_id);
   }

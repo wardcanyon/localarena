@@ -98,20 +98,14 @@ class GameState
    * @param $next_state
    * @param $bExclusive
    */
-   public function setPlayersMultiactive($players, $next_state, bool $bExclusive = false)
-   {
-       if ($bExclusive) {
-           // If set, previously-active players should be deactivated
-           // (unless they're in $players).
-           throw new \BgaVisibleSystemException('XXX: setPlayersMultiactive($bExclusive=true) unsupported');
-       }
+  public function setPlayersMultiactive($players, $next_state, bool $bExclusive = false)
+  {
+    if (!$bExclusive) {
+      // Deactivate all players (those in $players will be reactivated below)
+      $this->game->DbQuery('UPDATE `player` SET `player_is_multiactive` = 0');
+    }
 
-    // TODO: TESTING: Cover this function; we were previously
-    // running the query in this conditional even when $players
-    // was empty, and that caused a MySQL syntax error.
-    $this->game->DbQuery('UPDATE `player` SET `player_is_multiactive` = 0');
     if (count($players) > 0) {
-      // echo 'setPlayersMultiactive() called with non-empty list of players; setting some multiactive again' . "\n";
       $ids = implode(',', $players);
       $this->game->DbQuery('UPDATE `player` SET `player_is_multiactive` = 1 WHERE `player_id` IN (' . $ids . ')');
     }
@@ -120,8 +114,8 @@ class GameState
     // notif even if $players is empty.
     $this->game->notify_gameStateMultipleActiveUpdate();
 
-    if (count($players) == 0) {
-      // echo 'setPlayersMultiactive() called with empty list of players; taking transition "' . $next_state . '"' . "\n";
+    // Transition if no players are active afterwards
+    if ($this->game->getUniqueValueFromDB('SELECT COUNT(*) FROM `player` WHERE `player_is_multiactive` = 1') == 0) {
       $this->nextState($next_state);
     }
   }

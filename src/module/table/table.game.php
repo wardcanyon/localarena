@@ -171,12 +171,12 @@
      return $ret;
    }
 
-   function getNonEmptyCollectionFromDB($sql)
+   public static function getNonEmptyCollectionFromDB($sql)
    {
      $ret = [];
      try {
-       if (!($data = $this->conn()->query($sql))) {
-         var_dump($this->conn()->error);
+       if (!($data = self::conn()->query($sql))) {
+         var_dump(self::conn()->error);
        }
        $fetch = mysqli_fetch_all($data, MYSQLI_ASSOC);
 
@@ -201,12 +201,12 @@
        Second array level correspond to second column specified in SQL query.
        If $bSingleValue = true, keep only third column on result.
      */
-   function getDoubleKeyCollectionFromDB(string $sql, bool $bSingleValue = false)
+   public static function getDoubleKeyCollectionFromDB(string $sql, bool $bSingleValue = false)
    {
      $ret = [];
      try {
-       if (!($data = $this->conn()->query($sql))) {
-         var_dump($this->conn()->error);
+       if (!($data = self::conn()->query($sql))) {
+         var_dump(self::conn()->error);
        }
        $fetch = mysqli_fetch_all($data, MYSQLI_ASSOC);
 
@@ -233,12 +233,12 @@
      return $ret;
    }
 
-   function getObjectFromDB($sql, $low_priority_select = false)
+   public static function getObjectFromDB($sql, $low_priority_select = false)
    {
      $ret = [];
      try {
-       if (!($data = $this->conn()->query($sql))) {
-         var_dump($this->conn()->error);
+       if (!($data = self::conn()->query($sql))) {
+         var_dump(self::conn()->error);
        }
        $ret = mysqli_fetch_assoc($data);
      } catch (Exception $e) {
@@ -248,12 +248,12 @@
      return $ret;
    }
 
-   function getNonEmptyObjectFromDB($sql, $low_priority_select = false)
+   public static function getNonEmptyObjectFromDB($sql, $low_priority_select = false)
    {
      $ret = [];
      try {
-       if (!($data = $this->conn()->query($sql))) {
-         var_dump($this->conn()->error);
+       if (!($data = self::conn()->query($sql))) {
+         var_dump(self::conn()->error);
        }
 
        if ($data->num_rows == 0) {
@@ -268,7 +268,7 @@
      return $ret;
    }
 
-   static function getUniqueValueFromDB($sql, $low_priority_select = false)
+   public static function getUniqueValueFromDB($sql, $low_priority_select = false)
    {
      $ret = '';
      try {
@@ -289,7 +289,7 @@
      return $ret;
    }
 
-   static function getObjectListFromDB($sql, $bUniqueValue = false)
+   public static function getObjectListFromDB($sql, $bUniqueValue = false)
    {
      $ret = [];
      try {

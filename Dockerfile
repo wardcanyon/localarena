@@ -75,8 +75,9 @@ RUN docker-php-ext-install mysqli && docker-php-ext-enable mysqli
 
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 # `7z` is required for `composer` to install things.
+# `default-mysql-client` is required for mysqldump/mysql used by undo functionality.
 RUN apt-get update -y && apt-get dist-upgrade -y \
-    && apt-get install --no-install-recommends --yes p7zip-full \
+    && apt-get install --no-install-recommends --yes p7zip-full default-mysql-client \
     && rm -rf /var/lib/apt/lists/*
 
 RUN composer require --dev phpunit/phpunit ^11

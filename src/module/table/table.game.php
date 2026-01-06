@@ -1472,4 +1472,43 @@
    public static function getBgaEnvironment() {
        return 'localarena';
    }
+
+  // ==================== Undo Support ====================
+
+  /**
+   * Save the whole game situation inside an "Undo save point".
+   */
+  public function undoSavepoint(): void
+  {
+      $undo_file = $this->getUndoFilePath();
+      $servername = getenv('DB_HOST');
+      $username = getenv('DB_USER');
+      $password = trim(file_get_contents(getenv('DB_PASSWORD_FILE_PATH')));
+
+      $cmd = "mysqldump --user={$username} --password={$password} " .
+          "--host={$servername} --skip-ssl {$this->dbname} --result-file={$undo_file} 2>&1";
+      exec($cmd, $output, $result_code);
+  }
+
+  /**
+   * Restore the situation previously saved as an "Undo save point".
+   */
+  public function undoRestorePoint(): void
+  {
+      $undo_file = $this->getUndoFilePath();
+      if (file_exists($undo_file)) {
+          $servername = getenv('DB_HOST');
+          $username = getenv('DB_USER');
+          $password = trim(file_get_contents(getenv('DB_PASSWORD_FILE_PATH')));
+
+          $cmd = "mysql --user={$username} --password={$password} " .
+              "--host={$servername} --skip-ssl {$this->dbname} < {$undo_file} 2>&1";
+          exec($cmd, $output, $result_code);
+      }
+  }
+
+  private function getUndoFilePath(): string
+  {
+      return '/tmp/undo_' . $this->localarena_table_id . '.sql';
+  }
  }

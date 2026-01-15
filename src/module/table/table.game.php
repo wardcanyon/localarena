@@ -1073,7 +1073,7 @@
      $this->gameStateLabels = array_merge($this->gameStateLabels, $array);
    }
 
-     function reattributeColorsBasedOnPreferences($players, $colors)
+     function reattributeColorsBasedOnPreferences(array $players, array $colors): void
    {
    }
 

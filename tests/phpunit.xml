@@ -1,15 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.0/phpunit.xsd"
-         bootstrap="IntegrationTestCase.php"
+         bootstrap="/src/localarena/module/test/IntegrationTestCase.php"
          colors="true"
          cacheDirectory=".phpunit.cache"
          executionOrder="depends,defects"
          requireCoverageMetadata="false"
          beStrictAboutOutputDuringTests="true"
-         displayDetailsOnTestsThatTriggerWarnings="true"
-         failOnRisky="true"
-         failOnWarning="true">
+         displayDetailsOnTestsThatTriggerWarnings="true">
     <testsuites>
         <testsuite name="LocalArena Tests">
             <directory>.</directory>

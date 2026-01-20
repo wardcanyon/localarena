@@ -2,7 +2,7 @@
 
 namespace LocalArena\Test;
 
-require_once __DIR__ . '/IntegrationTestCase.php';
+require_once __DIR__ . '/../module/test/IntegrationTestCase.php';
 
 /**
  * Tests for the undo savepoint/restore functionality.

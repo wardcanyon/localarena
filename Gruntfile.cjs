@@ -46,9 +46,10 @@ module.exports = function(grunt) {
                     '-v $PWD/db/password.txt:/run/secrets/db-password:ro',
                     '-v $PWD/src/module:/src/localarena/module:ro',
                     '-v $PWD/src/game/localarenanoop:/src/game/localarenanoop:ro',
+                    '-v $PWD/tests:/src/localarena/tests:ro',
 
                     'wardcanyon/localarena-testenv:latest',
-                    'phpunit --configuration /src/localarena/module/test/phpunit.xml',
+                    'phpunit --configuration /src/localarena/tests/phpunit.xml',
                 ]
                     .concat(phpunit_args)
                     .join(' '),

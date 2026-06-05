@@ -8,12 +8,16 @@
 
 ################################################################################
 
+# Pinned tool versions. This Dockerfile is the single source of truth; override
+# at build time with `--build-arg` if necessary.
+ARG PHP_VERSION=8.2.31
+ARG PHAN_VERSION=6.0.5
+ARG PHP_AST_VERSION=1.1.3
+
 # The example below uses the PHP Apache image as the foundation for running the app.
-# By specifying the "8.2-apache" tag, it will also use whatever happens to be the
-# most recent version of that tag when you build your Dockerfile.
 # If reproducability is important, consider using a specific digest SHA, like
 # php@sha256:99cede493dfd88720b610eb8077c8688d3cca50003d76d1d539b0efc8cca72b4.
-FROM php:8.2-apache AS server
+FROM php:${PHP_VERSION}-apache AS server
 
 # Your PHP application may require additional PHP extensions to be installed
 # manually. For detailed instructions for installing extensions can be found, see
@@ -65,10 +69,15 @@ RUN chmod -R 755 /src
 # See https://docs.docker.com/go/dockerfile-user-best-practices/
 USER www-data
 
-FROM php:8.2-cli AS testenv
+FROM php:${PHP_VERSION}-cli AS testenv
+
+# Re-declare ARGs that are referenced in this stage. Globals declared before
+# the first FROM are only visible in FROM lines unless re-declared here.
+ARG PHAN_VERSION
+ARG PHP_AST_VERSION
 
 # Install `php-ast` from PECL (required for `phan`)
-RUN pecl install ast && docker-php-ext-enable ast
+RUN pecl install ast-${PHP_AST_VERSION} && docker-php-ext-enable ast
 
 # Install PHP mysqli extension
 RUN docker-php-ext-install mysqli && docker-php-ext-enable mysqli
@@ -81,7 +90,7 @@ RUN apt-get update -y && apt-get dist-upgrade -y \
     && rm -rf /var/lib/apt/lists/*
 
 RUN composer require --dev phpunit/phpunit ^11
-RUN composer require --dev phan/phan
+RUN composer require --dev phan/phan:${PHAN_VERSION}
 ENV PATH="$PATH:/vendor/bin"
 
 ENV DB_HOST=db

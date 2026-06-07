@@ -10,7 +10,7 @@
 
 # Pinned tool versions. This Dockerfile is the single source of truth; override
 # at build time with `--build-arg` if necessary.
-ARG PHP_VERSION=8.2.31
+ARG PHP_VERSION=8.4.21
 ARG PHAN_VERSION=6.0.5
 ARG PHP_AST_VERSION=1.1.3
 

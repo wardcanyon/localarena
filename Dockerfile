@@ -99,12 +99,16 @@ RUN composer require --dev phan/phan:${PHAN_VERSION}
 ENV PATH="$PATH:/vendor/bin"
 
 ENV DB_HOST=db
+ENV DB_PORT=3306
 ENV DB_USER=root
 ENV DB_PASSWORD_FILE_PATH=/run/secrets/db-password
+
+RUN echo -n 'example-pass' > /run/secrets/db-password
 
 COPY ./src/localarena_config.inc.php /src/localarena/localarena_config.inc.php
 COPY ./src/module /src/localarena/module
 COPY ./src/view /src/localarena/view
 COPY ./src/vendor /src/localarena/vendor
+COPY ./src/game/localarenanoop /src/game/localarenanoop
 RUN chown -R www-data: /src
 RUN chmod -R 755 /src

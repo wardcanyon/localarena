@@ -1,5 +1,6 @@
 <?php
 
+require_once APP_GAMEMODULE_PATH . 'module/db_config.php';
 require_once APP_GAMEMODULE_PATH . 'localarena_config.inc.php';
 require_once APP_GAMEMODULE_PATH . 'module/LocalArenaContext.php';
 
@@ -63,9 +64,9 @@ class TableManager
   {
     $servername = getenv('DB_HOST');
     $username = getenv('DB_USER');
-    $password = trim(file_get_contents(getenv('DB_PASSWORD_FILE_PATH')));
+    $password = localarena_db_password();
 
-    $conn = new mysqli($servername, $username, $password, $dbname);
+    $conn = new mysqli($servername, $username, $password, $dbname, localarena_db_port());
 
     // Set transaction isolation level so that we can read back
     // changes later in the same transaction.

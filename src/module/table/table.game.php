@@ -1,4 +1,5 @@
  <?php
+ require_once APP_GAMEMODULE_PATH . 'module/db_config.php';
  require_once APP_GAMEMODULE_PATH . 'module/LocalArenaContext.php';
  require_once APP_GAMEMODULE_PATH . 'module/table/feException.php';
  require_once APP_GAMEMODULE_PATH . 'module/table/BgaVisibleSystemException.php';
@@ -82,13 +83,12 @@
      if (self::$static_conn_ === null) {
          echo '*** LocalArena table constructor: setting up new connection' . "\n";
 
-       // These are provided by Docker Compose; see "compose.yaml".
        $this->servername = getenv('DB_HOST');
        $this->username = getenv('DB_USER');
-       $this->password = trim(file_get_contents(getenv('DB_PASSWORD_FILE_PATH')));
+       $this->password = localarena_db_password();
 
        // Create connection
-       $conn = new mysqli($this->servername, $this->username, $this->password, $this->dbname);
+       $conn = new mysqli($this->servername, $this->username, $this->password, $this->dbname, localarena_db_port());
 
        // Check connection
        if ($conn->connect_error) {
@@ -1483,10 +1483,11 @@
       $undo_file = $this->getUndoFilePath();
       $servername = getenv('DB_HOST');
       $username = getenv('DB_USER');
-      $password = trim(file_get_contents(getenv('DB_PASSWORD_FILE_PATH')));
+      $password = localarena_db_password();
+      $port = localarena_db_port();
 
       $cmd = "mysqldump --user={$username} --password={$password} " .
-          "--host={$servername} --skip-ssl {$this->dbname} --result-file={$undo_file} 2>&1";
+          "--host={$servername} --port={$port} --skip-ssl {$this->dbname} --result-file={$undo_file} 2>&1";
       exec($cmd, $output, $result_code);
   }
 
@@ -1499,10 +1500,11 @@
       if (file_exists($undo_file)) {
           $servername = getenv('DB_HOST');
           $username = getenv('DB_USER');
-          $password = trim(file_get_contents(getenv('DB_PASSWORD_FILE_PATH')));
+          $password = localarena_db_password();
+          $port = localarena_db_port();
 
           $cmd = "mysql --user={$username} --password={$password} " .
-              "--host={$servername} --skip-ssl {$this->dbname} < {$undo_file} 2>&1";
+              "--host={$servername} --port={$port} --skip-ssl {$this->dbname} < {$undo_file} 2>&1";
           exec($cmd, $output, $result_code);
       }
   }

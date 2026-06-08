@@ -13,6 +13,9 @@
 ARG PHP_VERSION=8.2.31
 ARG PHAN_VERSION=6.0.5
 ARG PHP_AST_VERSION=1.1.3
+# ParaTest runs the game test suites in parallel across CPU cores. The 7.x line
+# is the one compatible with PHPUnit 11.
+ARG PARATEST_VERSION=7.8.5
 
 # The example below uses the PHP Apache image as the foundation for running the app.
 # If reproducability is important, consider using a specific digest SHA, like
@@ -75,6 +78,7 @@ FROM php:${PHP_VERSION}-cli AS testenv
 # the first FROM are only visible in FROM lines unless re-declared here.
 ARG PHAN_VERSION
 ARG PHP_AST_VERSION
+ARG PARATEST_VERSION
 
 # Install `php-ast` from PECL (required for `phan`)
 RUN pecl install ast-${PHP_AST_VERSION} && docker-php-ext-enable ast
@@ -90,6 +94,7 @@ RUN apt-get update -y && apt-get dist-upgrade -y \
     && rm -rf /var/lib/apt/lists/*
 
 RUN composer require --dev phpunit/phpunit ^11
+RUN composer require --dev brianium/paratest:${PARATEST_VERSION}
 RUN composer require --dev phan/phan:${PHAN_VERSION}
 ENV PATH="$PATH:/vendor/bin"
 

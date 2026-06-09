@@ -101,9 +101,9 @@ ENV PATH="$PATH:/vendor/bin"
 ENV DB_HOST=db
 ENV DB_PORT=3306
 ENV DB_USER=root
-ENV DB_PASSWORD_FILE_PATH=/run/secrets/db-password
+ENV DB_PASSWORD_FILE_PATH=/etc/secrets/db-password
 
-RUN echo -n 'example-pass' > /run/secrets/db-password
+RUN mkdir -p /etc/secrets && echo -n 'example-pass' > /etc/secrets/db-password
 
 COPY ./src/localarena_config.inc.php /src/localarena/localarena_config.inc.php
 COPY ./src/module /src/localarena/module

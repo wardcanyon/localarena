@@ -155,6 +155,10 @@ class TableManager
         $game->localarenaApplySchema(explode('\n',$params->schema_changes));
     }
 
+    if ($params->enable_undo_savepoints) {
+        $game->setUndoSavepointsEnabled(true);
+    }
+
     return $game;
   }
 }

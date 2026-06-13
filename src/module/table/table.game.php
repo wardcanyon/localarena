@@ -1475,12 +1475,34 @@
 
   // ==================== Undo Support ====================
 
+  // Whether undoSavepoint() / undoRestorePoint() are active.  Defaults to false so the LocalArena test harness
+  // doesn't pay a mysqldump cost on every savepoint call -- in practice, most tests transit through state hooks
+  // that take savepoints but never exercise undo themselves.  Tests that DO exercise undo opt in by calling
+  // setUndoSavepointsEnabled(true) during setup.  This flag has no effect in real BGA production, which runs
+  // through its own Table class rather than this LocalArena mock.
+  protected bool $undoSavepointsEnabled_ = false;
+
+  /**
+   * Turn savepoint creation and restoration on or off.  When off, undoSavepoint() is a free no-op and
+   * undoRestorePoint() throws (so a test that attempts to exercise undo without opting in fails loudly).
+   * Tests that genuinely exercise undo should call setUndoSavepointsEnabled(true) before the savepoint of
+   * interest is taken.
+   */
+  public function setUndoSavepointsEnabled(bool $enabled): void
+  {
+      $this->undoSavepointsEnabled_ = $enabled;
+  }
+
   /**
    * Save the whole game situation inside an "Undo save point".
    */
   public function undoSavepoint(): void
   {
       $this->requireUndoSupport();
+      if (!$this->undoSavepointsEnabled_) {
+          // Disabled mode (default in tests): no-op so unrelated tests don't pay the mysqldump cost.
+          return;
+      }
       $undo_file = $this->getUndoFilePath();
       $servername = getenv('DB_HOST');
       $username = getenv('DB_USER');
@@ -1501,6 +1523,16 @@
   public function undoRestorePoint(): void
   {
       $this->requireUndoSupport();
+      if (!$this->undoSavepointsEnabled_) {
+          // Disabled mode (default in tests): a test that reaches here without enabling savepoints first is
+          // almost certainly trying to exercise undo without realising the harness has stripped it.  Fail
+          // loudly rather than silently no-op-ing -- a silent no-op would let the test pass while producing
+          // results inconsistent with production.
+          throw new \BgaVisibleSystemException(
+              'undoRestorePoint(): savepoints are disabled.  Tests that exercise undo must call ' .
+              '$this->table()->setUndoSavepointsEnabled(true) during setup.'
+          );
+      }
       $undo_file = $this->getUndoFilePath();
       if (file_exists($undo_file)) {
           $servername = getenv('DB_HOST');

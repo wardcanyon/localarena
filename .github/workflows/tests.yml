@@ -143,7 +143,12 @@ jobs:
 
       - name: "Run tests (shard ${{ matrix.shard.index }})"
         run: |
+          # `-w /src`: paratest's SuiteLoader::stripCwd assumes cwd has no
+          # trailing slash and adds 1 for the separator, so cwd="/" mangles
+          # absolute paths (drops "/s" from "/src/...", not just "/"). Set
+          # cwd to /src so the slice lands on the actual separator.
           docker run -i --rm \
+            -w /src \
             --network host \
             -e DB_HOST=127.0.0.1 \
             -e DB_PORT=3306 \

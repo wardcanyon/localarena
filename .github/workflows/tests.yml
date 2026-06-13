@@ -1,0 +1,174 @@
+name: "test:server"
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Cancel in-progress runs for the same branch/PR.
+concurrency:
+  group: tests-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ------------------------------------------------------------------ #
+  # Build testenv image and discover test classes for sharding.        #
+  # ------------------------------------------------------------------ #
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      shards: ${{ steps.discover.outputs.shards }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Build the testenv image from the PR's Dockerfile so changes to the
+      # image or to the baked-in source are exercised by this run.
+      - name: Build testenv image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: testenv
+          load: true
+          tags: localarena-testenv:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Save testenv image
+        run: docker save localarena-testenv:ci | gzip > testenv-image.tar.gz
+
+      # Discover every *Test.php file, shard by file, and generate a
+      # per-shard phpunit.xml so that ALL test classes in every file are
+      # run — not just classes whose names happen to match the filename.
+      - id: discover
+        run: |
+          find tests -name '*Test.php' -type f | sort > /tmp/test-files.txt
+          python3 <<'PYEOF'
+          import json
+
+          SHARD_COUNT = 8
+
+          with open("/tmp/test-files.txt") as f:
+              files = [l.strip() for l in f if l.strip()]
+
+          shards = [[] for _ in range(SHARD_COUNT)]
+          for i, path in enumerate(files):
+              shards[i % SHARD_COUNT].append(path)
+
+          result = []
+          for i, shard_files in enumerate(shards):
+              if not shard_files:
+                  continue
+
+              docker_files = [
+                  f.replace("tests/", "/src/localarena/tests/")
+                  for f in shard_files
+              ]
+              file_elements = "\n".join(
+                  f"      <file>{p}</file>" for p in docker_files
+              )
+
+              xml = f"""<?xml version="1.0" encoding="UTF-8"?>
+          <phpunit
+              bootstrap="/src/localarena/module/test/IntegrationTestCase.php"
+              colors="true"
+              cacheDirectory=".phpunit.cache"
+              executionOrder="depends,defects"
+              requireCoverageMetadata="false"
+              beStrictAboutOutputDuringTests="true"
+              displayDetailsOnTestsThatTriggerWarnings="true"
+          >
+            <testsuites>
+              <testsuite name="shard-{i}">
+          {file_elements}
+              </testsuite>
+            </testsuites>
+          </phpunit>"""
+
+              xml_path = f"tests/phpunit-shard-{i}.xml"
+              with open(xml_path, "w") as out:
+                  out.write(xml)
+
+              result.append({
+                  "index": i,
+                  "config": f"/src/localarena/tests/phpunit-shard-{i}.xml",
+              })
+
+          with open("/tmp/shards.json", "w") as f:
+              json.dump(result, f)
+          PYEOF
+          echo "shards=$(cat /tmp/shards.json)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: server-build
+          path: |
+            tests/
+            testenv-image.tar.gz
+
+  # ------------------------------------------------------------------ #
+  # Run test shards in parallel.                                        #
+  # ------------------------------------------------------------------ #
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: example-pass
+          MYSQL_DATABASE: localarena
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -u root -pexample-pass"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJson(needs.build.outputs.shards) }}
+    name: "test:server (shard ${{ matrix.shard.index }})"
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: server-build
+
+      - name: Load testenv image
+        run: docker load < testenv-image.tar.gz
+
+      - name: "Run tests (shard ${{ matrix.shard.index }})"
+        run: |
+          # `-w /src`: paratest's SuiteLoader::stripCwd assumes cwd has no
+          # trailing slash and adds 1 for the separator, so cwd="/" mangles
+          # absolute paths (drops "/s" from "/src/...", not just "/"). Set
+          # cwd to /src so the slice lands on the actual separator.
+          docker run -i --rm \
+            -w /src \
+            --network host \
+            -e DB_HOST=127.0.0.1 \
+            -e DB_PORT=3306 \
+            -v "${{ github.workspace }}/tests:/src/localarena/tests:ro" \
+            localarena-testenv:ci \
+            paratest --runner=WrapperRunner --processes=1 \
+              --configuration ${{ matrix.shard.config }}
+
+  # ------------------------------------------------------------------ #
+  # Gate job: single required check for branch protection.              #
+  # ------------------------------------------------------------------ #
+  test-server-passed:
+    if: always()
+    runs-on: ubuntu-latest
+    needs: [build, test]
+    name: "test:server"
+    steps:
+      - name: Check results
+        run: |
+          if [[ "${{ needs.build.result }}" != "success" || "${{ needs.test.result }}" != "success" ]]; then
+            echo "One or more jobs failed."
+            exit 1
+          fi

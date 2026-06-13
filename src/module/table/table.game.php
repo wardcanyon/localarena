@@ -1480,14 +1480,18 @@
    */
   public function undoSavepoint(): void
   {
+      $this->requireUndoSupport();
       $undo_file = $this->getUndoFilePath();
       $servername = getenv('DB_HOST');
       $username = getenv('DB_USER');
       $password = localarena_db_password();
       $port = localarena_db_port();
 
+      // --single-transaction: snapshot via InnoDB MVCC instead of LOCK TABLES,
+      // which would deadlock against the PHP request's open mysqli connection.
       $cmd = "mysqldump --user={$username} --password={$password} " .
-          "--host={$servername} --port={$port} --skip-ssl {$this->dbname} --result-file={$undo_file} 2>&1";
+          "--host={$servername} --port={$port} --skip-ssl --single-transaction --skip-lock-tables " .
+          "{$this->dbname} --result-file={$undo_file} 2>&1";
       exec($cmd, $output, $result_code);
   }
 
@@ -1496,6 +1500,7 @@
    */
   public function undoRestorePoint(): void
   {
+      $this->requireUndoSupport();
       $undo_file = $this->getUndoFilePath();
       if (file_exists($undo_file)) {
           $servername = getenv('DB_HOST');
@@ -1506,6 +1511,16 @@
           $cmd = "mysql --user={$username} --password={$password} " .
               "--host={$servername} --port={$port} --skip-ssl {$this->dbname} < {$undo_file} 2>&1";
           exec($cmd, $output, $result_code);
+      }
+  }
+
+  private function requireUndoSupport(): void
+  {
+      if (empty($this->game_infos['db_undo_support'])) {
+          throw new \Exception(
+              "Undo is not enabled for this game. " .
+              "Set 'db_undo_support' => true in gameinfos.inc.php to enable undo functionality."
+          );
       }
   }
 

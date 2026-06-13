@@ -104,4 +104,30 @@ class UndoTest extends IntegrationTestCase
             "SELECT player_score FROM player WHERE player_id = " . $playerId
         );
     }
+
+    /**
+     * Test that undoSavepoint() throws when db_undo_support is not enabled.
+     */
+    public function testUndoSavepointRequiresDbUndoSupport(): void
+    {
+        $this->table()->game_infos['db_undo_support'] = false;
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage("Undo is not enabled for this game");
+
+        $this->table()->undoSavepoint();
+    }
+
+    /**
+     * Test that undoRestorePoint() throws when db_undo_support is not enabled.
+     */
+    public function testUndoRestorePointRequiresDbUndoSupport(): void
+    {
+        $this->table()->game_infos['db_undo_support'] = false;
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage("Undo is not enabled for this game");
+
+        $this->table()->undoRestorePoint();
+    }
 }

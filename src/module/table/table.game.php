@@ -1503,6 +1503,7 @@
           // Disabled mode (default in tests): no-op so unrelated tests don't pay the mysqldump cost.
           return;
       }
+      $this->requireUndoCompatibleState('undoSavepoint');
       $undo_file = $this->getUndoFilePath();
       $servername = getenv('DB_HOST');
       $username = getenv('DB_USER');
@@ -1533,6 +1534,7 @@
               '$this->table()->setUndoSavepointsEnabled(true) during setup.'
           );
       }
+      $this->requireUndoCompatibleState('undoRestorePoint');
       $undo_file = $this->getUndoFilePath();
       if (file_exists($undo_file)) {
           $servername = getenv('DB_HOST');
@@ -1543,6 +1545,33 @@
           $cmd = "mysql --user={$username} --password={$password} " .
               "--host={$servername} --port={$port} --skip-ssl {$this->dbname} < {$undo_file} 2>&1";
           exec($cmd, $output, $result_code);
+      }
+  }
+
+  /**
+   * Reject undoSavepoint() / undoRestorePoint() from state types that real BGA forbids.  The well-known
+   * "UNDO cannot be used for multiple active players game states" message is what production throws when undo
+   * is attempted from a `multipleactiveplayer` state -- mirroring it here means test suites catch that class
+   * of bug locally, instead of finding out at deploy time.
+   *
+   * BGA allows undo from `activeplayer` and `game` states; this method handles those by no-op-returning, and
+   * fails loudly for anything else so unrecognised contexts surface during tests.
+   */
+  private function requireUndoCompatibleState(string $caller): void
+  {
+      $stateType = $this->gamestate->state()['type'] ?? null;
+      switch ($stateType) {
+          case 'activeplayer':
+          case 'game':
+              return;
+          case 'multipleactiveplayer':
+              throw new \BgaVisibleSystemException(
+                  'UNDO cannot be used for multiple active players game states'
+              );
+          default:
+              throw new \BgaVisibleSystemException(
+                  $caller . '() called from unexpected state type: ' . var_export($stateType, true)
+              );
       }
   }
 

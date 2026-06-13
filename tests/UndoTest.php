@@ -11,6 +11,16 @@ class UndoTest extends IntegrationTestCase
 {
     const LOCALARENA_GAME_NAME = 'localarenanoop';
 
+    protected function defaultTableParams(): \LocalArena\TableParams
+    {
+        // Opt in to real savepoints for this suite; the default ("disabled") would cause undoSavepoint() to
+        // no-op and undoRestorePoint() to throw, which is correct for tests that don't exercise undo but is
+        // not what this suite is for.
+        $params = parent::defaultTableParams();
+        $params->enable_undo_savepoints = true;
+        return $params;
+    }
+
     /**
      * Test that undoSavepoint() and undoRestorePoint() correctly save and restore database state.
      */

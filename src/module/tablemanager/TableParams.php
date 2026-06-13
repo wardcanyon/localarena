@@ -21,4 +21,10 @@ class TableParams
     //
     // This mechanism is intended only for PHPUnit tests.
     public $table_class = null;
+
+    // Iff true, undoSavepoint() / undoRestorePoint() are active on the table from creation.  Defaults to false
+    // so the typical test (which transits through state hooks that take savepoints but never exercises undo
+    // itself) pays no mysqldump cost.  Tests that exercise undo opt in by setting this to true in their
+    // defaultTableParams() override -- see UndoTest for an example.
+    public bool $enable_undo_savepoints = false;
 }

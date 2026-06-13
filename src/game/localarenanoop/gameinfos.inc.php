@@ -8,4 +8,5 @@ $gameinfos = [
         'ffa500',
         '773300',
     ],
+    'db_undo_support' => true,
 ];

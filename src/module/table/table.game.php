@@ -399,6 +399,30 @@
 
      public int $localarena_table_id;
 
+   // The in-memory "live" id of the framework's game-state machine.
+   //
+   // This is the LocalArena equivalent of BGA's in-memory current
+   // state: it advances *immediately* on every `nextState()`
+   // transition, so it stays correct (live) as a single request
+   // cascades synchronously through a chain of "game"-type states.
+   // `$this->gamestate->state()` / `state_id()` and
+   // `getCurrentStateId()` all read this value.
+   //
+   // It is deliberately decoupled from the *persisted* current-state
+   // global (global #1, label 'currentState'): see
+   // `flushCurrentStateGlobal()` and `getGameStateValue()` for the
+   // rationale.  In short, real BGA leaves the current-state global
+   // pinned at the state the request *entered* in for the duration of
+   // an in-request cascade and only advances it at the request
+   // boundary, whereas the in-memory state is live.  We replicate that
+   // divergence so that game code reading the current-state global
+   // mid-cascade behaves the same under LocalArena as in production.
+   //
+   // `null` means "not yet loaded during this request"; it is lazily
+   // initialized from the persisted global (the previous request's
+   // parked state) by `getLiveStateId()`.
+   private ?int $liveStateId_ = null;
+
    function __construct()
    {
      parent::__construct();
@@ -944,9 +968,84 @@
      return false;
    }
 
+   // Returns the *live* id of the framework's game-state machine --
+   // i.e. the state that has most recently been entered, updated
+   // immediately by every `nextState()` transition (including
+   // intra-request cascades).
+   //
+   // IMPORTANT: This is NOT the same as reading the current-state
+   // global via `getGameStateValue('currentState')`.  The two diverge
+   // while a single request synchronously cascades through several
+   // "game"-type states:
+   //
+   //   - `getCurrentStateId()` (and `gamestate->state()` /
+   //     `state_id()`) are LIVE -- they track the in-memory machine
+   //     and change on each `nextState()`.
+   //
+   //   - `getGameStateValue('currentState')` is STALE -- it stays
+   //     pinned at the state the request entered in until the request
+   //     boundary (see `flushCurrentStateGlobal()`).
+   //
+   // Framework/harness code that asks "what state is the machine in
+   // right now?" wants the live value, so it uses this method.
    function getCurrentStateId(): int
    {
-     return $this->getGameStateValue('currentState');
+     return $this->getLiveStateId();
+   }
+
+   // Returns the live current-state id, lazily initializing it from
+   // the persisted current-state global (global #1) the first time it
+   // is needed in a request.  See the `$liveStateId_` doc comment.
+   function getLiveStateId(): int
+   {
+     if ($this->liveStateId_ === null) {
+       $this->liveStateId_ = intval(
+         $this->getUniqueValueFromDB(
+           'select global_value from global where global_id = ' . $this->gameStateLabels['currentState']
+         )
+       );
+     }
+     return $this->liveStateId_;
+   }
+
+   // Advances the in-memory live current state.  Crucially, this does
+   // NOT write the persisted current-state global; that global is only
+   // updated at the request boundary by `flushCurrentStateGlobal()`.
+   // Called by `GameState::nextState()`.
+   function setLiveStateId(int $state_id): void
+   {
+     $this->liveStateId_ = $state_id;
+   }
+
+   // Persists the in-memory live current state into the current-state
+   // global (global #1, label 'currentState').
+   //
+   // This is the mechanism that reproduces real BGA's staleness rule.
+   // During an in-request cascade, `nextState()` advances only the
+   // in-memory `$liveStateId_` and leaves the global untouched, so any
+   // game code that reads the current-state global via
+   // `getGameStateValue()` mid-cascade sees the state the request
+   // *entered* in -- exactly as it would on BGA Studio.  Only here, at
+   // the request boundary (the game has finished processing the action
+   // and parked in a state awaiting player input), do we advance the
+   // global to the live value, so the next request and the persisted
+   // game state see the parked state.
+   //
+   // Invoked from `saveState()`, which is LocalArena's single
+   // persistence chokepoint at the end of each request (both
+   // `initTable()` setup and `doAction()` player actions).
+   function flushCurrentStateGlobal(): void
+   {
+     if ($this->liveStateId_ === null) {
+       // Nothing advanced the live state this request; the global is
+       // already correct.
+       return;
+     }
+     $keyint = $this->gameStateLabels['currentState'];
+     $this->DbQuery(
+       "INSERT INTO global (global_id, global_value) values({$keyint},{$this->liveStateId_}) " .
+         "ON DUPLICATE KEY UPDATE global_value={$this->liveStateId_}"
+     );
    }
 
      function localarenaApplySchema($lines) {
@@ -1081,6 +1180,27 @@
    {
    }
 
+     // Reads a game-state global (a BGA "global variable") by label.
+     //
+     // For ordinary game globals this is a straightforward read of the
+     // `global` table.
+     //
+     // Note the special behavior for the framework's reserved
+     // current-state global (global #1, label 'currentState', or any
+     // game-defined label that maps to that id, e.g. BGA's
+     // `BGA_GAMESTATE_CURRENT_STATE`).  This is the SECOND of the two
+     // ways game code can ask "what state am I in?" -- and, matching
+     // real BGA, it is deliberately STALE during an in-request cascade.
+     // `nextState()` does not write the global; it is only advanced at
+     // the request boundary (`flushCurrentStateGlobal()`).  So while a
+     // single action synchronously cascades through several
+     // "game"-type states, this returns the state the request *entered*
+     // in, even though `getCurrentStateId()` /
+     // `gamestate->state_id()` (the live, in-memory state -- the FIRST
+     // way) have already moved on.  Game logic that branches on the
+     // current-state global mid-cascade therefore behaves the same here
+     // as in production.
+     //
      // XXX: $default is ignored.
    function getGameStateValue($key, $default=0)
    {
@@ -1238,6 +1358,13 @@
 
    function saveState()
    {
+     // Request boundary: advance the persisted current-state global to
+     // the live state now that the action's synchronous cascade has
+     // finished and the game has parked.  Until this point the global
+     // deliberately lagged (see `flushCurrentStateGlobal()`), so that
+     // game code reading it mid-cascade matched real BGA's staleness.
+     $this->flushCurrentStateGlobal();
+
      $moveId = $this->getGameStateValue('moveId');
      $players = $this->loadPlayersBasicInfos();
      $prevCurrentPlayerId = $this->currentPlayer;
@@ -1545,6 +1672,12 @@
           $cmd = "mysql --user={$username} --password={$password} " .
               "--host={$servername} --port={$port} --skip-ssl {$this->dbname} < {$undo_file} 2>&1";
           exec($cmd, $output, $result_code);
+
+          // The restore overwrote the entire database, including the
+          // persisted current-state global.  Drop the in-memory live
+          // state so the next read re-derives it from the restored
+          // global rather than from a now-stale cached value.
+          $this->liveStateId_ = null;
       }
   }
 

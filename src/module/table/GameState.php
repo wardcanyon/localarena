@@ -183,7 +183,15 @@ class GameState
       );
     }
     $newStateId = $state['transitions'][$transition];
-    $this->game->setGameStateValue('currentState', $newStateId);
+
+    // Advance only the in-memory "live" state.  We deliberately do NOT
+    // write the persisted current-state global here: real BGA leaves
+    // that global pinned at the request's entry state for the whole
+    // synchronous cascade and only advances it at the request
+    // boundary.  LocalArena replicates that -- `Table::saveState()`
+    // flushes the live state into the global once the action parks.
+    // See `Table::$liveStateId_` and `Table::flushCurrentStateGlobal()`.
+    $this->game->setLiveStateId($newStateId);
 
     $this->log(
       'From state "' .
@@ -199,8 +207,19 @@ class GameState
   }
 
   /**
-   *Get an associative array of current game state attributes, see Your game state machine: states.inc.php for state attributes.
+   * Get an associative array of current game state attributes, see Your game state machine: states.inc.php for state attributes.
    * $state=$this->gamestate->state(); if( $state['name'] == 'myGameState' ) {...}
+   *
+   * This reflects the *live* in-memory state machine: it is updated
+   * immediately by `nextState()`, so during an in-request cascade
+   * through several "game"-type states it always names the state
+   * currently being processed.  This is one of the two ways game code
+   * can ask "what state am I in?"; the other is reading the
+   * current-state global via `getGameStateValue()`, which -- matching
+   * real BGA -- stays pinned at the request's entry state until the
+   * request boundary.  See `Table::getCurrentStateId()` and
+   * `Table::$liveStateId_`.
+   *
    * @return array
    */
   public function state()
@@ -210,10 +229,14 @@ class GameState
   }
 
     /**
-      @return int
-    */
+     * The id of the *live* state (see `state()`).  Updated immediately
+     * by every `nextState()` transition.  NOT the same as
+     * `getGameStateValue('currentState')` during a cascade, which lags.
+     *
+     * @return int
+     */
     public function state_id()
     {
-        return $this->game->getGameStateValue('currentState');
+        return $this->game->getLiveStateId();
     }
 }

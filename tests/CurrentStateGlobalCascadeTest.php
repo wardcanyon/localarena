@@ -174,7 +174,7 @@ class CurrentStateGlobalCascadeTest extends IntegrationTestCase
 
         // ST_INPUT -> ST_MULTI (recorded) --setPlayersMultiactive([])-->
         // ST_SECOND_INPUT (parks).
-        $this->playerByIndex(0)->act('actTestTransition', ['transition' => 'go_ma']);
+        $this->playerByIndex(0)->act('actTestTransition', ['transition' => 'gomulti']);
 
         $this->assertCount(1, $game->recorded, 'Expected one record for the multiactive cascade step.');
         $step = $game->recorded[0];
@@ -297,8 +297,10 @@ class CascadeStateTestGame extends \localarenanoop
                     // Kicks off the multi-state cascade.
                     'go' => CurrentStateGlobalCascadeTest::ST_CASCADE_A,
                     // Kicks off a one-step cascade that advances through
-                    // the MULTIACTIVE transition path.
-                    'go_ma' => CurrentStateGlobalCascadeTest::ST_MULTI,
+                    // the MULTIACTIVE transition path.  (Transition names
+                    // are validated as AT_alphanum_dash by the test
+                    // action, so no underscores here.)
+                    'gomulti' => CurrentStateGlobalCascadeTest::ST_MULTI,
                     // Single hop straight to another input (activeplayer)
                     // state -- no auto-advancing "game" state in between,
                     // so the machine stops there.  Used to observe one

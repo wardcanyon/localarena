@@ -43,6 +43,7 @@ class CurrentStateGlobalCascadeTest extends IntegrationTestCase
     const ST_CASCADE_B = 11;   // game-type
     const ST_CASCADE_C = 12;   // game-type
     const ST_SECOND_INPUT = 13; // where the cascade parks (activeplayer)
+    const ST_MULTI = 20;       // game-type, advances via the multiactive path
 
     protected function defaultTableParams(): \LocalArena\TableParams
     {
@@ -103,6 +104,14 @@ class CurrentStateGlobalCascadeTest extends IntegrationTestCase
                 $step['live_state_name'],
                 "gamestate->state()['name'] should be live at cascade step {$i}."
             );
+            // The client-facing "read index" (the state id LocalArena
+            // ships to clients) must track the live state, not the
+            // lagging global.
+            $this->assertEquals(
+                $expectedLive[$i],
+                $step['read_index_id'],
+                "The client-facing state-id read index should be live at cascade step {$i} ({$step['name']})."
+            );
 
             // (2) The current-state global LAGS: pinned at the entry
             // state for the entire cascade -- this is the real-BGA
@@ -126,6 +135,17 @@ class CurrentStateGlobalCascadeTest extends IntegrationTestCase
                 $step['live_state_id'],
                 "The live state and the current-state global must diverge mid-cascade (step {$i})."
             );
+
+            // Scoping: the staleness must hit ONLY the current-state
+            // slot.  A write to an unrelated global is visible
+            // immediately, even mid-cascade -- so a future change that
+            // accidentally buffered/lagged all globals would break here.
+            $this->assertEquals(
+                $step['scope_probe_written'],
+                $step['scope_probe_readback'],
+                "A non-current-state global must stay live mid-cascade; the lag is scoped to the " .
+                    "current-state slot only (step {$i})."
+            );
         }
 
         // At the request boundary the global catches up to the parked
@@ -136,6 +156,44 @@ class CurrentStateGlobalCascadeTest extends IntegrationTestCase
             intval($game->getGameStateValue('currentState')),
             'After the request, the current-state global should equal the parked state.'
         );
+    }
+
+    /**
+     * The same divergence must hold when the cascade advances through
+     * the MULTIACTIVE transition path (`setPlayersMultiactive()`), not
+     * just a plain `nextState()`.  This guards scenario (c): the
+     * rebuild must not have changed how multiactive transitions
+     * interact with the current-state global.
+     */
+    public function testMultiactiveTransitionDuringCascadeKeepsGlobalStale(): void
+    {
+        $game = $this->game();
+
+        $this->assertEquals(self::ST_INPUT, $game->getCurrentStateId());
+        $this->assertEquals(self::ST_INPUT, intval($game->getGameStateValue('currentState')));
+
+        // ST_INPUT -> ST_MULTI (recorded) --setPlayersMultiactive([])-->
+        // ST_SECOND_INPUT (parks).
+        $this->playerByIndex(0)->act('actTestTransition', ['transition' => 'go_ma']);
+
+        $this->assertCount(1, $game->recorded, 'Expected one record for the multiactive cascade step.');
+        $step = $game->recorded[0];
+
+        // The multiactive "game" state was entered live...
+        $this->assertEquals(self::ST_MULTI, $step['live_state_id']);
+        $this->assertEquals(self::ST_MULTI, $step['live_state_id_via_gamestate']);
+        $this->assertEquals(self::ST_MULTI, $step['read_index_id']);
+
+        // ...while the current-state global stayed pinned at the entry
+        // state across the multiactive transition.
+        $this->assertEquals(self::ST_INPUT, $step['current_state_global']);
+        $this->assertEquals(self::ST_INPUT, $step['current_state_global_via_alias']);
+        $this->assertNotEquals($step['current_state_global'], $step['live_state_id']);
+
+        // At the request boundary the global catches up to the parked
+        // state reached via the multiactive path.
+        $this->assertEquals(self::ST_SECOND_INPUT, $game->getCurrentStateId());
+        $this->assertEquals(self::ST_SECOND_INPUT, intval($game->getGameStateValue('currentState')));
     }
 
     /**
@@ -198,7 +256,17 @@ class CascadeStateTestGame extends \localarenanoop
         // global (global #1), mirroring how a real game might map
         // `'bgaCurrentState' => BGA_GAMESTATE_CURRENT_STATE`.  Reads via
         // this label must lag identically to reads via 'currentState'.
-        $this->initGameStateLabels(['myCurrentStateLabel' => 1]);
+        //
+        // Also register an UNRELATED game global ('scopeProbe', a
+        // distinct slot).  The cascade writes to it mid-flight and reads
+        // it straight back to prove the staleness is scoped to the
+        // current-state slot ALONE and does not leak into neighbouring
+        // globals -- on real BGA only BGA_GAMESTATE_CURRENT_STATE is
+        // pinned, while every other global stays live.
+        $this->initGameStateLabels([
+            'myCurrentStateLabel' => 1,
+            'scopeProbe' => 5,
+        ]);
 
         // Replace the trivial noop machine with one that cascades.
         $this->gamestate = new \GameState($this, self::cascadeMachineStates());
@@ -228,6 +296,9 @@ class CascadeStateTestGame extends \localarenanoop
                 'transitions' => [
                     // Kicks off the multi-state cascade.
                     'go' => CurrentStateGlobalCascadeTest::ST_CASCADE_A,
+                    // Kicks off a one-step cascade that advances through
+                    // the MULTIACTIVE transition path.
+                    'go_ma' => CurrentStateGlobalCascadeTest::ST_MULTI,
                     // Single hop straight to another input (activeplayer)
                     // state -- no auto-advancing "game" state in between,
                     // so the machine stops there.  Used to observe one
@@ -258,6 +329,16 @@ class CascadeStateTestGame extends \localarenanoop
                 'transitions' => ['next' => CurrentStateGlobalCascadeTest::ST_SECOND_INPUT],
             ],
 
+            // A "game"-type state that continues the cascade through the
+            // multiactive transition path (see stMultiCascade()).
+            CurrentStateGlobalCascadeTest::ST_MULTI => [
+                'name' => 'stMultiCascade',
+                'description' => '',
+                'type' => 'game',
+                'action' => 'stMultiCascade',
+                'transitions' => ['next' => CurrentStateGlobalCascadeTest::ST_SECOND_INPUT],
+            ],
+
             // Where the cascade parks (awaiting player input again).
             CurrentStateGlobalCascadeTest::ST_SECOND_INPUT => [
                 'name' => 'stSecondInput',
@@ -271,34 +352,64 @@ class CascadeStateTestGame extends \localarenanoop
 
     public function stCascadeA(): void
     {
-        $this->recordCascadeStep('stCascadeA');
+        $this->recordStep('stCascadeA');
+        $this->gamestate->nextState('next');
     }
 
     public function stCascadeB(): void
     {
-        $this->recordCascadeStep('stCascadeB');
+        $this->recordStep('stCascadeB');
+        $this->gamestate->nextState('next');
     }
 
     public function stCascadeC(): void
     {
-        $this->recordCascadeStep('stCascadeC');
+        $this->recordStep('stCascadeC');
+        $this->gamestate->nextState('next');
     }
 
-    // Record both ways of reading the current state as this game-type
-    // state is entered, then continue the cascade.
-    private function recordCascadeStep(string $name): void
+    // A "game"-type state that continues the cascade through the
+    // MULTIACTIVE transition path rather than a plain nextState().  With
+    // no players left active, setPlayersMultiactive() auto-advances via
+    // nextState('next'); this exercises the multiactive-transition code
+    // path mid-cascade and lets the test confirm it preserves the same
+    // live-state / lagging-global divergence.
+    public function stMultiCascade(): void
     {
+        $this->recordStep('stMultiCascade');
+        $this->gamestate->setPlayersMultiactive([], 'next');
+    }
+
+    // Record, as this game-type state is entered: both ways of reading
+    // the current state, the client-facing "read index" id, and a probe
+    // proving the lag does not leak into unrelated globals.  Does NOT
+    // transition -- the caller drives the next hop (so the same recorder
+    // serves both the plain-nextState and the multiactive paths).
+    private function recordStep(string $name): void
+    {
+        // Write a sentinel to a NON-current-state global, then read it
+        // straight back below.  It must round-trip live: the staleness
+        // applies to the current-state slot only, never to other slots.
+        $sentinel = 700 + count($this->recorded);
+        $this->setGameStateValue('scopeProbe', $sentinel);
+
         $this->recorded[] = [
             'name' => $name,
             // (1) live, in-memory readings
             'live_state_id' => $this->getCurrentStateId(),
             'live_state_id_via_gamestate' => $this->gamestate->state_id(),
             'live_state_name' => $this->gamestate->state()['name'],
+            // The state id LocalArena surfaces to clients in the
+            // gameStateChange payload (the "read index").  It is built
+            // from getCurrentStateId(), so it must be LIVE mid-cascade.
+            'read_index_id' => intval($this->getStateForNotifInner(/*includeMultiactive=*/ false)['id']),
             // (2) persisted current-state global (should lag)
             'current_state_global' => intval($this->getGameStateValue('currentState')),
             'current_state_global_via_alias' => intval($this->getGameStateValue('myCurrentStateLabel')),
+            // The unrelated-global probe: written just above, read back
+            // here.  Equality proves the lag is scoped to one slot.
+            'scope_probe_written' => $sentinel,
+            'scope_probe_readback' => intval($this->getGameStateValue('scopeProbe')),
         ];
-
-        $this->gamestate->nextState('next');
     }
 }

@@ -133,6 +133,60 @@ Notes:
 - This driver is **not** wired into CI; coverage is an on-demand,
   local-only tool.
 
+#### Coverage for a game built on top of the `testenv` image
+
+The example above measures LocalArena's own `module` sources. If you are
+running a **game's** tests against the `testenv` image, the mechanism is
+identical — you just point it at your own sources:
+
+1. **Enable PCOV per-invocation.** Run phpunit (or paratest) through PHP
+   with the flag: `php -d pcov.enabled=1 /vendor/bin/phpunit …` (the
+   binaries live in `/vendor/bin`, which is on `PATH`, but you must invoke
+   them via `php -d …` so the setting is applied). Without this flag the
+   `--coverage-*` options report that no driver is active — that is by
+   design, so normal runs stay at zero overhead.
+
+2. **Tell PHPUnit which code to measure.** Add a `<source>` element to
+   *your* `phpunit.xml`, pointing at the in-container path where your game
+   sources are mounted, e.g.:
+
+   ```xml
+   <source>
+       <include>
+           <directory>/src/game/yourgame</directory>
+       </include>
+   </source>
+   ```
+
+   Without a `<source>` block (or a `--coverage-filter` CLI option) the
+   report will be empty.
+
+3. **Get the report out of the container.** Mount a host directory for
+   file-based reports (`--coverage-html`, `--coverage-clover`, …);
+   `--coverage-text` prints to stdout and needs no mount.
+
+```
+$ mkdir -p coverage
+$ docker run -i --rm \
+  --network localarena_default \
+  -v $PWD/db/password.txt:/run/secrets/db-password:ro \
+  -v $PWD/your-sources:/src/game/yourgame:ro \
+  -v $PWD/tests:/src/game/yourgame/tests:ro \
+  -v $PWD/coverage:/coverage \
+  wardcanyon/localarena-testenv:latest \
+  php -d pcov.enabled=1 /vendor/bin/phpunit \
+    --configuration /src/game/yourgame/tests/phpunit.xml \
+    --coverage-text \
+    --coverage-html /coverage/html
+```
+
+Adjust the mounts and paths to match your project layout; the only
+coverage-specific additions are `php -d pcov.enabled=1`, the
+`--coverage-*` flags, the `<source>` block, and the `/coverage` mount.
+Do **not** bake `pcov.enabled=1` into a derived image unless you actually
+want coverage overhead on every run — the default exists precisely so the
+driver is loaded and ready but free.
+
 ### Running a game locally
 
 You can change which game will be launched, how many players will be

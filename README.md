@@ -89,6 +89,50 @@ rebuild the container every time.
 -v ${LOCALARENA_ROOT}/src/view:/src/localarena/view:ro
 ```
 
+### Generating code-coverage reports
+
+The `testenv` image ships with the [PCOV](https://github.com/krakjoe/pcov)
+coverage driver installed. PCOV is much faster than Xdebug for
+coverage-only work, but to keep normal test runs at **zero overhead** it
+is **disabled by default** (`pcov.enabled=0` is baked into the image).
+PCOV is a no-op while disabled, so it costs nothing until you ask for it.
+
+To produce a report, enable PCOV for that single invocation by passing
+`php -d pcov.enabled=1` and adding a `--coverage-*` option to PHPUnit. The
+command is the same as a normal test run (see `Gruntfile.cjs`'s
+`shell:test` task), with those two additions. For example, to get a
+text summary plus an HTML report written to `./coverage/html` on the host:
+
+```
+$ mkdir -p coverage
+$ docker run -i --rm \
+  --network localarena_default \
+  -v $PWD/db/password.txt:/run/secrets/db-password:ro \
+  -v $PWD/src/module:/src/localarena/module:ro \
+  -v $PWD/src/game/localarenanoop:/src/game/localarenanoop:ro \
+  -v $PWD/tests:/src/localarena/tests:ro \
+  -v $PWD/coverage:/coverage \
+  wardcanyon/localarena-testenv:latest \
+  php -d pcov.enabled=1 /vendor/bin/phpunit \
+    --configuration /src/localarena/tests/phpunit.xml \
+    --coverage-text \
+    --coverage-html /coverage/html
+```
+
+Notes:
+
+- `php -d pcov.enabled=1` is what turns coverage on. Without it, the
+  `--coverage-*` options will report that no coverage driver is active.
+- `--coverage-text` prints a per-file summary to the console;
+  `--coverage-html /coverage/html` writes a browsable report. Other
+  formats (`--coverage-clover`, `--coverage-cobertura`, etc.) work too.
+- The extra `-v $PWD/coverage:/coverage` mount is only needed for report
+  formats that write files to disk; `--coverage-text` alone needs no mount.
+- What gets measured is configured by the `<source>` element in
+  `tests/phpunit.xml` (currently the LocalArena `module` sources).
+- This driver is **not** wired into CI; coverage is an on-demand,
+  local-only tool.
+
 ### Running a game locally
 
 You can change which game will be launched, how many players will be

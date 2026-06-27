@@ -23,3 +23,12 @@ from there.
 
 If you are running locally (not in a remote/web session) with a working
 Docker setup, just run the suite directly with `grunt test`.
+
+## Code coverage
+
+The `testenv` image has the PCOV coverage driver installed but **disabled
+by default** (`pcov.enabled=0`), so it adds zero overhead to normal runs.
+Enable it per-invocation with `php -d pcov.enabled=1` plus a PHPUnit
+`--coverage-*` option. See the "Generating code-coverage reports" section
+of `README.md` for the full command. Coverage is a local-only tool and is
+not wired into CI.

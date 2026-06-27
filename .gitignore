@@ -6,3 +6,6 @@
 src/ebg/**/*.js
 
 src/phan.analysis.txt
+
+# Local-only code-coverage reports (see README "Generating code-coverage reports")
+/coverage/

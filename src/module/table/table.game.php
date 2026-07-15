@@ -5,7 +5,9 @@
  require_once APP_GAMEMODULE_PATH . 'module/table/BgaVisibleSystemException.php';
  require_once APP_GAMEMODULE_PATH . 'module/table/BgaUserException.php';
  require_once APP_GAMEMODULE_PATH . 'module/table/GameState.php';
- require_once APP_GAMEMODULE_PATH . 'module/table/Stats.php';
+ require_once APP_GAMEMODULE_PATH . 'module/table/LocalArenaStats.php';
+ require_once APP_GAMEMODULE_PATH . 'module/table/LocalArenaLegacy.php';
+ require_once APP_GAMEMODULE_PATH . 'module/table/LocalArenaBgaServices.php';
  require_once APP_GAMEMODULE_PATH . 'module/table/APP_GameAction.php';
  require_once APP_GAMEMODULE_PATH . 'module/table/deck.php';
  require_once APP_BASE_PATH . 'view/common/util.php';
@@ -390,6 +392,10 @@
    public TableStats $tableStats;
    public PlayerStats $playerStats;
 
+   // The modern object-based services API; carries the legacy-games
+   // API as `$this->bga->legacy`.
+   public LocalArenaBgaServices $bga;
+
    public $game_options;
    public $game_preferences;
    public $game_infos;
@@ -404,6 +410,22 @@
    public $gameStateLabels;
 
      public int $localarena_table_id;
+
+   // The (deterministic) player ID that `stGameSetup()` assigns to the
+   // first player at a table; subsequent players get consecutive IDs.
+   // Test code relies on this to know player IDs before a table exists
+   // (e.g. to seed legacy data that setup code will read).
+   const LOCALARENA_FIRST_PLAYER_ID = 2317679;
+
+   // The IDs of the players being seated at this table, recorded by
+   // `stGameSetup()` just before `setupNewGame()` runs.  Lets the
+   // legacy-games API compute the current team during setup, while the
+   // `player` table is still empty.  Null outside of table creation.
+   private ?array $localarena_setup_player_ids_ = null;
+
+   // True only while the game's `setupNewGame()` is running; storing
+   // legacy data throws during that window (as on BGA).
+   private bool $localarena_in_game_setup_ = false;
 
    // The in-memory "live" id of the framework's game-state machine.
    //
@@ -439,6 +461,7 @@
      $this->stats_type = localarenaLoadStatsDescription(LOCALARENA_GAME_PATH . $this->getGameName());
      $this->tableStats = new TableStats($this);
      $this->playerStats = new PlayerStats($this);
+     $this->bga = new LocalArenaBgaServices($this);
 
      $gameoptions_json_path = LOCALARENA_GAME_PATH . $this->getGameName() . '/gameoptions.json';
      $gamepreferences_json_path = LOCALARENA_GAME_PATH . $this->getGameName() . '/gamepreferences.json';
@@ -1089,7 +1112,7 @@
 
    function stGameSetup()
    {
-     $first_player_id = 2317679;
+     $first_player_id = self::LOCALARENA_FIRST_PLAYER_ID;
 
      $players = [];
      for ($i = 0; $i < LOCALARENA_PLAYER_COUNT; $i++) {
@@ -1105,7 +1128,19 @@
 
      $this->localarenaSetDefaultOptions();
 
-     $this->setupNewGame($players);
+     // Record who is at this table before `setupNewGame()` runs, so
+     // that the legacy-games API can compute the current team even
+     // while the `player` table is still empty (legacy data is
+     // frequently READ during setup); and flag that we are in game
+     // setup, during which STORING legacy data must throw (as it does
+     // on BGA).
+     $this->localarena_setup_player_ids_ = array_map('intval', array_keys($players));
+     $this->localarena_in_game_setup_ = true;
+     try {
+       $this->setupNewGame($players);
+     } finally {
+       $this->localarena_in_game_setup_ = false;
+     }
      $this->gamestate->nextState('');
    }
 
@@ -1640,6 +1675,131 @@
    public static function getBgaEnvironment() {
        return 'localarena';
    }
+
+  // ==================== Legacy-games API ====================
+  //
+  // The modern face of this API is `$this->bga->legacy` (see
+  // `module/table/LocalArenaLegacy.php`); the methods below are the deprecated
+  // function-based aliases, kept for compatibility with older games.
+  //
+  // See https://en.doc.boardgamearena.com/Main_game_logic:_yourgamename.game.php#Legacy_games_API
+
+  // XXX: This is part of the LocalArena API, not the BGA API; it is
+  // intended only for internal use (by the legacy-games API).
+  public function localarenaInGameSetup(): bool
+  {
+      return $this->localarena_in_game_setup_;
+  }
+
+  // This table's legacy scope, as recorded in the table's registry row
+  // (see `TableParams::$legacy_scope`); assigned by
+  // `TableManager::getTable()`.  Null means the default scope.
+  //
+  // XXX: This is part of the LocalArena API, not the BGA API.
+  public ?string $localarena_legacy_scope = null;
+
+  // Returns the legacy scope that this table's legacy data lives
+  // under.  Legacy data is shared exactly by the tables of a game that
+  // share a scope.  The default scope is the empty string -- the
+  // game's one shared pool, which gives BGA's semantics (all tables of
+  // a game share their legacy data); the test harness instead assigns
+  // each test case a private scope, so that tests are isolated by
+  // default.
+  //
+  // XXX: This is part of the LocalArena API, not the BGA API; it is
+  // intended only for internal use (by the legacy-games API).
+  public function localarenaLegacyScope(): string
+  {
+      return $this->localarena_legacy_scope ?? '';
+  }
+
+  // Returns the team signature (see `localarenaLegacyTeamSignature()`)
+  // for the set of players at this table.
+  //
+  // XXX: This is part of the LocalArena API, not the BGA API; it is
+  // intended only for internal use (by the legacy-games API).
+  public function localarenaLegacyTeamSignature(): string
+  {
+      $player_ids = array_map('intval', $this->getObjectListFromDB('SELECT player_id FROM player', /*bUniqueValue=*/ true));
+      if (count($player_ids) === 0 && $this->localarena_setup_player_ids_ !== null) {
+          // We are early enough in game setup that `setupNewGame()` has
+          // not yet inserted the players; use the seating list instead.
+          $player_ids = $this->localarena_setup_player_ids_;
+      }
+      if (count($player_ids) === 0) {
+          throw new \BgaVisibleSystemException('Cannot compute the legacy-data team: this table has no players.');
+      }
+      return localarenaLegacyTeamSignature($player_ids);
+  }
+
+  /**
+   * Deprecated alias of `$this->bga->legacy->set()`.
+   */
+  public function storeLegacyData(int $player_id, string $key, $data, int $ttl = 365): void
+  {
+      $this->bga->legacy->set($key, $player_id, $data, $ttl);
+  }
+
+  /**
+   * Deprecated alias of `$this->bga->legacy->get()`.
+   *
+   * Note that (as on BGA) the return shape differs from the modern
+   * `get()`: this returns an array of rows -- one per matching key,
+   * since `$key` may contain '%' wildcards -- whose 'value' fields are
+   * still JSON-encoded.  An empty array means no data.
+   */
+  public function retrieveLegacyData($player_id, $key): array
+  {
+      $rows = [];
+      foreach ($this->bga->legacy->localarenaGetRaw($key, intval($player_id)) as $row_key => $json_value) {
+          $rows[] = [
+              'player_id' => intval($player_id),
+              'key' => $row_key,
+              'value' => $json_value,
+          ];
+      }
+      return $rows;
+  }
+
+  /**
+   * Deprecated alias of `$this->bga->legacy->delete()`.
+   */
+  public function removeLegacyData(int $player_id, string $key): void
+  {
+      $this->bga->legacy->delete($key, $player_id);
+  }
+
+  /**
+   * Deprecated alias of `$this->bga->legacy->setTeam()`.
+   */
+  public function storeLegacyTeamData($data, int $ttl = 365): void
+  {
+      $this->bga->legacy->setTeam($data, $ttl);
+  }
+
+  /**
+   * Deprecated alias of `$this->bga->legacy->getTeam()`.
+   *
+   * As with `retrieveLegacyData()`, this returns rows whose 'value'
+   * fields are still JSON-encoded (at most one row, since team data is
+   * keyless).  An empty array means no data.
+   */
+  public function retrieveLegacyTeamData(): array
+  {
+      $json_value = $this->bga->legacy->localarenaGetTeamRaw();
+      if ($json_value === null) {
+          return [];
+      }
+      return [['value' => $json_value]];
+  }
+
+  /**
+   * Deprecated alias of `$this->bga->legacy->deleteTeam()`.
+   */
+  public function removeLegacyTeamData(): void
+  {
+      $this->bga->legacy->deleteTeam();
+  }
 
   // ==================== Undo Support ====================
 

@@ -27,4 +27,17 @@ class TableParams
     // itself) pays no mysqldump cost.  Tests that exercise undo opt in by setting this to true in their
     // defaultTableParams() override -- see UndoTest for an example.
     public bool $enable_undo_savepoints = false;
+
+    // The "legacy scope" that the table's legacy data (the
+    // `$this->bga->legacy` API) lives under.  Legacy data is shared
+    // exactly by the tables of a game that share a scope.
+    //
+    // Null (the default) means the empty scope: the game's one shared
+    // pool, which gives BGA's semantics (all tables of a game share
+    // their legacy data).  The test harness instead assigns each test
+    // case its own unique scope (see
+    // IntegrationTestCase::legacyScope()), so that tests are isolated
+    // by default; a test that creates several tables whose legacy data
+    // should flow from one to the next gives them all the same scope.
+    public ?string $legacy_scope = null;
 }

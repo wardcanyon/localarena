@@ -8,6 +8,7 @@ echo '*** XXX: requiring load_game_hooks.php...' . "\n";
 require_once APP_GAMEMODULE_PATH . 'module/gameconfig/load_game_hooks.php';
 
 require_once 'TableParams.php';
+require_once APP_GAMEMODULE_PATH . 'module/tablemanager/metadata_db.php';
 
 use \LocalArena\TableParams;
 
@@ -19,45 +20,10 @@ class TableManager
 
   public function __construct()
   {
-    // Open the `localarena` database, which is created by the
-    // MySQL container.  If it is still empty, initialize it.
-
-    $this->conn = $this::openDatabase('localarena');
-
-    $result = $this->conn->query("SHOW TABLES LIKE 'table'");
-    if ($result->num_rows == 0) {
-      if (php_sapi_name() == 'cli') {
-        echo "*** LocalArena metadata database requires initialization...\n";
-      }
-      $this->loadFile(APP_GAMEMODULE_PATH . '/module/tablemanager/schema.sql');
-    }
-  }
-
-  // XXX: Copied from "table.game.php"; move to a shared library.
-  function loadFile($filename)
-  {
-    // Temporary variable, used to store current query
-    $templine = '';
-    // Read in entire file
-    $lines = file($filename);
-    // Loop through each line
-    foreach ($lines as $line) {
-      // Skip it if it's a comment
-      if (substr($line, 0, 2) == '--' || $line == '') {
-        continue;
-      }
-
-      // Add this line to the current segment
-      $templine .= $line;
-      // If it has a semicolon at the end, it's the end of the query
-      if (substr(trim($line), -1, 1) == ';') {
-        // Perform the query
-        $this->conn->query($templine) or
-          (print 'Error performing query \'<strong>' . $templine . '\': ' . $this->conn->error . '<br /><br />');
-        // Reset temp variable to empty
-        $templine = '';
-      }
-    }
+    // Open the `localarena` metadata database (created by the MySQL
+    // container), initializing it from schema.sql if it is still
+    // empty.
+    $this->conn = localarenaOpenMetadataDb();
   }
 
   public static function openDatabase(string $dbname)
@@ -127,6 +93,10 @@ class TableManager
 
     $game->localarena_table_id = $table_id;
 
+    // NULL (tables created before legacy-scope support) leaves the
+    // Table falling back to its default scope, the game name.
+    $game->localarena_legacy_scope = $row['table_legacy_scope'] ?? null;
+
     return $game;
   }
 
@@ -137,7 +107,17 @@ class TableManager
   // `setupNewGame()`, and perform any initial state transitions.
   public function createTable(TableParams $params)
   {
-    $this->conn->query('INSERT INTO `table` (table_game) VALUES ("' . $params->game . '")');
+    // A null legacy scope defaults to the empty string: the game's one
+    // shared pool of legacy data (as on BGA).  The scope is recorded
+    // on the table's registry row.
+    $legacy_scope = $params->legacy_scope ?? '';
+    $this->conn->query(
+      'INSERT INTO `table` (table_game, table_legacy_scope) VALUES ("' .
+        $params->game .
+        '", "' .
+        $this->conn->real_escape_string($legacy_scope) .
+        '")'
+    );
     $table_id = $this->conn->insert_id;
 
     $dbname = $this::getTableDatabaseName($table_id);

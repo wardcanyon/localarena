@@ -1705,6 +1705,19 @@
       $this->requireUndoCompatibleState('undoRestorePoint');
       $undo_file = $this->getUndoFilePath();
       if (file_exists($undo_file)) {
+          // The restore runs in a separate mysql process, and its DROP TABLEs need an exclusive
+          // metadata lock on every table in the database.  But this call happens mid-action,
+          // inside the transaction that doAction() opened on the game connection -- and that
+          // transaction holds metadata locks on every table the action has touched so far (e.g.
+          // `gamelog`, via notifications).  Those locks release only when the transaction ends,
+          // and the transaction cannot end until the restore returns: a guaranteed self-deadlock
+          // (the metadata-lock wait timeout defaults to a year, so the process hangs forever).
+          //
+          // Roll the in-flight transaction back before the restore.  Its writes were about to be
+          // overwritten by the snapshot anyway, and the post-restore writes doAction() goes on to
+          // make (moveId, saveState) simply apply in autocommit mode.
+          $this->conn()->rollback();
+
           $servername = getenv('DB_HOST');
           $username = getenv('DB_USER');
           $password = localarena_db_password();

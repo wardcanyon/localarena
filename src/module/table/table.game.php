@@ -5,6 +5,7 @@
  require_once APP_GAMEMODULE_PATH . 'module/table/BgaVisibleSystemException.php';
  require_once APP_GAMEMODULE_PATH . 'module/table/BgaUserException.php';
  require_once APP_GAMEMODULE_PATH . 'module/table/GameState.php';
+ require_once APP_GAMEMODULE_PATH . 'module/table/Stats.php';
  require_once APP_GAMEMODULE_PATH . 'module/table/APP_GameAction.php';
  require_once APP_GAMEMODULE_PATH . 'module/table/deck.php';
  require_once APP_BASE_PATH . 'view/common/util.php';
@@ -375,14 +376,19 @@
 
  class Table extends APP_GameClass
  {
-   // This contains the data defined in `stats.inc.php`.
+   // This contains the game's statistics description, as loaded from
+   // `stats.json`, `stats.jsonc`, or the legacy `stats.inc.php` (see
+   // `localarenaLoadStatsDescription()`).
    //
    // XXX: Is this available in the actual BGA implementation? Do we
    // need to hide it?
-   //
-   // XXX: Why do stats work for "thecrew" (or at least not throw
-   // errors) but don't for "emppty" and "burglebrostwo""?
    public $stats_type;
+
+   // The object-based statistics APIs (the modern face of
+   // `initStat()`/`setStat()`/`incStat()`/`getStat()`); see
+   // https://en.doc.boardgamearena.com/Game_statistics:_stats.json
+   public TableStats $tableStats;
+   public PlayerStats $playerStats;
 
    public $game_options;
    public $game_preferences;
@@ -430,8 +436,9 @@
      $this->currentPlayer = 0;
      $this->replayFrom = 0;
 
-     include LOCALARENA_GAME_PATH . $this->getGameName() . '/stats.inc.php';
-     $this->stats_type = $stats_type;
+     $this->stats_type = localarenaLoadStatsDescription(LOCALARENA_GAME_PATH . $this->getGameName());
+     $this->tableStats = new TableStats($this);
+     $this->playerStats = new PlayerStats($this);
 
      $gameoptions_json_path = LOCALARENA_GAME_PATH . $this->getGameName() . '/gameoptions.json';
      $gamepreferences_json_path = LOCALARENA_GAME_PATH . $this->getGameName() . '/gamepreferences.json';
@@ -1248,86 +1255,120 @@
      );
    }
 
-   function initStat($type, $key, $value, $player_id = null)
+   // Resolves a stat name within one section ('table' or 'player') of
+   // the game's statistics description (stats.json/stats.jsonc, or
+   // the legacy stats.inc.php) to its integer ID.  Note that IDs are
+   // only unique within a section; a table stat and a player stat may
+   // share the same numeric ID, so rows are disambiguated by
+   // `stats_player_id` being NULL (table) or not (player).
+   private function statTypeId(string $type, string $name): int
    {
-     if (!is_null($player_id)) {
-       throw new \feException('$player_id parameter not supported');
-     }
      if ($type !== 'player' && $type !== 'table') {
        throw new \feException('Stat type must be "player" or "table".');
      }
-
-     $id = $this->stats_type[$type][$key]['id'];
-     if (!is_int($id)) {
-       echo "*** stat does not have integer ID\n";
-       // XXX: Should add an "internal LocalArena error" exception type.
-       throw new \feException('Stat must have an integer ID.');
+     if (!isset($this->stats_type[$type][$name])) {
+       throw new \feException(
+         'There is no ' . $type . ' statistic named "' . $name . '" in the game\'s statistics description.'
+       );
      }
+     $id = $this->stats_type[$type][$name]['id'] ?? null;
+     if (!is_int($id)) {
+       // XXX: Should add an "internal LocalArena error" exception type.
+       throw new \feException('Statistic "' . $name . '" must have an integer ID in the statistics description.');
+     }
+     return $id;
+   }
+
+   // Renders a stat value (int, float, or bool) as a SQL literal.
+   private function statValueLiteral($value): string
+   {
+     if (is_bool($value)) {
+       return $value ? '1' : '0';
+     }
+     if (!is_numeric($value)) {
+       throw new \feException('Stat values must be int, float, or bool.');
+     }
+     // The `0 +` normalizes numeric strings.
+     return strval(0 + $value);
+   }
+
+   // The WHERE predicate selecting stat rows: table stats are stored
+   // with a NULL `stats_player_id` (which `=` would never match).
+   private function statRowPredicate(int $id, $player_id): string
+   {
+     $player_pred = is_null($player_id) ? 'stats_player_id IS NULL' : 'stats_player_id = ' . intval($player_id);
+     return 'stats_type = ' . $id . ' AND ' . $player_pred;
+   }
+
+   function initStat($type, $key, $value, $player_id = null)
+   {
+     $id = $this->statTypeId($type, $key);
+     $value_literal = $this->statValueLiteral($value);
 
      if ($type == 'player') {
-       $players = $this->loadPlayersBasicInfos();
-       foreach ($players as $player) {
+       if (is_null($player_id)) {
+         $player_ids = array_keys($this->loadPlayersBasicInfos());
+       } else {
+         $player_ids = [$player_id];
+       }
+       foreach ($player_ids as $init_player_id) {
          $this->DbQuery(
            'INSERT INTO `stats`(`stats_type`, `stats_player_id`, `stats_value`) VALUES (' .
              $id .
              ',' .
-             $player['player_id'] .
+             intval($init_player_id) .
              ',' .
-             $value .
+             $value_literal .
              ')'
          );
        }
      } else {
+       if (!is_null($player_id)) {
+         throw new \feException('$player_id may only be given when initializing a player statistic.');
+       }
        $this->DbQuery(
-         'INSERT INTO `stats`(`stats_type`, `stats_player_id`, `stats_value`) VALUES (' . $id . ',NULL,' . $value . ')'
+         'INSERT INTO `stats`(`stats_type`, `stats_player_id`, `stats_value`) VALUES (' .
+           $id .
+           ',NULL,' .
+           $value_literal .
+           ')'
        );
      }
    }
 
-   function incStat($delta, $name, $player_id = null)
+   // Note: on BGA, `$bDoNotLoop` is a legacy flag; LocalArena accepts
+   // it for signature compatibility but ignores it.
+   function incStat($delta, $name, $player_id = null, $bDoNotLoop = false)
    {
-     $type = $player_id == null ? 'table' : 'player';
-     $id = $this->stats_type[$type][$name]['id'];
-     if ($player_id == null) {
-       $player_id = ' NULL ';
-     }
+     $type = is_null($player_id) ? 'table' : 'player';
+     $id = $this->statTypeId($type, $name);
      $this->DbQuery(
-       'UPDATE `stats` set stats_value = stats_value+' .
-         $delta .
-         ' where  stats_type = ' .
-         $id .
-         ' and stats_player_id=' .
-         $player_id
+       'UPDATE `stats` SET stats_value = stats_value + ' .
+         $this->statValueLiteral($delta) .
+         ' WHERE ' .
+         $this->statRowPredicate($id, $player_id)
      );
    }
 
-   function setStat($value, $name, $player_id = null)
+   // Note: on BGA, `$bDoNotLoop` is a legacy flag; LocalArena accepts
+   // it for signature compatibility but ignores it.
+   function setStat($value, $name, $player_id = null, $bDoNotLoop = false)
    {
-     $type = $player_id == null ? 'table' : 'player';
-     $id = $this->stats_type[$type][$name]['id'];
-     if ($player_id == null) {
-       $player_id = ' NULL ';
-     }
+     $type = is_null($player_id) ? 'table' : 'player';
+     $id = $this->statTypeId($type, $name);
      $this->DbQuery(
-       'UPDATE `stats` set stats_value = ' .
-         $value .
-         ' where  stats_type = ' .
-         $id .
-         ' and stats_player_id=' .
-         $player_id
+       'UPDATE `stats` SET stats_value = ' .
+         $this->statValueLiteral($value) .
+         ' WHERE ' .
+         $this->statRowPredicate($id, $player_id)
      );
    }
 
    function getStat($name, $player_id = null)
    {
-     $type = $player_id == null ? 'table' : 'player';
-     $id = $this->stats_type[$type][$name]['id'];
-     if ($player_id == null) {
-       $player_id = ' NULL ';
-     }
-     return $this->getUniqueValueFromDB(
-       'select stats_value from stats where stats_type = ' . $id . ' and stats_player_id=' . $player_id
-     );
+     $type = is_null($player_id) ? 'table' : 'player';
+     $id = $this->statTypeId($type, $name);
+     return $this->getUniqueValueFromDB('SELECT stats_value FROM stats WHERE ' . $this->statRowPredicate($id, $player_id));
    }
 
    function incGameStateValue($value_label, $increment)

@@ -1,0 +1,50 @@
+// Statistics for the "localarenanoop" test game.
+//
+// This file doubles as a fixture for LocalArena's own test suite: it
+// deliberately uses jsonc-style comments, table/player stats that
+// share numeric IDs and names (which real games do too; IDs are only
+// unique within a section), a "value_labels" section, and a
+// "display": "limited" stat, so that the stats.json loader is
+// exercised against all of them.
+{
+  "table": {
+    "tableTestStat": {
+      "id": 10,
+      "name": "Test table statistic",
+      "type": "int"
+    },
+    "tableFloatStat": {
+      "id": 11,
+      "name": "Test float table statistic",
+      "type": "float"
+    },
+    /* "turnsNumber" exists as both a table stat and a player stat,
+       like the "turns_number" example in the BGA documentation. */
+    "turnsNumber": {
+      "id": 12,
+      "name": "Number of turns",
+      "type": "int"
+    }
+  },
+  "player": {
+    "playerTestStat": {
+      "id": 10,
+      "name": "Test player statistic",
+      "type": "int"
+    },
+    "playerBoolStat": {
+      "id": 11,
+      "name": "Test bool player statistic",
+      "type": "bool",
+      "display": "limited"
+    },
+    "turnsNumber": {
+      "id": 12,
+      "name": "Number of turns",
+      "type": "int"
+    }
+  },
+  "value_labels": {
+    "10": ["Zero", "One", "Two"]
+  }
+}

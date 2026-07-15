@@ -200,6 +200,79 @@ class IntegrationTestCase extends \PHPUnit\Framework\TestCase
     );
   }
 
+  // Returns a `StatPeer` for the given table statistic.  (For player
+  // statistics, see `PlayerPeer::stat()`.)
+  public function tableStat(string $name): StatPeer
+  {
+    return new StatPeer($this, $name, null);
+  }
+
+  // Returns the value of the given player statistic for every player
+  // at the table, as an array mapping player ID to the stat's value
+  // (cast to its declared type), in ascending player-ID order.
+  //
+  // Warning: if you assert on the returned array directly, remember
+  // that PHP array comparisons can be key-order-sensitive (e.g.
+  // `assertSame()` fails for identical dicts whose keys are merely
+  // ordered differently).  Prefer `assertPlayerStats()`, which
+  // canonicalizes both sides before comparing.
+  public function playerStatValues(string $name): array
+  {
+    $values = [];
+    foreach ($this->players() as $player) {
+      $values[intval($player->id())] = $player->stat($name)->get();
+    }
+    ksort($values);
+    return $values;
+  }
+
+  // Asserts that the given table statistic has the expected value.
+  public function assertTableStat($expected, string $name, string $message = ''): void
+  {
+    $this->assertEquals(
+      $expected,
+      $this->tableStat($name)->get(),
+      'Unexpected value for table statistic "' . $name . '".' . ($message === '' ? '' : '  ' . $message)
+    );
+  }
+
+  // Asserts that the given player statistic has the expected value
+  // for every player at the table.  `$expected` maps player ID to the
+  // expected value; it may be in any order, but must cover every
+  // player (a player missing from `$expected` is a failure, not a
+  // "don't care").
+  public function assertPlayerStats(array $expected, string $name, string $message = ''): void
+  {
+    // Canonicalize so that the comparison is order-insensitive and a
+    // mismatch produces a readable side-by-side diff.
+    $normalized = [];
+    foreach ($expected as $player_id => $value) {
+      $normalized[intval($player_id)] = $value;
+    }
+    ksort($normalized);
+    $this->assertEquals(
+      $normalized,
+      $this->playerStatValues($name),
+      'Unexpected values for player statistic "' . $name . '".' . ($message === '' ? '' : '  ' . $message)
+    );
+  }
+
+  // Asserts that the given player statistic has the expected value
+  // for `$player`.  (Given a player ID, use `playerById()`.)
+  public function assertPlayerStat($expected, string $name, PlayerPeer $player, string $message = ''): void
+  {
+    $this->assertEquals(
+      $expected,
+      $player->stat($name)->get(),
+      'Unexpected value for player statistic "' .
+        $name .
+        '" of player ' .
+        $player->id() .
+        '.' .
+        ($message === '' ? '' : '  ' . $message)
+    );
+  }
+
   // XXX: How will we get notifs routed back to the test fix fixtures?
 
   // TODO: Clean up the table after successful tests.
@@ -277,7 +350,62 @@ class PlayerPeer
     $state = $this->table()->getStateForClient($this->id(), /*includeMultiactive=*/ true);
     return new GameStateInfo($state);
   }
+
+  // Returns a `StatPeer` for the given player statistic of this
+  // player.
+  public function stat(string $name): StatPeer
+  {
+    return new StatPeer($this->itc_, $name, $this->id_);
+  }
   // TODO: Add accessors for things like "is this player active?"
+}
+
+// A peer for a single statistic: either a table statistic, or one
+// player's value of a player statistic.
+class StatPeer
+{
+  private IntegrationTestCase $itc_;
+  private string $name_;
+
+  // The owning player's ID, or null for a table statistic.
+  //
+  // XXX: Should this be PlayerIdString?
+  private ?string $player_id_;
+
+  public function __construct(IntegrationTestCase $itc, string $name, ?string $player_id)
+  {
+    $this->itc_ = $itc;
+    $this->name_ = $name;
+    $this->player_id_ = $player_id;
+  }
+
+  public function name(): string
+  {
+    return $this->name_;
+  }
+
+  // Returns the statistic's current value, cast to its declared type
+  // ("int", "float", or "bool").
+  public function get()
+  {
+    if ($this->player_id_ === null) {
+      return $this->itc_->table()->tableStats->get($this->name_);
+    }
+    return $this->itc_->table()->playerStats->get($this->name_, intval($this->player_id_));
+  }
+
+  // Sets the statistic's value.  Prefer producing stats by driving
+  // the game through actions; reach for this only when a test needs
+  // to arrange stat state directly (e.g. to exercise game code that
+  // derives values from stats).
+  public function set($value): void
+  {
+    if ($this->player_id_ === null) {
+      $this->itc_->table()->tableStats->set($this->name_, $value);
+    } else {
+      $this->itc_->table()->playerStats->set($this->name_, $value, intval($this->player_id_));
+    }
+  }
 }
 
 // TODO: Should we use this in the implementation of LocalArena as well?

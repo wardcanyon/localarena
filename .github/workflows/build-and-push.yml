@@ -1,9 +1,15 @@
 name: Build and push image
 
 on:
-  push:
+  # Only build/push after the test suite has run on main. The
+  # `workflow_run` event fires when the referenced workflow completes;
+  # the job-level `if` below ensures we only push when it succeeded.
+  workflow_run:
+    workflows: ["test:server"]
     branches:
       - main
+    types:
+      - completed
   workflow_dispatch:
 
 env:
@@ -14,12 +20,22 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
 
+    # Run on a manual dispatch, or when the triggering test workflow
+    # succeeded. This skips the push when test:server fails.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+
     permissions:
       contents: read
       packages: write
 
     steps:
+      # Build the exact commit that test:server ran against. On
+      # workflow_dispatch this is empty and checkout uses the dispatched ref.
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Log in to GHCR
         uses: docker/login-action@v3

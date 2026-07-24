@@ -89,6 +89,54 @@ rebuild the container every time.
 -v ${LOCALARENA_ROOT}/src/view:/src/localarena/view:ro
 ```
 
+#### Legacy-games data in tests
+
+The [legacy-games API](https://en.doc.boardgamearena.com/Main_game_logic:_yourgamename.game.php#Legacy_games_API)
+(`$this->bga->legacy`, plus the deprecated `storeLegacyData()`-style
+aliases) is supported; legacy data persists across tables in the
+`legacy_player_data` and `legacy_team_data` tables in the shared
+`localarena` database.  (It lives outside the per-table database
+deliberately: `undoRestorePoint()` restores the table database, and
+must not roll back legacy data.)
+
+In addition to the game name, legacy data is keyed by a table's
+*legacy scope* (`TableParams::$legacy_scope`); legacy data is shared
+exactly by the tables of a game that share a scope.  Outside of tests
+the scope is empty -- the game's one shared pool, which gives BGA's
+semantics that every table of a game shares its legacy data.  In
+tests, `IntegrationTestCase` instead assigns each test case its own
+scope (unique by construction: the database allocates it), so tests'
+legacy data is *isolated by default*: nothing leaks between tests,
+between runs, or between tests and interactive play against the same
+database, and nothing is ever cleared.
+
+Because campaign-style games read legacy data during `setupNewGame()`,
+tests usually need to arrange it *before* their table is created.
+`IntegrationTestCase` creates the table lazily and provides helpers
+that write straight into the test's scope, so a test can seed first
+and then let table creation read the data:
+
+```php
+public function testCampaignSetup(): void
+{
+    // No table exists yet.  stGameSetup() assigns deterministic
+    // player IDs; presetPlayerId() knows them in advance.
+    $this->seedLegacyData(self::presetPlayerId(0), 'campaign', ['unlocked' => ['red']]);
+    $this->seedLegacyTeamData(['chapter' => 3]);
+
+    // The first table() call creates the table; setupNewGame() can
+    // read the seeded data via $this->bga->legacy.
+    $this->table();
+    // ... assertions ...
+}
+```
+
+A test that creates further tables itself (e.g. to drive a campaign
+from one table into the next) should set
+`TableParams::$legacy_scope = $this->legacyScope()` on each of them so
+they share the test's pool.  See `tests/LegacyTest.php` for full
+examples.
+
 ### Generating code-coverage reports
 
 The `testenv` image ships with the [PCOV](https://github.com/krakjoe/pcov)
@@ -303,8 +351,12 @@ $ docker volume rm localarena_db-data
 
 - Game-end functionality is missing; there is no score display.
 
-- [Legacy game functionality](https://en.doc.boardgamearena.com/Main_game_logic:_yourgamename.game.php#Legacy_games_API)
-  is not supported.
+- The [legacy-games API](https://en.doc.boardgamearena.com/Main_game_logic:_yourgamename.game.php#Legacy_games_API)
+  is supported (see "Legacy-games data in tests" above), but legacy
+  data is never garbage-collected here beyond its TTL (in particular,
+  per-test scopes accumulate rows, much as tests accumulate `table_N`
+  databases), and writes to it are not covered by the per-action
+  transaction on the table database.
 
 ## Tips
 

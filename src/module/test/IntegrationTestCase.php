@@ -94,6 +94,13 @@ class IntegrationTestCase extends \PHPUnit\Framework\TestCase
 
     $tableParams->game = $this::LOCALARENA_GAME_NAME;
 
+    // Unless the test asked for a specific legacy scope, give the
+    // table this test's own private scope, so that its legacy data is
+    // isolated by default (see `legacyScope()`).
+    if ($tableParams->legacy_scope === null) {
+      $tableParams->legacy_scope = $this->legacyScope();
+    }
+
     $table_manager = new \TableManager();
     $this->table_ = $table_manager->createTable($tableParams);
 
@@ -271,6 +278,114 @@ class IntegrationTestCase extends \PHPUnit\Framework\TestCase
         '.' .
         ($message === '' ? '' : '  ' . $message)
     );
+  }
+
+  // ==================== Legacy-games data ====================
+  //
+  // Legacy data (the `$this->bga->legacy` API) persists ACROSS tables,
+  // in the shared `localarena` database -- so, unlike everything else
+  // about a table, it can (and frequently must) be arranged BEFORE the
+  // table for a test case is set up: games read legacy data during
+  // `setupNewGame()`.
+  //
+  // The seeding helpers below therefore write straight to the legacy
+  // store, without touching (or creating) the test's table.  Because a
+  // test's table is created lazily, a test can seed legacy data first
+  // and then let table creation (e.g. the first `table()` call) run
+  // setup code that reads it.  Use `presetPlayerId()` for the player
+  // IDs that `stGameSetup()` will later assign.
+  //
+  // Tests are ISOLATED BY DEFAULT: each test case gets its own legacy
+  // scope (see `legacyScope()`), which `initTable()` assigns to the
+  // test's table and which the helpers below seed into and read from.
+  // No test can see another test's legacy data -- nor data from
+  // previous runs, nor real ("game name"-scoped) data from interactive
+  // play against the same database -- and nothing needs to be cleared.
+
+  // The legacy scope for this test case, allocated on first use.
+  private ?string $legacy_scope_ = null;
+
+  // Returns this test case's own legacy scope: the scope that
+  // `initTable()` gives the test's table by default, and that
+  // `seedLegacyData()`/`seedLegacyTeamData()` write into.  Unique per
+  // test case (and per run) -- the id is allocated by the database, so
+  // uniqueness is guaranteed rather than probabilistic -- which is
+  // what makes tests' legacy data isolated by default.
+  //
+  // A test that creates FURTHER tables itself (e.g. to exercise legacy
+  // data flowing from one table to the next) should set
+  // `TableParams::$legacy_scope` to this value for each of them.
+  public function legacyScope(): string
+  {
+    if ($this->legacy_scope_ === null) {
+      $this->legacy_scope_ = 'test/' . \LocalArenaLegacyStore::allocateScopeId();
+    }
+    return $this->legacy_scope_;
+  }
+
+  // Returns the player ID that `stGameSetup()` assigns to the player
+  // with the given zero-based index.  Valid before the table exists.
+  public static function presetPlayerId(int $index): int
+  {
+    return \Table::LOCALARENA_FIRST_PLAYER_ID + $index;
+  }
+
+  // Returns the IDs of all players that `stGameSetup()` will seat (in
+  // seating order).  Valid before the table exists.
+  public static function presetPlayerIds(): array
+  {
+    return array_map(fn($i) => self::presetPlayerId($i), range(0, LOCALARENA_PLAYER_COUNT - 1));
+  }
+
+  private function legacyStore(): \LocalArenaLegacyStore
+  {
+    return new \LocalArenaLegacyStore($this::LOCALARENA_GAME_NAME, $this->legacyScope());
+  }
+
+  // Seeds legacy data for the given player (0 for game-global data)
+  // into this test's legacy scope, as if a previous table had stored
+  // it.  May be called before the table is set up.  A zero or negative
+  // $ttl seeds already-expired data (useful for exercising TTL
+  // behavior).
+  public function seedLegacyData(int $player_id, string $key, $value, int $ttl = 365): void
+  {
+    \LocalArenaLegacyStore::validateKey($key);
+    $this->legacyStore()->setPlayerData($player_id, $key, json_encode($value), $ttl);
+  }
+
+  // Seeds legacy TEAM data for the given set of players (default: all
+  // of the players that `stGameSetup()` will seat), as if a previous
+  // table with exactly those players had stored it.  May be called
+  // before the table is set up.
+  public function seedLegacyTeamData($value, ?array $player_ids = null, int $ttl = 365): void
+  {
+    $signature = localarenaLegacyTeamSignature($player_ids ?? self::presetPlayerIds());
+    $this->legacyStore()->setTeamData($signature, json_encode($value), $ttl);
+  }
+
+  // Reads back the legacy value stored for ($player_id, $key), or
+  // $default if there is none; for assertions.  Does not require (or
+  // create) the table.
+  public function legacyValue(string $key, int $player_id, $default = null)
+  {
+    $rows = $this->legacyStore()->getPlayerData($player_id, $key);
+    if (!array_key_exists($key, $rows)) {
+      return $default;
+    }
+    return json_decode($rows[$key], /*associative=*/ true);
+  }
+
+  // Reads back the legacy team value stored for the given set of
+  // players (default: the players that `stGameSetup()` seats), or
+  // $default if there is none; for assertions.
+  public function legacyTeamValue(?array $player_ids = null, $default = null)
+  {
+    $signature = localarenaLegacyTeamSignature($player_ids ?? self::presetPlayerIds());
+    $json = $this->legacyStore()->getTeamData($signature);
+    if ($json === null) {
+      return $default;
+    }
+    return json_decode($json, /*associative=*/ true);
   }
 
   // XXX: How will we get notifs routed back to the test fix fixtures?

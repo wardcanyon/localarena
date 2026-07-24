@@ -16,9 +16,12 @@
     <!--
         Defines which code coverage is measured against. This has no effect on
         normal runs; coverage is only collected when PHPUnit is invoked with a
-        `--coverage-*` option AND a coverage driver is active (PCOV is installed
-        in the testenv image but disabled by default). See the "Generating
-        code-coverage reports" section of README.md.
+        coverage option (e.g. "coverage-html") AND a coverage driver is active
+        (PCOV is installed in the testenv image but disabled by default). See
+        the "Generating code-coverage reports" section of README.md.
+
+        N.B.: A double hyphen is forbidden inside an XML comment, so the
+        coverage options are named above without their leading dashes.
     -->
     <source>
         <include>

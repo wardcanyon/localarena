@@ -148,7 +148,10 @@ export default class EbgZone {
   updateDisplay(): void {
     var elPos = dojo.position(this.container_div);
     if (this.autowidth) {
-      elPos = dojo.position($("page-content")).w;
+      // N.B.: Only the width comes from the page content; replacing the
+      // whole `elPos` object with a number left `elPos.w`/`elPos.h`
+      // undefined, so every item was laid out at `NaN`.
+      elPos.w = dojo.position($("page-content")).w;
     }
     var j = 0;
     var height = 0;
@@ -310,26 +313,37 @@ export default class EbgZone {
     var centerX = controlWidth / 2;
     var centerY = controlHeight / 2;
 
+    // N.B.: The radii below are derived from the item size, so `c` has
+    // to exist before we compute them; it used to be declared at the
+    // bottom of the function, which meant that `c` was still
+    // `undefined` here and every call threw a `TypeError`.
+    var c: Coords = {
+      w: this.item_width,
+      h: this.item_height,
+      x: 0,
+      y: 0,
+    };
+
+    var a: number;
+    var b: number;
+    var theta: number;
+
     var j = itemCount - (i + 1);
     if (j <= 4) {
-      var a = c.w;
-      var b = (c.h * centerY) / centerX;
-      var theta = Math.PI + j * ((2 * Math.PI) / 5);
-    } else if (j > 4) {
-      var a = 2 * c.w;
-      var b = (2 * c.h * centerY) / centerX;
-      var theta =
+      a = c.w;
+      b = (c.h * centerY) / centerX;
+      theta = Math.PI + j * ((2 * Math.PI) / 5);
+    } else {
+      a = 2 * c.w;
+      b = (2 * c.h * centerY) / centerX;
+      theta =
         Math.PI -
         Math.PI / 2 +
         (j - 4) * ((2 * Math.PI) / Math.max(10, itemCount - 5));
     }
 
-    var c: Coords = {
-      w: this.item_width,
-      h: this.item_height,
-      x: centerX + a * Math.cos(theta) - c.w / 2,
-      y: centerY + b * Math.sin(theta) - c.h / 2,
-    };
+    c.x = centerX + a * Math.cos(theta) - c.w / 2;
+    c.y = centerY + b * Math.sin(theta) - c.h / 2;
     return c;
   }
 }

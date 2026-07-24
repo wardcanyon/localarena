@@ -18,6 +18,17 @@ import * as Tooltip from "dijit/Tooltip";
 // Should we consider combining it with the other global definitions?
 declare const jQuery;
 
+// Parse a computed-style length (e.g. "12.5px") into a number.
+//
+// N.B.: The computed value of `left`/`top` is "auto" for statically
+// positioned nodes; parsing that gives us `NaN`, which would poison the
+// arithmetic below and end up assigning e.g. "NaNpx" (which the browser
+// discards, leaving the node wherever it happened to be).
+function parsePx(value: string): number {
+  var parsed = parseFloat(value);
+  return isFinite(parsed) ? parsed : 0;
+}
+
 @declare()
 export class EbgCoreGamegui {
   lock = false;
@@ -436,6 +447,15 @@ export class EbgCoreGamegui {
     return this.slideToObjectPos(mobile_obj, target_obj, 0, 0, duration, delay);
   }
 
+  // N.B.: `slideToObject()` is the animated equivalent of
+  // `placeOnObject()`, so it has to agree with it about where the
+  // mobile object ends up: *centered* on the target object.  Lining the
+  // two nodes up by their top-left corners instead leaves the mobile
+  // object off by half of the difference between the two nodes' sizes,
+  // which is very visible whenever they aren't the same size (e.g. a
+  // stack of pieces being slid onto a small anchor/slot node: the stack
+  // ends up hanging below and to the right of the slot by half of its
+  // own height and width).
   slideToObjectPos(
     mobile_obj,
     target_obj,
@@ -449,13 +469,14 @@ export class EbgCoreGamegui {
 
     var start = domGeom.position(mobile_obj);
     var stop = domGeom.position(target_obj);
-    var finalx = stop.x - start.x;
-    var finaly = stop.y - start.y;
 
-    var left =
-      finalx + parseFloat(computedStyle.left.replace("px", "")) + target_x;
-    var top =
-      finaly + parseFloat(computedStyle.top.replace("px", "")) + target_y;
+    // As in `placeOnObjectPos()`, `target_x`/`target_y` are relative to
+    // the center of the target object.
+    var finalx = stop.x - start.x + stop.w / 2 - start.w / 2;
+    var finaly = stop.y - start.y + stop.h / 2 - start.h / 2;
+
+    var left = finalx + parsePx(computedStyle.left) + target_x;
+    var top = finaly + parsePx(computedStyle.top) + target_y;
 
     return fx.slideTo({
       node: mobile_obj,
@@ -477,31 +498,18 @@ export class EbgCoreGamegui {
     console.log("not implemented : slideTemporaryObject");
   }
 
-  slideToObjectAndDestroy(node, to, time, delay) {
-    var start = domGeom.position(node);
-    var stop = domGeom.position(to);
-    var finalx = start.x - stop.x;
-    var finaly = start.y - stop.y;
-    var tnode = node;
-
-    dojo
-      .animateProperty({
-        node: tnode,
-        duration: time,
-        delay: delay,
-        properties: {
-          left: -finalx,
-          top: -finaly,
-        },
-        onEnd: dojo.partial(function (tnode) {
-          var animation = dojo.fadeOut({ duration: 250, node: tnode });
-          (animation.onEnd = dojo.partial(function (tnode) {
-            dojo.destroy(tnode);
-          }, tnode)),
-            animation.play();
-        }, tnode),
-      })
-      .play();
+  // N.B.: This used to animate `left`/`top` to the *difference* between
+  // the two nodes' positions, which is only correct for a node whose
+  // current `left`/`top` happen to be zero; and, like
+  // `slideToObjectPos()`, it did not align the two nodes' centers.  It
+  // is now just "slide, then fade out and destroy".
+  slideToObjectAndDestroy(node, to, time = 500, delay = 0) {
+    var page = this;
+    var anim = this.slideToObjectPos(node, to, 0, 0, time, delay);
+    dojo.connect(anim, "onEnd", function () {
+      page.fadeOutAndDestroy(node, 250, 0);
+    });
+    anim.play();
   }
 
   fadeOutAndDestroy(node, duration, delay) {
@@ -530,15 +538,12 @@ export class EbgCoreGamegui {
 
     var start = domGeom.position(mobile_obj);
     var stop = domGeom.position(target_obj);
-    console.log(stop);
 
     var finalx = stop.x - start.x + stop.w / 2 - start.w / 2;
     var finaly = stop.y - start.y + stop.h / 2 - start.h / 2;
 
-    var left =
-      finalx + parseFloat(computedStyle.left.replace("px", "")) + target_x;
-    var top =
-      finaly + parseFloat(computedStyle.top.replace("px", "")) + target_y;
+    var left = finalx + parsePx(computedStyle.left) + target_x;
+    var top = finaly + parsePx(computedStyle.top) + target_y;
     dojo.style(mobile, {
       left: left + "px",
       top: top + "px",

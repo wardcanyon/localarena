@@ -1,6 +1,5 @@
 import declare from "./declareDecorator";
 
-import * as domGeom from "dojo/dom-geometry";
 import * as style from "dojo/dom-style";
 
 @declare()
@@ -27,7 +26,24 @@ export default class EbgStock {
     this.container_div = container_div;
     this.item_width = item_width;
     this.item_height = item_height;
-    dojo.byId(this.container_div).style = "position: relative; height: 324px;";
+
+    // Items are positioned with `left`/`top` relative to the container,
+    // so the container has to establish a containing block for them.
+    //
+    // N.B.: Only touch `position`, and only if we have to.  Assigning
+    // to `node.style` replaces the node's entire `style` attribute,
+    // which throws away whatever inline styles the game set on the node
+    // it handed us (its position on the board, its size, a
+    // `transform: translate(-50%, -50%)` used to center it on a point,
+    // ...).  That leaves the stack's contents drawn some distance away
+    // from where the game put the stack.  (It also used to force a
+    // hard-coded `height: 324px`; the height is maintained by
+    // `resetItemsPosition()` below.)
+    var node = dojo.byId(this.container_div);
+    if (style.getComputedStyle(node).position == "static") {
+      dojo.style(node, "position", "relative");
+    }
+
     dojo.connect(window, "onresize", this, "resetItemsPosition");
   }
 
@@ -100,16 +116,14 @@ export default class EbgStock {
     item.connect("onclick", this, "onClick");
 
     if (from != null) {
-      var start = domGeom.position(this.container_div.id + "_item_" + id);
-      var stop = domGeom.position(from);
-      var finalx = start.x - stop.x;
-      var finaly = start.y - stop.y;
-
-      dojo.style(this.container_div.id + "_item_" + id, {
-        left: -finalx + "px",
-        top: -finaly + "px",
-        opacity: 1,
-      });
+      // The item starts out on top of `from` and is then animated into
+      // its place in the stack by `resetItemsPosition()` below.
+      //
+      // N.B.: This used to set `left`/`top` to the *difference* between
+      // the two nodes' positions, ignoring the item's own position
+      // within the stack, so the animation started from the wrong spot.
+      this.page.placeOnObject(this.container_div.id + "_item_" + id, from);
+      dojo.style(this.container_div.id + "_item_" + id, { opacity: 1 });
     } else {
       dojo
         .fadeIn({
@@ -159,29 +173,15 @@ export default class EbgStock {
       return value.id != id;
     });
     if (to != null) {
-      var start = domGeom.position(this.container_div.id + "_item_" + id);
-      var stop = domGeom.position(to);
-      var finalx = start.x - stop.x;
-      var finaly = start.y - stop.y;
-      var tnode = this.container_div.id + "_item_" + id;
-
-      dojo
-        .animateProperty({
-          node: tnode,
-          duration: 1000,
-          properties: {
-            left: -finalx,
-            top: -finaly,
-          },
-          onEnd: dojo.partial(function (tnode) {
-            var animation = dojo.fadeOut({ duration: 250, node: tnode });
-            (animation.onEnd = dojo.partial(function (tnode) {
-              dojo.destroy(tnode);
-            }, tnode)),
-              animation.play();
-          }, tnode),
-        })
-        .play();
+      // N.B.: As in `addToStockWithId()`, this used to animate
+      // `left`/`top` to the difference between the two nodes'
+      // positions, which sent the item somewhere other than `to`
+      // whenever it was not the first item in the stack.
+      this.page.slideToObjectAndDestroy(
+        this.container_div.id + "_item_" + id,
+        to,
+        1000,
+      );
     } else {
       this.toBeDelete.push(id);
     }
@@ -198,29 +198,11 @@ export default class EbgStock {
   removeAllTo(to) {
     for (var idx in this.items) {
       var id = this.items[idx].id;
-      var start = domGeom.position(this.container_div.id + "_item_" + id);
-      var stop = domGeom.position(to);
-      var finalx = start.x - stop.x;
-      var finaly = start.y - stop.y;
-      var tnode = this.container_div.id + "_item_" + id;
-
-      dojo
-        .animateProperty({
-          node: tnode,
-          duration: 1000,
-          properties: {
-            left: -finalx,
-            top: -finaly,
-          },
-          onEnd: dojo.partial(function (tnode) {
-            var animation = dojo.fadeOut({ duration: 250, node: tnode });
-            (animation.onEnd = dojo.partial(function (tnode) {
-              dojo.destroy(tnode);
-            }, tnode)),
-              animation.play();
-          }, tnode),
-        })
-        .play();
+      this.page.slideToObjectAndDestroy(
+        this.container_div.id + "_item_" + id,
+        to,
+        1000,
+      );
     }
     this.items.length = 0;
   }

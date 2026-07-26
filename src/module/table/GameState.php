@@ -170,6 +170,55 @@ class GameState
   }
 
   /**
+   * Change current state to a new state.  Important: the $stateNum
+   * parameter is the KEY of the state (and NOT the name of a
+   * transition, cf. `nextState()`); see Your game state machine:
+   * states.inc.php for more information about states.
+   *
+   * Unlike `nextState()`, this does NOT consult the current state's
+   * transitions: any state in the machine can be jumped to from
+   * anywhere, whether or not an edge joins them.  That is the point of
+   * the method -- but it is also why it should not be used in normal
+   * cases.  Specific advanced cases include jumping to a specific state
+   * from "do_anytime" actions, jumping to a dispatcher state, and
+   * jumping to a recovery state from a zombie-player function.
+   *
+   * If $bWithActions is false, the target state is entered but its
+   * "action" (st*) method is NOT run, so a "game"-type state jumped
+   * into this way does not immediately cascade onwards; the machine
+   * simply comes to rest there.  (The state-change notification is sent
+   * either way, so clients always learn about the new state.)
+   *
+   * Like `nextState()`, this advances only the in-memory "live" state;
+   * the persisted current-state global is flushed at the request
+   * boundary.  See `nextState()` and `Table::flushCurrentStateGlobal()`.
+   *
+   * @param $stateNum
+   * @param $bWithActions
+   */
+  public function jumpToState(int $stateNum, bool $bWithActions = true): void
+  {
+    if (!isset($this->machinestates[$stateNum])) {
+      throw new feException('Cannot jump to state ' . $stateNum . ': there is no such state in the game state machine.');
+    }
+
+    $state = $this->state();
+    $this->game->setLiveStateId($stateNum);
+
+    $this->log(
+      'From state "' .
+        $state['name'] .
+        '", jumping to state "' .
+        $this->machinestates[$stateNum]['name'] .
+        '"' .
+        ($bWithActions ? '' : ' (without actions)') .
+        '.'
+    );
+
+    $this->game->enterState($bWithActions);
+  }
+
+  /**
    * Change current state to a new state. Important: parameter $transition is the name of the transition, and NOT the name of the target game state, see Your game state machine: states.inc.php for more information about states.
    *
    * @param $transition

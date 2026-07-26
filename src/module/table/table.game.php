@@ -1155,7 +1155,14 @@
      // XXX: Not implemented.
    }
 
-   function enterState()
+   // Enters the current live state: announces it to the clients and
+   // then runs its "action" (st*) method, if it has one.
+   //
+   // $bWithActions is false only when `GameState::jumpToState()` was
+   // asked to jump into a state *without* running its action method
+   // (see that method); the state-change notification is sent either
+   // way.
+   function enterState(bool $bWithActions = true)
    {
      $state = $this->gamestate->state();
 
@@ -1167,6 +1174,11 @@
      }
 
      echo 'enterState(): done sending notifs' . "\n";
+
+     if (!$bWithActions) {
+       echo 'enterState(): not running the state action method, as requested' . "\n";
+       return;
+     }
 
      if (isset($state['action'])) {
        $mname = $state['action'];

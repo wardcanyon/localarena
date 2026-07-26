@@ -36,6 +36,7 @@ class JumpToStateTest extends IntegrationTestCase
     const ST_INERT = 12;         // game-type; its action jumps to ST_OTHER_INPUT
     const ST_OTHER_INPUT = 13;   // activeplayer
     const ST_MULTI = 14;         // multipleactiveplayer
+    const ST_ARGS = 15;          // game-type, with both an action and args
 
     protected function defaultTableParams(): \LocalArena\TableParams
     {
@@ -209,6 +210,109 @@ class JumpToStateTest extends IntegrationTestCase
     }
 
     /**
+     * `$bWithActions` suppresses the target state's ACTION method only:
+     * its "args" method still runs, so the arrival notification carries
+     * the state's args as usual.  (Were it otherwise, clients would be
+     * told about a state they cannot render.)
+     */
+    public function testRendersTheTargetStatesArgsEvenWithoutActions(): void
+    {
+        $game = $this->game();
+
+        $game->gamestate->jumpToState(self::ST_ARGS, /*bWithActions=*/ false);
+
+        $this->assertEquals([], $game->entered, 'The target state\'s action method must not have run.');
+
+        // `getStateForNotif()` (and hence the arrival notification)
+        // calls the args method.
+        $notif = $this->lastNotif();
+        $this->assertEquals('gameStateChange', $notif['notification_type']);
+        $this->assertEquals(self::ST_ARGS, $notif['args']['id']);
+        $this->assertEquals(['jumped' => true], $notif['args']['args']);
+        $this->assertEquals(['jumped' => true], $this->state()->args());
+    }
+
+    /**
+     * A jump changes the state and nothing else: whoever was the active
+     * player still is.  (Making someone active is the game's job, via
+     * `changeActivePlayer()`/`activeNextPlayer()`, exactly as when
+     * arriving by transition.)
+     */
+    public function testDoesNotChangeTheActivePlayer(): void
+    {
+        $game = $this->game();
+
+        $player_id = intval($this->playerByIndex(1)->id());
+        $game->gamestate->changeActivePlayer($player_id);
+
+        $game->gamestate->jumpToState(self::ST_TARGET_INPUT);
+
+        $this->assertGameState(self::ST_TARGET_INPUT);
+        $this->assertEquals($player_id, intval($game->getActivePlayerId()));
+    }
+
+    /**
+     * Likewise for multiactive flags: jumping out of a multiactive
+     * state does not clear them, matching what `nextState()` does (and
+     * so leaving `setPlayersMultiactive()` / `setPlayerNonMultiactive()`
+     * as the way players stop being active).
+     */
+    public function testDoesNotClearMultiactiveFlags(): void
+    {
+        $game = $this->game();
+
+        $player_count = count($this->players());
+
+        $game->gamestate->jumpToState(self::ST_MULTI, /*bWithActions=*/ false);
+        $game->gamestate->setAllPlayersMultiactive();
+        $this->assertCount($player_count, $game->gamestate->getActivePlayerList());
+
+        $game->gamestate->jumpToState(self::ST_TARGET_INPUT);
+
+        // The flags themselves survive the jump...
+        $this->assertEquals(
+            $player_count,
+            intval($game->getUniqueValueFromDB('SELECT COUNT(*) FROM `player` WHERE `player_is_multiactive` = 1')),
+            'A jump should not clear multiactive flags.'
+        );
+        // ...even though nobody counts as multiactive in an
+        // "activeplayer" state.
+        $this->assertEquals([], $game->gamestate->getActivePlayerList());
+    }
+
+    /**
+     * End-to-end: a state jumped to in one request is the state the
+     * NEXT request starts in.  (This is what the request-boundary flush
+     * of the current-state global buys; without it the jump would be
+     * forgotten as soon as the action returned.)
+     */
+    public function testJumpedToStateIsWhereTheNextRequestStarts(): void
+    {
+        $game = $this->game();
+
+        // Request 1: jump, without running actions, into a state the
+        // machine would otherwise never reach, and park there.
+        $this->playerByIndex(0)->act('actTestJumpToState', [
+            'state_id' => self::ST_TARGET_INPUT,
+            'with_actions' => false,
+        ]);
+        $this->assertGameState(self::ST_TARGET_INPUT);
+
+        // Request 2: jump into the dispatcher, which records the
+        // current-state global as it stood when this request began.
+        $this->playerByIndex(0)->act('actTestJumpToState', [
+            'state_id' => self::ST_DISPATCH,
+            'with_actions' => true,
+        ]);
+
+        $this->assertEquals(
+            [['live' => self::ST_DISPATCH, 'global' => self::ST_TARGET_INPUT]],
+            $game->recorded,
+            'The second request should have started in the state the first request jumped to.'
+        );
+    }
+
+    /**
      * Jumping into a multiactive state works like arriving there by
      * transition (the arrival is announced as a multiactive state); the
      * jump itself does not make anyone active.
@@ -361,6 +465,18 @@ class JumpToStateTestGame extends \localarenanoop
                 'possibleactions' => [],
                 'transitions' => [],
             ],
+
+            // Has both an action and an args method, so that a jump
+            // "without actions" can be seen to skip the former while
+            // still running the latter.
+            JumpToStateTest::ST_ARGS => [
+                'name' => 'stArgs',
+                'description' => '',
+                'type' => 'game',
+                'action' => 'stArgs',
+                'args' => 'argArgs',
+                'transitions' => ['next' => JumpToStateTest::ST_OTHER_INPUT],
+            ],
         ];
     }
 
@@ -378,6 +494,18 @@ class JumpToStateTestGame extends \localarenanoop
         $this->record(JumpToStateTest::ST_INERT);
 
         $this->gamestate->nextState('next');
+    }
+
+    public function stArgs(): void
+    {
+        $this->record(JumpToStateTest::ST_ARGS);
+
+        $this->gamestate->nextState('next');
+    }
+
+    public function argArgs(): array
+    {
+        return ['jumped' => true];
     }
 
     private function record(int $state_id): void

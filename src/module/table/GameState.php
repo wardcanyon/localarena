@@ -193,23 +193,29 @@ class GameState
    * the persisted current-state global is flushed at the request
    * boundary.  See `nextState()` and `Table::flushCurrentStateGlobal()`.
    *
-   * @param $stateNum
+   * N.B.: BGA's documentation calls the first parameter $stateNum, but
+   * its signature names it $nextState (see `_ide_helper.php`); we match
+   * the signature, so that a game passing it by name still works.
+   *
+   * @param $nextState
    * @param $bWithActions
    */
-  public function jumpToState(int $stateNum, bool $bWithActions = true): void
+  public function jumpToState(int $nextState, bool $bWithActions = true): void
   {
-    if (!isset($this->machinestates[$stateNum])) {
-      throw new feException('Cannot jump to state ' . $stateNum . ': there is no such state in the game state machine.');
+    if (!isset($this->machinestates[$nextState])) {
+      throw new feException(
+        'Cannot jump to state ' . $nextState . ': there is no such state in the game state machine.'
+      );
     }
 
     $state = $this->state();
-    $this->game->setLiveStateId($stateNum);
+    $this->game->setLiveStateId($nextState);
 
     $this->log(
       'From state "' .
         $state['name'] .
         '", jumping to state "' .
-        $this->machinestates[$stateNum]['name'] .
+        $this->machinestates[$nextState]['name'] .
         '"' .
         ($bWithActions ? '' : ' (without actions)') .
         '.'

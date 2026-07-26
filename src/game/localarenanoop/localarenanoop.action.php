@@ -26,4 +26,17 @@ class action_localarenanoop extends APP_GameAction
         $this->game->gamestate->nextState($transition);
         self::ajaxResponse();
     }
+
+    // LocalArena test-support action: jump straight to a state by its
+    // key, within a real request.  The companion of
+    // `actTestTransition()` for `jumpToState()`; likewise, real games
+    // never expose anything like it.
+    public function actTestJumpToState()
+    {
+        self::setAjaxMode();
+        $state_id = self::getArg("state_id", AT_posint, /*required=*/ true);
+        $with_actions = self::getArg("with_actions", AT_bool, /*required=*/ true);
+        $this->game->gamestate->jumpToState($state_id, $with_actions);
+        self::ajaxResponse();
+    }
 }

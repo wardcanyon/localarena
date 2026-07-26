@@ -262,6 +262,8 @@ class JumpToStateTest extends IntegrationTestCase
         $game = $this->game();
 
         $player_count = count($this->players());
+        $active_player_id = intval($this->playerByIndex(0)->id());
+        $game->gamestate->changeActivePlayer($active_player_id);
 
         $game->gamestate->jumpToState(self::ST_MULTI, /*bWithActions=*/ false);
         $game->gamestate->setAllPlayersMultiactive();
@@ -275,9 +277,13 @@ class JumpToStateTest extends IntegrationTestCase
             intval($game->getUniqueValueFromDB('SELECT COUNT(*) FROM `player` WHERE `player_is_multiactive` = 1')),
             'A jump should not clear multiactive flags.'
         );
-        // ...even though nobody counts as multiactive in an
-        // "activeplayer" state.
-        $this->assertEquals([], $game->gamestate->getActivePlayerList());
+        // ...but they stop being what "who is active?" means: in an
+        // "activeplayer" state that question is answered by the active
+        // player, whatever the flags still say.
+        $this->assertEquals(
+            [$active_player_id],
+            array_map('intval', $game->gamestate->getActivePlayerList())
+        );
     }
 
     /**

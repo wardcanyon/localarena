@@ -139,6 +139,12 @@ class TableManager
         $game->setUndoSavepointsEnabled(true);
     }
 
+    // Null leaves the table with BGA's own per-request notification
+    // size limit, which is what `Table` starts out with.
+    if ($params->notif_size_limit !== null) {
+        $game->localarenaSetNotifSizeLimit($params->notif_size_limit);
+    }
+
     return $game;
   }
 }

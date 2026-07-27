@@ -137,6 +137,63 @@ from one table into the next) should set
 they share the test's pool.  See `tests/LegacyTest.php` for full
 examples.
 
+#### The notification size limit
+
+BGA does not send notifications as your game code produces them: they
+are bundled, and the bundle goes out once the request has finished --
+so one bundle covers the action *and* every state transition that
+followed it synchronously.  That bundle may not exceed **128 KiB**.  A
+request that generates more than that fails outright:
+
+```
+Unexpected error: Error: generated notifications are larger than 128k (140501)
+```
+
+...and the move is lost.  LocalArena keeps the same books, so a test
+that would blow the limit on BGA fails here instead, with BGA's own
+message (a `LocalArenaNotifSizeLimitException`, which is a
+`BgaVisibleSystemException`).  As on BGA, the failing request is rolled
+back in its entirety: no notifications are sent, no move is consumed,
+and the state machine stays where the request found it.
+
+What makes the limit worth modelling is that no single notification
+need look suspicious.  It is one *action's* worth of notifications that
+is capped, not one call's and not a table's, so a cascade of
+"game"-type states that each send a few kilobytes -- plus the
+framework's own state-change notifications, which count too -- can
+overrun it between them.  Where BGA reports only the total, LocalArena
+also logs a breakdown of the bundle by notification type, so you can
+see which ones were expensive.
+
+What LocalArena counts is the serialized notification (the JSON that
+goes into the `gamelog` row), once per `notifyAllPlayers()` /
+`notifyPlayer()` call rather than once per recipient.  BGA's exact
+accounting is not documented, so treat the limit as the cliff edge it
+is: a game tuned to sit just under it here could still be over it on
+the site.
+
+Tests are held to BGA's limit by default.  To exercise the limit
+without generating 128 KiB of padding, or to opt out of it entirely,
+set `TableParams::$notif_size_limit` (or call
+`$table->localarenaSetNotifSizeLimit()`):
+
+```php
+protected function defaultTableParams(): TableParams
+{
+    $params = parent::defaultTableParams();
+    // A small limit, so a test can exceed it cheaply...
+    $params->notif_size_limit = 16 * 1024;
+    // ...or no limit at all.
+    $params->notif_size_limit = \LocalArenaNotifBudget::NO_LIMIT;
+    return $params;
+}
+```
+
+`$table->localarenaNotifBudget()` exposes what the request in flight
+has spent so far (`total()`, `count()`, `breakdown()`), which is
+useful for asserting that a chatty action stays clear of the limit
+rather than merely under it.  See `tests/NotifSizeLimitTest.php`.
+
 ### Generating code-coverage reports
 
 The `testenv` image ships with the [PCOV](https://github.com/krakjoe/pcov)

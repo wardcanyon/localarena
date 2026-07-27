@@ -39,4 +39,22 @@ class action_localarenanoop extends APP_GameAction
         $this->game->gamestate->jumpToState($state_id, $with_actions);
         self::ajaxResponse();
     }
+
+    // LocalArena test-support action: generate `count` notifications
+    // carrying `bytes` bytes of padding each, within a real request, so
+    // that framework tests can drive the per-request notification-size
+    // limit (see LocalArenaNotifBudget.php).  As with the other
+    // "actTest" actions here, real games never expose anything like it.
+    public function actTestNotifs()
+    {
+        self::setAjaxMode();
+        $count = self::getArg("count", AT_posint, /*required=*/ true);
+        $bytes = self::getArg("bytes", AT_posint, /*required=*/ true);
+        for ($i = 0; $i < $count; $i++) {
+            $this->game->notifyAllPlayers("testPadding", "", [
+                "padding" => str_repeat("x", $bytes),
+            ]);
+        }
+        self::ajaxResponse();
+    }
 }

@@ -7,6 +7,7 @@
  require_once APP_GAMEMODULE_PATH . 'module/table/GameState.php';
  require_once APP_GAMEMODULE_PATH . 'module/table/LocalArenaStats.php';
  require_once APP_GAMEMODULE_PATH . 'module/table/LocalArenaLegacy.php';
+ require_once APP_GAMEMODULE_PATH . 'module/table/LocalArenaNotifBudget.php';
  require_once APP_GAMEMODULE_PATH . 'module/table/LocalArenaBgaServices.php';
  require_once APP_GAMEMODULE_PATH . 'module/table/APP_GameAction.php';
  require_once APP_GAMEMODULE_PATH . 'module/table/deck.php';
@@ -451,12 +452,23 @@
    // parked state) by `getLiveStateId()`.
    private ?int $liveStateId_ = null;
 
+   // The size of the notification bundle the request in flight has
+   // generated so far, and the limit on it.  BGA bundles the
+   // notifications produced by one request -- the action plus every
+   // state transition that follows it -- and fails the request if the
+   // bundle exceeds 128 KiB; see LocalArenaNotifBudget.php.
+   //
+   // Reset when a request begins (`doAction()`) and checked at the
+   // request boundary, just before the action's transaction commits.
+   private LocalArenaNotifBudget $localarena_notif_budget_;
+
    function __construct()
    {
      parent::__construct();
 
      $this->currentPlayer = 0;
      $this->replayFrom = 0;
+     $this->localarena_notif_budget_ = new LocalArenaNotifBudget();
 
      $this->stats_type = localarenaLoadStatsDescription(LOCALARENA_GAME_PATH . $this->getGameName());
      $this->tableStats = new TableStats($this);
@@ -1485,6 +1497,13 @@
      $this->gameServer = $gameServer;
      $this->currentPlayer = intval($params['bgg_player_id']);
 
+     // A new request means a new notification bundle (see
+     // `localarenaCheckNotifSizeLimit()`), so the budget starts over.
+     // Notifications generated outside of a request -- during table
+     // creation, or by test code poking at the game directly -- are
+     // never part of one, and so never count against it.
+     $this->localarena_notif_budget_->reset();
+
      // Check that the given player ID is participating in the table.
      $player = self::getObjectFromDB('SELECT * FROM `player` WHERE `player_id` = ' . $this->currentPlayer);
      if ($player === null) {
@@ -1512,12 +1531,31 @@
          $this->setGameStateValue('moveId', $this->getGameStateValue('moveId') + 1);
          $this->saveState();
 
+         // Request boundary: the notifications this request generated
+         // are about to be sent as one bundle, so this is where BGA
+         // decides whether that bundle is too big.  Check before we
+         // commit, so that an over-budget request has no effect at all
+         // -- it rolls back below and sends nothing -- which is what
+         // "the move is lost" means on BGA.
+         $this->localarenaCheckNotifSizeLimit();
+
          $this->conn()->commit();
        } catch (\Exception $e) {
          $this->log(
            'Caught exception while handling an action; rolling back transaction.  Exception: ' . $e->getMessage()
          );
          $this->conn()->rollback();
+
+         // The rollback undid everything the request wrote, including
+         // the request-boundary flush of the current-state global, so
+         // the persisted table is back where the request found it.
+         // Drop the in-memory live state as well, so that it is
+         // re-derived from that global rather than left pointing at
+         // wherever the failed cascade got to: on BGA a failed request
+         // leaves nothing behind, and the next one starts afresh from
+         // the database.
+         $this->liveStateId_ = null;
+
          throw $e;
        }
 
@@ -1582,6 +1620,48 @@
      }
    }
 
+   // Returns the notification budget for the request in flight: how
+   // much of BGA's per-request notification allowance the game has
+   // spent so far, and on what.  See LocalArenaNotifBudget.php.
+   //
+   // XXX: This is part of the LocalArena API, not the BGA API.
+   public function localarenaNotifBudget(): LocalArenaNotifBudget
+   {
+     return $this->localarena_notif_budget_;
+   }
+
+   // Sets the limit, in bytes, on the total size of the notifications
+   // one request may generate.  It defaults to BGA's own limit
+   // (`LocalArenaNotifBudget::BGA_LIMIT_BYTES`, 128 KiB), which is what
+   // a game should normally be tested against; a test can lower it to
+   // exercise the limit without generating 128 KiB of notifications, or
+   // turn the check off entirely with `LocalArenaNotifBudget::NO_LIMIT`.
+   // `TableParams::$notif_size_limit` sets this at table creation.
+   //
+   // XXX: This is part of the LocalArena API, not the BGA API.
+   public function localarenaSetNotifSizeLimit(int $limit_bytes): void
+   {
+     $this->localarena_notif_budget_->setLimit($limit_bytes);
+   }
+
+   // Fails the request if the notifications it generated came to more
+   // than the limit, exactly as BGA does (see
+   // LocalArenaNotifBudget.php).
+   private function localarenaCheckNotifSizeLimit(): void
+   {
+     $budget = $this->localarena_notif_budget_;
+     if (!$budget->exceeded()) {
+       return;
+     }
+
+     // BGA reports the total and nothing else, which leaves you to
+     // work out for yourself which of the notifications an action
+     // cascade produced were the expensive ones.  Log that breakdown
+     // before failing with BGA's message.
+     $this->log($budget->describe());
+     $budget->requireWithinLimit();
+   }
+
    /**
     * Send a notification to all players of the game.
     *
@@ -1603,6 +1683,8 @@
      $notif['notification_log'] = $notification_log;
      $notif['gamelog_move_id'] = $this->getGameStateValue('moveId');
      $data = json_encode($notif);
+
+     $this->localarena_notif_budget_->record($notification_type, strlen($data));
 
      // $this->localarena_game_config_->validateNotif($notification_type, $notification_args, /*player_id=*/null);
 
@@ -1636,6 +1718,11 @@
      $notif['notification_type'] = $notification_type;
      $notif['notification_log'] = $notification_log;
      $data = json_encode($notif);
+
+     // A private notif counts once, like a notif to everyone: what the
+     // budget models is the notifications the game GENERATED, not the
+     // number of recipients they go out to.
+     $this->localarena_notif_budget_->record($notification_type, strlen($data));
 
      // $this->localarena_game_config_->validateNotif($notification_type, $notification_args, $player_id);
 

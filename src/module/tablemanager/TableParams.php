@@ -40,4 +40,19 @@ class TableParams
     // by default; a test that creates several tables whose legacy data
     // should flow from one to the next gives them all the same scope.
     public ?string $legacy_scope = null;
+
+    // The limit, in bytes, on the total size of the notifications that
+    // one request -- an action plus all of the state transitions that
+    // follow it -- may generate; a request that exceeds it fails and is
+    // rolled back, as on BGA.
+    //
+    // Null (the default) means BGA's own limit, 128 KiB
+    // (`LocalArenaNotifBudget::BGA_LIMIT_BYTES`), which is what a game
+    // should normally be tested against.  A test that wants to exercise
+    // the limit cheaply can set a small value here instead of
+    // generating 128 KiB of notifications, and one that deliberately
+    // generates enormous notifications can turn the check off with
+    // `LocalArenaNotifBudget::NO_LIMIT` (0).  See also
+    // `Table::localarenaSetNotifSizeLimit()`.
+    public ?int $notif_size_limit = null;
 }

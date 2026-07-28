@@ -427,6 +427,14 @@
    // legacy data throws during that window (as on BGA).
    private bool $localarena_in_game_setup_ = false;
 
+   // The game-option values this table was created with, and the
+   // option ids permitted to carry an unpublished value; see
+   // `TableParams::$game_options` and
+   // `TableParams::$allow_unpublished_option_values`.  Applied by
+   // `localarenaSetDefaultOptions()` during game setup.
+   private array $localarena_table_options_ = [];
+   private array $localarena_allow_unpublished_option_values_ = [];
+
    // The in-memory "live" id of the framework's game-state machine.
    //
    // This is the LocalArena equivalent of BGA's in-memory current
@@ -498,6 +506,15 @@
      $this->gamestate = new GameState($this, $machinestates);
    }
 
+   // Records the game-option values this table is being created with.
+   // Must be called before `initTable()`, which runs game setup; see
+   // `TableManager::createTable()`.
+   public function localarenaSetTableOptions(array $options, array $allow_unpublished_option_values): void
+   {
+     $this->localarena_table_options_ = $options;
+     $this->localarena_allow_unpublished_option_values_ = $allow_unpublished_option_values;
+   }
+
    function localarenaSetDefaultOptions()
    {
      foreach ($this->game_options as $option_id => $option_desc) {
@@ -509,6 +526,53 @@
          $option_id,
          $option_desc['default'] ?? array_key_first($option_desc['values'])
        );
+     }
+
+     $this->localarenaApplyTableOptions();
+   }
+
+   // Applies the table's chosen game-option values (see
+   // `TableParams::$game_options`) over the defaults just written by
+   // `localarenaSetDefaultOptions()`.  Runs during game setup, before
+   // `setupNewGame()`, so that setup code reads the same values it
+   // would on a real BGA table created with those options.
+   private function localarenaApplyTableOptions(): void
+   {
+     foreach ($this->localarena_table_options_ as $option_id => $value) {
+       if (!array_key_exists($option_id, $this->game_options)) {
+         throw new \BgaVisibleSystemException(
+           'This table was created with a value for game option "' .
+             $option_id .
+             '", which this game does not define.  (Defined options: ' .
+             implode(', ', array_keys($this->game_options)) .
+             '.)'
+         );
+       }
+
+       // A value the game does not publish is reachable only if the
+       // table said so explicitly, one option id at a time: a test
+       // reaching unreleased content is deliberate, whereas the same
+       // value arriving by typo or by a stale copy of the option
+       // definitions is a bug that would otherwise configure a table
+       // no player could ever create.
+       $published_values = $this->game_options[$option_id]['values'] ?? [];
+       if (
+         !array_key_exists($value, $published_values) &&
+         !in_array((string) $option_id, array_map('strval', $this->localarena_allow_unpublished_option_values_), true)
+       ) {
+         throw new \BgaVisibleSystemException(
+           'This table was created with value "' .
+             $value .
+             '" for game option "' .
+             $option_id .
+             '", which that option does not list.  (Listed values: ' .
+             implode(', ', array_keys($published_values)) .
+             '.)  If this value is deliberately unpublished -- e.g. content that is implemented but not yet' .
+             ' offered to players -- name the option id in `TableParams::$allow_unpublished_option_values`.'
+         );
+       }
+
+       $this->localarenaSetGameStateInitialValue($option_id, $value);
      }
    }
 

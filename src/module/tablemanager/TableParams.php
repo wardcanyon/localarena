@@ -28,6 +28,29 @@ class TableParams
     // defaultTableParams() override -- see UndoTest for an example.
     public bool $enable_undo_savepoints = false;
 
+    // Game-option values for this table, as a map of option id =>
+    // value.  These are applied on top of the defaults from the game's
+    // "gameoptions.json" during game setup, before `setupNewGame()`
+    // runs -- the same point at which a real BGA table has the options
+    // its creator chose -- so setup code sees them.
+    //
+    // Naming an option id that the game does not define is an error.
+    public array $game_options = [];
+
+    // Option ids whose `$game_options` value is allowed not to appear
+    // among that option's published `values`.
+    //
+    // A game may deliberately define an option value that players
+    // cannot select: content that is implemented but not yet released
+    // is typically commented out of "gameoptions.inc.php" so the BGA
+    // lobby never offers it, even though the engine honors the value
+    // if it is set.  Tests need to reach exactly those values, so
+    // supplying one is allowed -- but only deliberately.  Listing the
+    // option id here is that declaration; without it, an unpublished
+    // value throws rather than quietly configuring a table that no
+    // player could create.
+    public array $allow_unpublished_option_values = [];
+
     // The "legacy scope" that the table's legacy data (the
     // `$this->bga->legacy` API) lives under.  Legacy data is shared
     // exactly by the tables of a game that share a scope.

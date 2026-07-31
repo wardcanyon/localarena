@@ -7,6 +7,8 @@
  require_once APP_GAMEMODULE_PATH . 'module/table/GameState.php';
  require_once APP_GAMEMODULE_PATH . 'module/table/LocalArenaStats.php';
  require_once APP_GAMEMODULE_PATH . 'module/table/LocalArenaLegacy.php';
+ require_once APP_GAMEMODULE_PATH . 'module/table/NotificationMessage.php';
+ require_once APP_GAMEMODULE_PATH . 'module/table/LocalArenaCounters.php';
  require_once APP_GAMEMODULE_PATH . 'module/table/LocalArenaBgaServices.php';
  require_once APP_GAMEMODULE_PATH . 'module/table/APP_GameAction.php';
  require_once APP_GAMEMODULE_PATH . 'module/table/deck.php';
@@ -392,6 +394,25 @@
    public TableStats $tableStats;
    public PlayerStats $playerStats;
 
+   // The counter APIs; see `module/table/LocalArenaCounters.php` and
+   // https://en.doc.boardgamearena.com/PlayerCounter_and_TableCounter
+   //
+   // Games create their own counters with the factory, in their Game
+   // class's constructor:
+   //
+   //     $this->roundCounter = $this->counterFactory->createTableCounter('round');
+   //
+   public \Bga\GameFramework\Components\Counters\CounterFactory $counterFactory;
+
+   // The two player counters that every game has by default.  Unlike
+   // the counters a game creates, these are stored in the `player`
+   // table's `player_score` and `player_score_aux` columns -- so they
+   // need no `initDb()`, and setting them is what keeps the scores
+   // that the framework itself reads up to date.  They are unbounded
+   // and start at 0.
+   public \Bga\GameFramework\Components\Counters\PlayerCounter $playerScore;
+   public \Bga\GameFramework\Components\Counters\PlayerCounter $playerScoreAux;
+
    // The modern object-based services API; carries the legacy-games
    // API as `$this->bga->legacy`.
    public LocalArenaBgaServices $bga;
@@ -470,6 +491,16 @@
      $this->tableStats = new TableStats($this);
      $this->playerStats = new PlayerStats($this);
      $this->bga = new LocalArenaBgaServices($this);
+
+     // The counter factory must exist before the game's own
+     // constructor body runs: that is where games create their
+     // counters.
+     $this->counterFactory = new \Bga\GameFramework\Components\Counters\CounterFactory($this);
+     $this->playerScore = $this->counterFactory->localarenaCreatePlayerColumnCounter('playerScore', 'player_score');
+     $this->playerScoreAux = $this->counterFactory->localarenaCreatePlayerColumnCounter(
+       'playerScoreAux',
+       'player_score_aux'
+     );
 
      $gameoptions_json_path = LOCALARENA_GAME_PATH . $this->getGameName() . '/gameoptions.json';
      $gamepreferences_json_path = LOCALARENA_GAME_PATH . $this->getGameName() . '/gamepreferences.json';
@@ -838,6 +869,39 @@
      // XXX: no-op; but in strict mode, this should throw an exception
    }
 
+   // Combines the game's `getAllDatas()` with the framework's own
+   // "medium" data (see `getMediumDatas()`) to produce the gamedatas
+   // served to a client.
+   //
+   // The per-player sub-arrays are merged rather than replaced: on
+   // BGA, `gamedatas.players[$player_id]` carries the framework's
+   // information about a player (name, color, ...) ALONGSIDE whatever
+   // the game published for them in `$result['players']`.  A plain
+   // `array_merge()` of the two would drop the latter entirely, so
+   // per-player data -- notably the values that
+   // `PlayerCounter::fillResult()` writes, which is where a front-end
+   // counter gets its starting value -- would never reach the client.
+   //
+   // Where both sides define the same field for a player, the game's
+   // value wins: `getAllDatas()` is what the game controls.
+   private function mergeMediumDatas(array $alldatas, array $medium_datas): array
+   {
+     if (
+       isset($alldatas['players']) &&
+       is_array($alldatas['players']) &&
+       isset($medium_datas['players']) &&
+       is_array($medium_datas['players'])
+     ) {
+       foreach ($medium_datas['players'] as $player_id => $player_info) {
+         $game_data = $alldatas['players'][$player_id] ?? null;
+         if (is_array($game_data)) {
+           $medium_datas['players'][$player_id] = array_merge($player_info, $game_data);
+         }
+       }
+     }
+     return array_merge($alldatas, $medium_datas);
+   }
+
    function getFullDatas()
    {
      $ret = $this->getMediumDatas();
@@ -852,7 +916,7 @@
        $ret['alldatas'] = json_decode($data);
      } else {
        // XXX:
-       $ret['alldatas'] = array_merge($this->getAllDatasValidated(), $this->getMediumDatas());
+       $ret['alldatas'] = $this->mergeMediumDatas($this->getAllDatasValidated(), $this->getMediumDatas());
      }
 
      $ret['states'] = $this->gamestate->machinestates;
@@ -1711,7 +1775,11 @@
        ',' .
        $this->getCurrentPlayerId() .
        ',\'' .
-       $data .
+       // As in `notifyAllPlayers()`: the JSON goes into a string
+       // literal, so it has to be escaped (a notification argument
+       // containing a quote or a backslash would otherwise be
+       // mangled, or break the query outright).
+       $this->escapeStringForDb($data) .
        '\')';
      $this->DbQuery($sql);
    }

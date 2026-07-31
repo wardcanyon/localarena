@@ -79,7 +79,16 @@ export class EbgCoreGamegui {
 
     for (const player_id in this.bg_game_players) {
       let scoreCtrl = new ebg.counter();
-      scoreCtrl.create("player_score_" + player_id);
+      // The score controls follow the `playerScore` counter that
+      // every game has by default, so a game that updates
+      // `$this->playerScore` never has to touch them; their starting
+      // value is the "score" field that games are expected to publish
+      // from `getAllDatas()`.
+      scoreCtrl.create("player_score_" + player_id, {
+        value: this.playerScoreFromGamedatas(player_id),
+        playerCounter: "playerScore",
+        playerId: player_id,
+      });
       this.scoreCtrl[player_id] = scoreCtrl;
     }
 
@@ -117,6 +126,16 @@ export class EbgCoreGamegui {
 
     // Transition into initial state.
     this.notif_gameStateChange({ args: gamedatas.gameState });
+  }
+
+  // The starting value for a player's score control: the "score"
+  // field of their entry in the gamedatas, if the game published one.
+  private playerScoreFromGamedatas(player_id): number {
+    const player = this.gamedatas?.players?.[player_id];
+    if (player === undefined || player === null || player.score === undefined || player.score === null) {
+      return 0;
+    }
+    return parseInt("" + player.score);
   }
 
   onUpdateActionButtons(stateName, args) {}

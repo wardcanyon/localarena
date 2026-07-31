@@ -16,6 +16,9 @@ define('APP_GAMEMODULE_PATH', '/src/localarena/');
 define('LOCALARENA_GAME_PATH', '/src/game/');
 
 use \LocalArena\TableParams;
+use \Bga\GameFramework\Components\Counters\Counter;
+use \Bga\GameFramework\Components\Counters\PlayerCounter;
+use \Bga\GameFramework\Components\Counters\TableCounter;
 
 // The game-specific view code expects this.
 //
@@ -280,6 +283,148 @@ class IntegrationTestCase extends \PHPUnit\Framework\TestCase
     );
   }
 
+  // ==================== Counters ====================
+  //
+  // Counters are created by the game (in its Game class's
+  // constructor), so a test reaches them by name rather than by
+  // holding a reference: `counter('credits')` finds the same object
+  // the game holds.  The two counters every game has by default are
+  // named "playerScore" and "playerScoreAux".
+  //
+  // A test that needs a counter the game does not define can create
+  // one itself -- `$this->table()->counterFactory->createPlayerCounter(...)`
+  // followed by `initDb()` -- at any point after the table exists.
+
+  // Returns the counter with the given name.
+  public function counter(string $name): Counter
+  {
+    return $this->table()->counterFactory->localarenaGetCounter($name);
+  }
+
+  // Returns the player counter with the given name.
+  public function playerCounter(string $name): PlayerCounter
+  {
+    $counter = $this->counter($name);
+    if (!($counter instanceof PlayerCounter)) {
+      throw new \Exception('Counter "' . $name . '" is not a player counter.');
+    }
+    return $counter;
+  }
+
+  // Returns the table counter with the given name.
+  public function tableCounter(string $name): TableCounter
+  {
+    $counter = $this->counter($name);
+    if (!($counter instanceof TableCounter)) {
+      throw new \Exception('Counter "' . $name . '" is not a table counter.');
+    }
+    return $counter;
+  }
+
+  // Returns the value of the given player counter for every player it
+  // has a value for, as an array mapping the counter's own key
+  // (player id, or player no for a "useNo" counter) to value, in
+  // ascending key order.
+  //
+  // Warning: if you assert on the returned array directly, remember
+  // that PHP array comparisons can be key-order-sensitive.  Prefer
+  // `assertPlayerCounters()`, which canonicalizes both sides.
+  public function playerCounterValues(string $name): array
+  {
+    $values = $this->playerCounter($name)->getAll();
+    ksort($values);
+    return $values;
+  }
+
+  // Asserts that the given table counter has the expected value.
+  public function assertTableCounter(int $expected, string $name, string $message = ''): void
+  {
+    $this->assertSame(
+      $expected,
+      $this->tableCounter($name)->get(),
+      'Unexpected value for table counter "' . $name . '".' . ($message === '' ? '' : '  ' . $message)
+    );
+  }
+
+  // Asserts that the given player counter has the expected value for
+  // `$player`.
+  public function assertPlayerCounter(int $expected, string $name, PlayerPeer $player, string $message = ''): void
+  {
+    $this->assertSame(
+      $expected,
+      $player->counterValue($name),
+      'Unexpected value for player counter "' .
+        $name .
+        '" of player ' .
+        $player->id() .
+        '.' .
+        ($message === '' ? '' : '  ' . $message)
+    );
+  }
+
+  // Asserts that the given player counter has the expected value for
+  // every player it has a value for.  `$expected` maps the counter's
+  // own key (player id, or player no for a "useNo" counter) to the
+  // expected value; it may be in any order, but must cover every key
+  // the counter has (a key missing from `$expected` is a failure, not
+  // a "don't care").
+  public function assertPlayerCounters(array $expected, string $name, string $message = ''): void
+  {
+    $normalized = [];
+    foreach ($expected as $key => $value) {
+      $normalized[intval($key)] = $value;
+    }
+    ksort($normalized);
+    $this->assertSame(
+      $normalized,
+      $this->playerCounterValues($name),
+      'Unexpected values for player counter "' . $name . '".' . ($message === '' ? '' : '  ' . $message)
+    );
+  }
+
+  // ==================== Notifications ====================
+
+  // Returns the notifications the table has sent, oldest first, each
+  // as an array with the keys:
+  //
+  //   'id'        the gamelog id (ascending; useful for slicing)
+  //   'moveId'    the move the notification belongs to
+  //   'type'      the notification type ('setPlayerCounter', ...)
+  //   'log'       the game-log message ('' for a silent notification)
+  //   'args'      the notification's arguments
+  //   'recipient' the player it was sent to, or null for all players
+  //
+  // With `$type`, only notifications of that type are returned; with
+  // `$recipient_player_id`, only those that the given player received
+  // (which includes the ones sent to everybody).
+  public function notifs(?string $type = null, ?int $recipient_player_id = null): array
+  {
+    $rows = $this->table()->getObjectListFromDB('SELECT * FROM `gamelog` ORDER BY `gamelog_id` ASC');
+
+    $notifs = [];
+    foreach ($rows as $row) {
+      $notif = json_decode($row['gamelog_notification'], /*associative=*/ true);
+      $recipient = $row['gamelog_player'] === null ? null : intval($row['gamelog_player']);
+
+      if ($type !== null && ($notif['notification_type'] ?? null) !== $type) {
+        continue;
+      }
+      if ($recipient_player_id !== null && $recipient !== null && $recipient !== $recipient_player_id) {
+        continue;
+      }
+
+      $notifs[] = [
+        'id' => intval($row['gamelog_id']),
+        'moveId' => intval($row['gamelog_move_id']),
+        'type' => $notif['notification_type'] ?? null,
+        'log' => $notif['notification_log'] ?? null,
+        'args' => $notif['args'] ?? null,
+        'recipient' => $recipient,
+      ];
+    }
+    return $notifs;
+  }
+
   // ==================== Legacy-games data ====================
   //
   // Legacy data (the `$this->bga->legacy` API) persists ACROSS tables,
@@ -388,7 +533,10 @@ class IntegrationTestCase extends \PHPUnit\Framework\TestCase
     return json_decode($json, /*associative=*/ true);
   }
 
-  // XXX: How will we get notifs routed back to the test fix fixtures?
+  // XXX: How will we get notifs routed back to the test fixtures as
+  // they are sent?  `notifs()` above reads them back out of the
+  // gamelog after the fact, which is enough to assert on what was
+  // sent, but not to observe the sending itself.
 
   // TODO: Clean up the table after successful tests.
 }
@@ -404,6 +552,7 @@ class PlayerPeer
   // XXX: Should this be PlayerIdString?
   private string $id_;
     private int $no_;
+  private string $name_;
 
   private function table()
   {
@@ -415,6 +564,7 @@ class PlayerPeer
     $this->itc_ = $itc;
     $this->id_ = $row['player_id'];
     $this->no_ = intval($row['player_no']);
+    $this->name_ = $row['player_name'];
   }
 
   // XXX: Should this be PlayerIdString?
@@ -427,6 +577,11 @@ class PlayerPeer
     {
         return $this->no_;
     }
+
+  public function name(): string
+  {
+    return $this->name_;
+  }
 
   // XXX: This is duplicated with `CharacterPeer::act()`; do we need
   // to consolidate them?
@@ -471,6 +626,15 @@ class PlayerPeer
   public function stat(string $name): StatPeer
   {
     return new StatPeer($this->itc_, $name, $this->id_);
+  }
+
+  // Returns the value of the given player counter for this player,
+  // addressing the counter by whichever of player id and player no it
+  // is keyed by (see `setUseNo()`).
+  public function counterValue(string $name): int
+  {
+    $counter = $this->itc_->playerCounter($name);
+    return $counter->get($counter->getUseNo() ? $this->no() : intval($this->id()));
   }
   // TODO: Add accessors for things like "is this player active?"
 }

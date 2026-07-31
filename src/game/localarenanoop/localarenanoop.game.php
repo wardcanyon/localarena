@@ -2,13 +2,27 @@
 
 require_once APP_GAMEMODULE_PATH . "module/table/table.game.php";
 
+use Bga\GameFramework\Components\Counters\PlayerCounter;
+use Bga\GameFramework\Components\Counters\TableCounter;
+
 class localarenanoop extends Table
 {
+    // Counters, so that LocalArena's own tests have a game that goes
+    // through the whole documented lifecycle: created here, given
+    // storage in `setupNewGame()`, and published in `getAllDatas()`.
+    // (Tests that want a counter with some other configuration create
+    // one themselves through `$table->counterFactory`.)
+    public PlayerCounter $playerCredits;
+    public TableCounter $roundCounter;
+
     function __construct()
     {
         parent::__construct();
         self::initGameStateLabels([
         ]);
+
+        $this->playerCredits = $this->counterFactory->createPlayerCounter("credits");
+        $this->roundCounter = $this->counterFactory->createTableCounter("round");
     }
 
     protected function getGameName()
@@ -57,6 +71,9 @@ class localarenanoop extends Table
             $gameinfos["player_colors"]
         );
         self::reloadPlayersBasicInfos();
+
+        $this->playerCredits->initDb(array_keys($players));
+        $this->roundCounter->initDb(1);
     }
 
     /*
@@ -70,7 +87,22 @@ class localarenanoop extends Table
      */
     protected function getAllDatas()
     {
-        return [];
+        $result = [];
+
+        // The default `playerScore` counter is displayed from the
+        // "score" field, so games are expected to publish it here.
+        $result["players"] = self::getCollectionFromDB(
+            "SELECT `player_id` `id`, `player_score` AS `score` FROM `player`"
+        );
+
+        $this->playerCredits->fillResult(
+            $result,
+            /*fieldName=*/ null,
+            /*currentPlayerId=*/ intval(self::getCurrentPlayerId())
+        );
+        $this->roundCounter->fillResult($result);
+
+        return $result;
     }
 
     /*

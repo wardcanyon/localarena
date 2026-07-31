@@ -1,3 +1,5 @@
+Drop table if exists `bga_player_counters`;
+Drop table if exists `bga_table_counters`;
 Drop table if exists `gamelog`;
 Drop table if exists `global`;
 Drop table if exists `player`;
@@ -96,7 +98,7 @@ CREATE TABLE `stats` (
 
 
 --
--- Index pour les tables exportées
+-- Index pour les tables exportï¿½es
 --
 
 --
@@ -133,7 +135,7 @@ ALTER TABLE `stats`
   ADD KEY `stats_player_id` (`stats_player_id`);
 
 --
--- AUTO_INCREMENT pour les tables exportées
+-- AUTO_INCREMENT pour les tables exportï¿½es
 --
 
 --

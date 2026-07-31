@@ -137,6 +137,57 @@ from one table into the next) should set
 they share the test's pool.  See `tests/LegacyTest.php` for full
 examples.
 
+#### Counters in tests
+
+The [counter components](https://en.doc.boardgamearena.com/PlayerCounter_and_TableCounter)
+are supported: `$this->counterFactory->createPlayerCounter()` and
+`createTableCounter()`, the `PlayerCounter` and `TableCounter` objects
+they return (`initDb()`, `get()`, `set()`, `inc()`, `getAll()`,
+`setAll()`, `fillResult()`, the visibility and player-key settings),
+and the two counters every game has by default, `$this->playerScore`
+and `$this->playerScoreAux`.
+
+A game's own counters keep their values in the `bga_player_counters`
+and `bga_table_counters` tables of the per-table database, which
+`initDb()` creates; the two default counters are stored in the
+`player` table's `player_score` and `player_score_aux` columns, so
+they need no `initDb()` call.  Every `set()`/`inc()`/`setAll()` sends
+the front end a `setPlayerCounter`, `setTableCounter`, or
+`setPlayerCounterAll` notification, which is what lets an
+`ebg.counter` created with a `playerCounter`/`tableCounter` option
+keep itself up to date without the game touching it.
+
+Counters belong to the game, so tests reach them by name:
+
+```php
+$this->counter('credits');                       // the counter object
+$this->tableCounter('round')->get();
+$this->playerByIndex(0)->counterValue('credits');
+
+$this->assertTableCounter(3, 'round');
+$this->assertPlayerCounter(5, 'credits', $this->playerByIndex(0));
+$this->assertPlayerCounters([$player0_id => 5, $player1_id => 8], 'credits');
+```
+
+A test that needs a counter the game does not define can create one
+itself -- `$this->table()->counterFactory->createPlayerCounter(...)`,
+then `initDb()` -- at any point after the table exists.
+
+`IntegrationTestCase::notifs()` returns the notifications the table has
+sent (optionally filtered by type and recipient), which is how a test
+asserts on what a counter announced:
+
+```php
+$notifs = $this->notifs('setPlayerCounter');
+$this->assertSame(2, $notifs[0]['args']['inc']);
+```
+
+LocalArena is stricter than BGA in three places here, deliberately:
+reading a counter whose `initDb()` was never called is an error rather
+than a silent zero; two counters may not share a name; and player
+counters validate the player id (or no) they are given unless they are
+created with `strict: false`.  See `tests/CountersTest.php`.
+
 ### Generating code-coverage reports
 
 The `testenv` image ships with the [PCOV](https://github.com/krakjoe/pcov)
@@ -357,6 +408,12 @@ $ docker volume rm localarena_db-data
   per-test scopes accumulate rows, much as tests accumulate `table_N`
   databases), and writes to it are not covered by the per-action
   transaction on the table database.
+
+- A player counter whose visibility is not "public" (see
+  "Counters in tests" above) sends its value only to the players who
+  may see it, rather than sending them a redacted notification; so the
+  players who may not see the value do not get the game-log message
+  that accompanied the update either.
 
 ## Tips
 

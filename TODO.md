@@ -22,7 +22,10 @@
 
 ### For testing
 
-- Add test fixtures for notifs.
+- Finish the test fixtures for notifs.  `IntegrationTestCase::notifs()`
+  reads them back out of the gamelog after the fact; we should also be
+  able to observe them as they are sent (and to assert that a player
+  did *not* receive one).
 
 - A missing validation check in "burglebrostwo" made the game's state
   machine run in a tight loop.  Should we have a limit on the number

@@ -138,7 +138,16 @@ class TableManager
     $game->initTable($params->load_schema_file);
 
     if ($params->schema_changes !== '') {
-        $game->localarenaApplySchema(explode('\n',$params->schema_changes));
+        // N.B.: a DOUBLE-quoted "\n" -- the single-quoted form split on
+        // a literal backslash-n, so a multi-statement $schema_changes
+        // arrived as one line and was sent to mysqli::query() whole,
+        // which rejects multiple statements.
+        // Keep the line endings, so that concatenating the lines back
+        // together in localarenaApplySchema() cannot merge tokens
+        // across a line break -- `loadFile()` uses file(), which keeps
+        // them, and this needs to behave the same way.
+        $lines = array_map(fn($line) => $line . "\n", explode("\n", $params->schema_changes));
+        $game->localarenaApplySchema($lines);
     }
 
     if ($params->enable_undo_savepoints) {

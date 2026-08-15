@@ -1,0 +1,61 @@
+name: Warm testenv build cache
+
+# The `build` job in `test:server` restores the testenv image layers from
+# the GitHub Actions cache (`cache-from: type=gha`). Those entries are
+# scoped per ref, and GitHub evicts anything that has not been *accessed*
+# for 7 days. So after a quiet week on main, the next push rebuilds the
+# image from scratch and has to re-download every Composer package over
+# the network.
+#
+# That is exactly how run 31894604833 failed: main's cache had gone cold
+# (the previous main build was 18 days earlier), the `composer require`
+# layers actually executed, api.github.com returned HTTP 504 for four
+# package zipballs, and the image build died -- so all 8 test shards were
+# skipped without a single test running.
+#
+# Scheduled workflows always run on the default branch, which means this
+# job reads and writes the very cache scope that push-to-main builds
+# depend on. Pull requests benefit too, since a PR can read its base
+# branch's cache.
+#
+# When the cache is already warm this is a no-op: every layer is a cache
+# hit, nothing is downloaded, and the run just refreshes the eviction
+# clock.
+#
+# Note that GitHub disables scheduled workflows in repositories with no
+# activity for 60 days; if that ever happens, re-enable this from the
+# Actions tab (or trigger it via workflow_dispatch).
+
+on:
+  schedule:
+    # Daily, comfortably inside the 7-day eviction window.
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+
+# Never let a manual dispatch race the scheduled run: they would both be
+# writing the same cache scope.
+concurrency:
+  group: cache-warm
+  cancel-in-progress: false
+
+jobs:
+  warm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # These inputs must mirror the `build` job in `tests.yml` -- same
+      # context, same target, same (default) gha cache scope -- otherwise
+      # this warms cache entries that `build` will never look up. There is
+      # deliberately no `load:`/`push:`, since nothing here needs the
+      # image itself; only the exported layer cache matters.
+      - name: Build testenv image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: testenv
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

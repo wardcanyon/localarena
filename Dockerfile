@@ -104,9 +104,45 @@ RUN apt-get update -y && apt-get dist-upgrade -y \
     && apt-get install --no-install-recommends --yes p7zip-full default-mysql-client \
     && rm -rf /var/lib/apt/lists/*
 
-RUN composer require --dev phpunit/phpunit ^11
-RUN composer require --dev brianium/paratest:${PARATEST_VERSION}
-RUN composer require --dev phan/phan:${PHAN_VERSION}
+# Composer fetches package zipballs from api.github.com, which
+# intermittently returns 5xx. Source fallback is disabled for
+# non-interactive installs ("Not trying alternative sources"), so a single
+# 504 aborts the image build -- and since CI builds this image before it
+# can run anything, that takes down the whole test suite. Retry with
+# backoff instead.
+#
+# The three requires share one layer so they also share the retry helper;
+# they were previously three layers, but they are always invalidated
+# together anyway.
+#
+# ARGs in scope are exported into the RUN environment, so the quoted
+# heredoc below (no Dockerfile-level expansion, which would eat the shell
+# variables) still interpolates the pinned versions.
+RUN <<'EOF'
+set -eu
+
+composer_require() {
+    attempt=1
+    while :; do
+        if composer require --dev --no-interaction "$@"; then
+            return 0
+        fi
+        if [ "${attempt}" -ge 5 ]; then
+            echo "composer require $* failed after 5 attempts" >&2
+            return 1
+        fi
+        delay=$((attempt * 10))
+        echo "composer require $* failed (attempt ${attempt}/5); retrying in ${delay}s" >&2
+        sleep "${delay}"
+        attempt=$((attempt + 1))
+    done
+}
+
+composer_require phpunit/phpunit ^11
+composer_require brianium/paratest:${PARATEST_VERSION}
+composer_require phan/phan:${PHAN_VERSION}
+EOF
+
 ENV PATH="$PATH:/vendor/bin"
 
 ENV DB_HOST=db

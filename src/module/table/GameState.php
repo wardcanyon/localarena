@@ -89,19 +89,33 @@ class GameState
   /**
    * Activate each of the players in $players.
    *
-   * If `!$bExclusive`, any players not in $players will be deactivated.
+   * $bExclusive says what happens to players who are already
+   * multiactive but are NOT in $players:
    *
-   * If no players are active afterwards, the state transition
-   * $next_state will be taken.
+   * - false (the default): they stay active, i.e. $players is ADDED to
+   *   the set of active players;
+   * - true: they are deactivated, so that the players multiactive at
+   *   the end are exactly those in $players.
+   *
+   * Whether the $next_state transition is taken depends on the
+   * ARGUMENT, not on the resulting flags: with a non-empty $players,
+   * $next_state is ignored entirely (whatever is passed for it); with
+   * an empty $players, the transition is taken.  Note that this means
+   * an empty $players and `!$bExclusive` transitions onwards even
+   * though the players who were already active still carry the flag.
+   *
+   * Returns true iff the state transition was taken.
    *
    * @param $players
    * @param $next_state
    * @param $bExclusive
    */
-  public function setPlayersMultiactive($players, $next_state, bool $bExclusive = false)
+  public function setPlayersMultiactive($players, $next_state, bool $bExclusive = false): bool
   {
-    if (!$bExclusive) {
-      // Deactivate all players (those in $players will be reactivated below)
+    if ($bExclusive) {
+      // Deactivate all players (those in $players are reactivated
+      // below), so that $players ends up being exactly the multiactive
+      // set.
       $this->game->DbQuery('UPDATE `player` SET `player_is_multiactive` = 0');
     }
 
@@ -114,10 +128,12 @@ class GameState
     // notif even if $players is empty.
     $this->game->notify_gameStateMultipleActiveUpdate();
 
-    // Transition if no players are active afterwards
-    if ($this->game->getUniqueValueFromDB('SELECT COUNT(*) FROM `player` WHERE `player_is_multiactive` = 1') == 0) {
+    if (count($players) == 0) {
       $this->nextState($next_state);
+      return true;
     }
+
+    return false;
   }
 
   /**

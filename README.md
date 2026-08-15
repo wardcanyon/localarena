@@ -137,6 +137,35 @@ from one table into the next) should set
 they share the test's pool.  See `tests/LegacyTest.php` for full
 examples.
 
+### LocalArena's own test suite
+
+Everything above is about testing *a game*. LocalArena also has tests
+for *itself*, under `tests/`, in two lanes:
+
+- **Integration tests** (`tests/*Test.php`) drive a real table against
+  a real database, using the same `IntegrationTestCase` fixtures that
+  games use. They exercise the framework the way a game does, and they
+  need the Docker stack running.
+
+- **Unit tests** (`tests/unit/*Test.php`) exercise framework code that
+  can be tested in isolation -- argument parsing, pure helpers -- with
+  no table and no database. They need only a PHP interpreter and
+  PHPUnit, which makes them fast, and runnable in environments where
+  Docker is not available.
+
+Most framework behavior is only observable by driving a table, so the
+integration lane is the default; reach for the unit lane when the code
+under test genuinely does not need one. Both lanes are collected by
+`tests/phpunit.xml`, so `grunt test` runs them together.
+
+Both use the bundled `localarenanoop` game (`src/game/localarenanoop`)
+as a harness: a game that does as little as possible, so that tests
+observe the framework rather than a game's behavior. A test that needs
+different *behavior* subclasses it via `TableParams::$table_class`
+(see `tests/JumpToStateTest.php`); a test that needs different *files*
+on disk -- a different schema, different `gameinfos.inc.php` -- needs a
+new harness game beside it.
+
 ### Generating code-coverage reports
 
 The `testenv` image ships with the [PCOV](https://github.com/krakjoe/pcov)

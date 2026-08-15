@@ -41,17 +41,27 @@ class APP_GameAction
   }
 
   /**
+   * Reads, validates, and converts one request argument.
+   *
+   * An argument that is absent is an error only if $required; otherwise
+   * $default is returned unconverted (it is a value the caller chose,
+   * not request input, so there is nothing to validate).  BGA's
+   * signature names this parameter $default -- see `_ide_helper.php`,
+   * `getArg(string $argName, int $argType, bool $bMandatory = false,
+   * mixed $default = null, array $argTypeDetails = [], ...)` -- so we
+   * match that name, and games passing it by name still work.
+   *
+   * N.B.: BGA's trailing $bCanFail parameter is not implemented here.
+   *
    * @param string $arg
    * @param int $type
    * @param bool $required
-   *
-   * TODO: This is a great candidate for unit testing!  I'm also not
-   * positive that the behavior matches BGA exactly (e.g. the return
-   * types may not be identical, and so on).
+   * @param mixed $default
+   * @param array $enumValues Possible values for AT_enum (BGA calls this $argTypeDetails).
    *
    * @return mixed
    */
-  function getArg($arg, $type, $required = false, $unknownParam = null, $enumValues = [])
+  function getArg($arg, $type, $required = false, $default = null, $enumValues = [])
   {
     if (isset($this->params[$arg])) {
       $rawVal = $this->params[$arg];
@@ -116,12 +126,17 @@ class APP_GameAction
         case AT_json:
           return json_decode($rawVal, /*associative=*/ true);
       }
-    } else {
-      if ($required) {
-        throw new feException('Required parameter ' . $arg . ' not found.');
-      }
+
+      // The argument was supplied, but we were asked to convert it as
+      // a type we don't recognize.
+      throw new feException('Unsupported arg type: ' . $type);
     }
-    throw new feException('Unsupported arg type: ' . $type);
+
+    if ($required) {
+      throw new feException('Required parameter ' . $arg . ' not found.');
+    }
+
+    return $default;
   }
 
   /**

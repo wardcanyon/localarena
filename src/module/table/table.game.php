@@ -459,6 +459,10 @@
    // parked state) by `getLiveStateId()`.
    private ?int $liveStateId_ = null;
 
+   // How many players this table seats; null means
+   // `LOCALARENA_PLAYER_COUNT`.  See `localarenaSetPlayerCount()`.
+   private ?int $localarena_player_count_ = null;
+
    function __construct()
    {
      parent::__construct();
@@ -513,6 +517,34 @@
    {
      $this->localarena_table_options_ = $options;
      $this->localarena_allow_unpublished_option_values_ = $allow_unpublished_option_values;
+   }
+
+   // Records how many players this table seats.  Must be called before
+   // `initTable()`, which runs game setup; see
+   // `TableManager::createTable()`.
+   //
+   // Null means "use the configured default", i.e.
+   // `LOCALARENA_PLAYER_COUNT`, which is what interactive play does.
+   public function localarenaSetPlayerCount(?int $player_count): void
+   {
+     if ($player_count !== null && $player_count < 1) {
+       throw new \BgaVisibleSystemException(
+         'A table must seat at least one player; was asked for ' . $player_count . '.'
+       );
+     }
+     $this->localarena_player_count_ = $player_count;
+   }
+
+   // The number of players this table seats.
+   //
+   // This is per-table rather than global so that a test can create
+   // tables of different sizes: `LOCALARENA_PLAYER_COUNT` is a `const`
+   // baked into the image, so before this existed every table in the
+   // process -- and therefore every test -- had exactly the same
+   // number of players.
+   public function localarenaPlayerCount(): int
+   {
+     return $this->localarena_player_count_ ?? LOCALARENA_PLAYER_COUNT;
    }
 
    function localarenaSetDefaultOptions()
@@ -1029,7 +1061,12 @@
      return intval($this->getPlayerRowById($player_id)['player_no']);
    }
 
-   function getPlayerColorById(int $player_id): int
+   // N.B.: A player color is a six-character hex string ('ff0000'),
+   // not a number.  This was declared `: int`, which made it either
+   // fatal or silently wrong for every color a game defines --
+   // 'ff0000' raised a TypeError, while '008000' was coerced to the
+   // integer 8000.
+   function getPlayerColorById(int $player_id): string
    {
      return $this->getPlayerRowById($player_id)['player_color'];
    }
@@ -1179,7 +1216,7 @@
      $first_player_id = self::LOCALARENA_FIRST_PLAYER_ID;
 
      $players = [];
-     for ($i = 0; $i < LOCALARENA_PLAYER_COUNT; $i++) {
+     for ($i = 0; $i < $this->localarenaPlayerCount(); $i++) {
        $player_id = $first_player_id + $i;
        $players[$player_id] = [
          'player_no' => $i + 1,

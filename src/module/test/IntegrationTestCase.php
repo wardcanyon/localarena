@@ -332,9 +332,23 @@ class IntegrationTestCase extends \PHPUnit\Framework\TestCase
 
   // Returns the IDs of all players that `stGameSetup()` will seat (in
   // seating order).  Valid before the table exists.
-  public static function presetPlayerIds(): array
+  public function presetPlayerIds(): array
   {
-    return array_map(fn($i) => self::presetPlayerId($i), range(0, LOCALARENA_PLAYER_COUNT - 1));
+    return array_map(fn($i) => self::presetPlayerId($i), range(0, $this->playerCount() - 1));
+  }
+
+  // The number of players this test's table seats.
+  //
+  // Valid before the table exists -- it comes from
+  // `defaultTableParams()` until there is a table to ask -- which is
+  // what the legacy-seeding helpers need, since they run before table
+  // creation.
+  public function playerCount(): int
+  {
+    if ($this->table_ === null) {
+      return $this->defaultTableParams()->playerCount ?? LOCALARENA_PLAYER_COUNT;
+    }
+    return $this->table_->localarenaPlayerCount();
   }
 
   private function legacyStore(): \LocalArenaLegacyStore
@@ -359,7 +373,7 @@ class IntegrationTestCase extends \PHPUnit\Framework\TestCase
   // before the table is set up.
   public function seedLegacyTeamData($value, ?array $player_ids = null, int $ttl = 365): void
   {
-    $signature = localarenaLegacyTeamSignature($player_ids ?? self::presetPlayerIds());
+    $signature = localarenaLegacyTeamSignature($player_ids ?? $this->presetPlayerIds());
     $this->legacyStore()->setTeamData($signature, json_encode($value), $ttl);
   }
 
@@ -380,7 +394,7 @@ class IntegrationTestCase extends \PHPUnit\Framework\TestCase
   // $default if there is none; for assertions.
   public function legacyTeamValue(?array $player_ids = null, $default = null)
   {
-    $signature = localarenaLegacyTeamSignature($player_ids ?? self::presetPlayerIds());
+    $signature = localarenaLegacyTeamSignature($player_ids ?? $this->presetPlayerIds());
     $json = $this->legacyStore()->getTeamData($signature);
     if ($json === null) {
       return $default;

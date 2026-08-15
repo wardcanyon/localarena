@@ -134,6 +134,7 @@ class TableManager
     // state, which applies the option defaults and then calls
     // `setupNewGame()`.
     $game->localarenaSetTableOptions($params->game_options, $params->allow_unpublished_option_values);
+    $game->localarenaSetPlayerCount($params->playerCount);
 
     $game->initTable($params->load_schema_file);
 

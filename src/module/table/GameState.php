@@ -175,7 +175,11 @@ class GameState
   public function checkPossibleAction($action, $bThrowException = true)
   {
     $state = $this->state();
-    if (!isset($state['possibleactions'][$action])) {
+    // `possibleactions` is a plain list of action names, so membership
+    // is by value.  (An `isset()` lookup by key here would never match,
+    // making this check -- and the half of `checkAction()` built on it
+    // -- accept or reject everything, depending on the caller.)
+    if (!in_array($action, $state['possibleactions'] ?? [])) {
       if ($bThrowException) {
         throw new feException('Impossible action "' . $action . '" at this state "' . $state['name'] . '"');
       } else {

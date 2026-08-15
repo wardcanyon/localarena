@@ -1490,17 +1490,27 @@
 
    function checkAction($actionName, $bThrowException = true)
    {
-     if (
-       in_array($this->getCurrentPlayerId(), $this->gamestate->getActivePlayerList()) &&
-       $this->gamestate->checkPossibleAction($actionName, false)
-     ) {
+     // Turn-order gate: the current player must be entitled to act
+     // right now.  `getActivePlayerList()` is the single source of
+     // truth for that -- THE active player in an "activeplayer" state,
+     // the multiactive set in a "multipleactiveplayer" state, and empty
+     // (nobody may act) in "game"/"manager" states.
+     $active_ids = array_map('intval', $this->gamestate->getActivePlayerList());
+     if (!in_array(intval($this->getCurrentPlayerId()), $active_ids)) {
+       if ($bThrowException) {
+         throw new BgaUserException($this->_('It is not your turn'));
+       }
+       return false;
+     }
+
+     if (!$this->gamestate->checkPossibleAction($actionName, false)) {
        if ($bThrowException) {
          $state = $this->gamestate->state();
          throw new feException('Impossible action "' . $actionName . '" at this state "' . $state['name'] . '"');
-       } else {
-         return false;
        }
+       return false;
      }
+
      return true;
    }
 

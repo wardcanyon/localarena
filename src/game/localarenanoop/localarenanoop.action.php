@@ -39,4 +39,17 @@ class action_localarenanoop extends APP_GameAction
         $this->game->gamestate->jumpToState($state_id, $with_actions);
         self::ajaxResponse();
     }
+
+    // LocalArena test-support action: run the framework's
+    // `checkAction()` within a real request, as whichever player the
+    // request was submitted by.  Framework tests use this to exercise
+    // the turn-order gate end to end; real games call `checkAction()`
+    // at the top of their own action handlers instead.
+    public function actTestCheckAction()
+    {
+        self::setAjaxMode();
+        $action_name = self::getArg("action_name", AT_alphanum_dash, /*required=*/ true);
+        $this->game->checkAction($action_name);
+        self::ajaxResponse();
+    }
 }

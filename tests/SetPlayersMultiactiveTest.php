@@ -37,10 +37,11 @@ class SetPlayersMultiactiveTest extends IntegrationTestCase
     protected function defaultTableParams(): \LocalArena\TableParams
     {
         $params = parent::defaultTableParams();
-        // Three players, so that "the others" is more than one player
-        // and an exclusive call has something to deactivate besides the
-        // player it activates.
-        $params->playerCount = 3;
+        // N.B.: The harness seats LOCALARENA_PLAYER_COUNT players
+        // whatever `TableParams::$playerCount` says, so these tests are
+        // written for the two players it gives us: in each of them one
+        // player stands for "the players named in the call" and the
+        // other for "everyone else".
         $params->table_class = SetPlayersMultiactiveTestGame::class;
         return $params;
     }
@@ -125,7 +126,7 @@ class SetPlayersMultiactiveTest extends IntegrationTestCase
      */
     public function testExclusiveDeactivatesTheOtherPlayers(): void
     {
-        $this->givenMultiactive([$this->playerId(0), $this->playerId(2)]);
+        $this->givenMultiactive([$this->playerId(0), $this->playerId(1)]);
 
         $this->game()->gamestate->setPlayersMultiactive(
             [$this->playerId(1)],
@@ -142,23 +143,21 @@ class SetPlayersMultiactiveTest extends IntegrationTestCase
     }
 
     /**
-     * An exclusive call activates the named players even if they were
-     * not active before, and keeps those of them that already were:
-     * "exactly $players" cuts both ways.
+     * "Exactly $players" cuts both ways: an exclusive call activates a
+     * named player who was not active before, in the same breath as it
+     * deactivates an unnamed player who was.
      */
-    public function testExclusiveActivatesExactlyTheNamedPlayers(): void
+    public function testExclusiveActivatesTheNamedPlayerAndDeactivatesTheRest(): void
     {
         $this->givenMultiactive([$this->playerId(0)]);
 
         $this->game()->gamestate->setPlayersMultiactive(
-            [$this->playerId(0), $this->playerId(2)],
+            [$this->playerId(1)],
             'tDone',
             /*bExclusive=*/ true
         );
 
-        $expected = [$this->playerId(0), $this->playerId(2)];
-        sort($expected);
-        $this->assertEquals($expected, $this->activeIds());
+        $this->assertEquals([$this->playerId(1)], $this->activeIds());
     }
 
     /**

@@ -48,15 +48,40 @@ jobs:
           find tests -name '*Test.php' -type f | sort > /tmp/test-files.txt
           python3 <<'PYEOF'
           import json
+          import os
 
-          SHARD_COUNT = 8
+          # Upper bound on the matrix size.  Sharding is by file, so
+          # there is never any point in more shards than there are test
+          # files; the cap just leaves headroom as the suite grows.
+          #
+          # Note that a shard is not free: before it runs a single test
+          # it boots a MySQL service, downloads the build artifact, and
+          # `docker load`s the testenv image -- call it a minute of fixed
+          # setup.  Shards are worth adding while some shard's *tests*
+          # take longer than that; past that point they only widen the
+          # matrix.
+          MAX_SHARDS = 16
 
           with open("/tmp/test-files.txt") as f:
               files = [l.strip() for l in f if l.strip()]
 
-          shards = [[] for _ in range(SHARD_COUNT)]
-          for i, path in enumerate(files):
-              shards[i % SHARD_COUNT].append(path)
+          shard_count = min(MAX_SHARDS, len(files))
+
+          # Greedy longest-first bin packing, with file size standing in
+          # for runtime: take the files largest first and put each one on
+          # whichever shard is currently smallest.  With more files than
+          # shards this balances better than round-robin; with fewer, it
+          # falls out to one file per shard.
+          shards = [[] for _ in range(shard_count)]
+          weights = [0] * shard_count
+          for test_path in sorted(files, key=lambda p: (-os.path.getsize(p), p)):
+              i = weights.index(min(weights))
+              shards[i].append(test_path)
+              weights[i] += os.path.getsize(test_path)
+
+          # Keep each shard's file list in a stable, readable order.
+          for shard_files in shards:
+              shard_files.sort()
 
           result = []
           for i, shard_files in enumerate(shards):

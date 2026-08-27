@@ -184,6 +184,43 @@ class IntegrationTestCase extends \PHPUnit\Framework\TestCase
     return new GameStateInfo($state);
   }
 
+  // ==================== Zombie ("abandoned") players ====================
+
+  // Marks $player_id as a zombie -- BGA's term for a player who has
+  // quit the table (or been expelled from it for running out of time)
+  // -- or, with $zombie false, un-marks them.
+  //
+  // Every player starts out non-zombie, so a test that never calls
+  // this sees no zombie behavior at all.
+  //
+  // What being a zombie means is that the table no longer waits on
+  // that player: whenever the game comes to rest on them, the
+  // framework calls the game's own `zombieTurn($state, $player_id)` to
+  // play for them.  That happens synchronously, inside the transition
+  // that made them active -- so a `nextState()` in the game (or an
+  // `act()` here) can return with the zombie's turn, and everything it
+  // set off, already played out.  A player zombified while they are
+  // ALREADY the one being waited on is instead picked up at the start
+  // of the next request; see `Table::checkStuckedZombiePlayers()`.
+  //
+  // Zombifying a player is the only way to reach a game's
+  // `zombieTurn()` from a test, and hence the only way for a defect in
+  // it to be found anywhere other than in production.
+  public function setPlayerZombie(int $player_id, bool $zombie = true): void
+  {
+    $this->table()->DbQuery(
+      'UPDATE `player` SET `player_zombie` = ' . ($zombie ? 1 : 0) . ' WHERE `player_id` = ' . $player_id
+    );
+  }
+
+  // Whether $player_id is currently a zombie.
+  public function isPlayerZombie(int $player_id): bool
+  {
+    return intval(
+      $this->table()->getUniqueValueFromDB('SELECT `player_zombie` FROM `player` WHERE `player_id` = ' . $player_id)
+    ) === 1;
+  }
+
   // Asserts that the game's state machine is in the $expected_state_id state.
   public function assertGameState(int $expected_state_id, ?string $message = null): void
   {
@@ -471,6 +508,19 @@ class PlayerPeer
   public function stat(string $name): StatPeer
   {
     return new StatPeer($this->itc_, $name, $this->id_);
+  }
+
+  // Marks this player a zombie (or, with $zombie false, un-marks
+  // them); see `IntegrationTestCase::setPlayerZombie()`.
+  public function setZombie(bool $zombie = true): void
+  {
+    $this->itc_->setPlayerZombie(intval($this->id_), $zombie);
+  }
+
+  // Whether this player is currently a zombie.
+  public function isZombie(): bool
+  {
+    return $this->itc_->isPlayerZombie(intval($this->id_));
   }
   // TODO: Add accessors for things like "is this player active?"
 }

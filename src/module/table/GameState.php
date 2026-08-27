@@ -241,7 +241,38 @@ class GameState
         '.'
     );
 
+    $this->enterStateAndRunZombieTurns($bWithActions);
+  }
+
+  /**
+   * Enters the (already updated) live state and then, in the SAME
+   * call, plays out any zombie the game has just come to rest on.
+   *
+   * Both halves belong to "changing state", which is why every
+   * transition goes through here.  On BGA the zombie's turn runs
+   * inside the transition that made them active, so game code that
+   * calls `nextState()` (or `jumpToState()`) can find, when the call
+   * returns, that the zombie has already answered, that whatever
+   * resumed on that answer has already run, and that the machine has
+   * moved several states beyond the one it was sent to.  Games contain
+   * real bugs that depend on exactly that re-entrancy; a LocalArena
+   * that deferred zombie turns to the next request would hide every
+   * one of them.
+   *
+   * See `Table::localarenaRunZombieTurns()`, and
+   * `LocalArenaZombieTurnRunner` below it -- which is where the caps
+   * that stop a non-progressing `zombieTurn()` from hanging the suite
+   * live.
+   */
+  private function enterStateAndRunZombieTurns(bool $bWithActions = true): void
+  {
     $this->game->enterState($bWithActions);
+
+    // Note that this runs even for a jump made "without actions".
+    // Suppressing the state's own action method says nothing about
+    // whether the table is left waiting on a player who has quit --
+    // and if it is, somebody has to play for them.
+    $this->game->localarenaRunZombieTurns();
   }
 
   /**
@@ -278,7 +309,7 @@ class GameState
         '".'
     );
 
-    $this->game->enterState();
+    $this->enterStateAndRunZombieTurns();
   }
 
   /**

@@ -5,6 +5,7 @@
  require_once APP_GAMEMODULE_PATH . 'module/table/BgaVisibleSystemException.php';
  require_once APP_GAMEMODULE_PATH . 'module/table/BgaUserException.php';
  require_once APP_GAMEMODULE_PATH . 'module/table/GameState.php';
+require_once APP_GAMEMODULE_PATH . 'module/table/LocalArenaZombieTurnRunner.php';
  require_once APP_GAMEMODULE_PATH . 'module/table/LocalArenaStats.php';
  require_once APP_GAMEMODULE_PATH . 'module/table/LocalArenaLegacy.php';
  require_once APP_GAMEMODULE_PATH . 'module/table/LocalArenaBgaServices.php';
@@ -880,7 +881,7 @@
      public function rawGetPlayers()
      {
          return $this->getCollectionFromDB(
-             'SELECT player_id, player_name, player_color, player_no, player_is_multiactive FROM player ORDER BY player_no'
+             'SELECT player_id, player_name, player_color, player_no, player_is_multiactive, player_zombie FROM player ORDER BY player_no'
          );
      }
 
@@ -899,15 +900,25 @@
          'eliminated' => 0,
          'is_ai' => '0',
          'name' => $row['player_name'],
-         'zombie' => 0,
+         'zombie' => intval($row['player_zombie']),
        ];
      }
      return $ret;
    }
 
+   // The players at this table, keyed by player id, in seating order.
+   //
+   // `player_zombie` is part of the row because that is how a game asks
+   // whether a player has abandoned the table: the conventional
+   // `isPlayerZombie()` helper that BGA's game template gives every
+   // game reads it straight out of this array.  Reporting it (rather
+   // than omitting the column, so that every player looked to be
+   // present) is what makes a game's zombie code reachable from its
+   // tests at all.  See `checkStuckedZombiePlayers()` for the
+   // framework side of the same feature.
    public function loadPlayersBasicInfos()
    {
-     $sql = 'SELECT player_id, player_name, player_color, player_no FROM player ORDER BY player_no';
+     $sql = 'SELECT player_id, player_name, player_color, player_no, player_zombie FROM player ORDER BY player_no';
      return $this->getCollectionFromDB($sql);
    }
 
@@ -1055,6 +1066,145 @@
      $sql = 'SELECT player_zombie FROM player where player_id=' . $this->getCurrentPlayerId();
      return $this->getUniqueValueFromDB($sql);
    }
+
+  // ==================== Zombie ("abandoned") players ====================
+  //
+  // On BGA, a player who quits a table -- or is expelled from it for
+  // running out of time -- is marked a "zombie".  The table keeps
+  // running without them: whenever the game comes to rest waiting on a
+  // zombie, the framework calls the game's own
+  // `zombieTurn($state, $player_id)` to play for them.
+  //
+  // Every published game has to implement `zombieTurn()`, and it is
+  // reliably among the least-exercised code it contains, because
+  // nothing in an ordinary test drive of the game ever reaches it.
+  // That is the reason LocalArena reproduces the mechanism instead of
+  // leaving `player_zombie` inert: a test marks a player a zombie (see
+  // `IntegrationTestCase::setPlayerZombie()`) and from then on the
+  // game's zombie handling runs here, under test, rather than for the
+  // first time in production.
+  //
+  // The framework runs zombie turns from two places, mirroring BGA:
+  //
+  // - On every state entry -- `GameState::jumpToState()`, and hence
+  //   also `nextState()` -- SYNCHRONOUSLY, before the transition
+  //   returns to whoever took it.  See `localarenaRunZombieTurns()`.
+  //
+  // - At the top of each request (`doAction()`), as a sweep for a
+  //   zombie who was ALREADY active when they were zombified, and so
+  //   was never noticed by a state entry.  See
+  //   `checkStuckedZombiePlayers()`.
+
+  // Caps on zombie processing; see `LocalArenaZombieTurnRunner`, which
+  // is where the loop these bound lives (and where the reasoning
+  // behind them is written down).
+  const LOCALARENA_MAX_ZOMBIE_DEPTH = LocalArenaZombieTurnRunner::DEFAULT_MAX_DEPTH;
+  const LOCALARENA_MAX_ZOMBIE_TURNS_PER_PASS = LocalArenaZombieTurnRunner::DEFAULT_MAX_TURNS_PER_PASS;
+
+  // Allocated on first use; holds the nesting depth across calls.
+  private ?LocalArenaZombieTurnRunner $localarena_zombie_runner_ = null;
+
+  // BGA's sweep for zombies the state machine never got the chance to
+  // notice.
+  //
+  // A state entry only sees the zombies that exist AT THAT MOMENT, so
+  // a player who is zombified while already active -- the ordinary
+  // case, since that is precisely when a player quits: on their own
+  // turn -- is not covered by it.  Without this sweep the table would
+  // sit forever waiting on someone who is never going to answer.
+  // Running it at the top of each request means the answer comes on
+  // the next request instead.
+  public function checkStuckedZombiePlayers(): void
+  {
+    $this->localarenaRunZombieTurns('checkStuckedZombiePlayers()');
+  }
+
+  // Plays out every zombie the game is currently waiting on, and every
+  // zombie the resulting transitions run into, before returning.
+  //
+  // Synchrony is the whole point.  Real BGA runs the zombie's turn
+  // inside the transition that made them active, so from the game's
+  // point of view a single `nextState()` call can contain the zombie's
+  // answer, whatever effect resumes on the strength of that answer,
+  // and the remainder of the zombie's turn -- all of it running
+  // underneath game code that has not finished its own state action
+  // yet.  Bugs in this area are bugs in exactly that re-entrancy, so
+  // deferring the work to the next request (much easier, and quite
+  // wrong) would reproduce none of them.
+  //
+  // The loop, the re-reading, and the runaway caps are in
+  // `LocalArenaZombieTurnRunner`; what is here is the table-specific
+  // half -- who counts as waiting, and how a turn is handed to the
+  // game.
+  public function localarenaRunZombieTurns(string $context = 'a state entry'): void
+  {
+    if ($this->localarena_zombie_runner_ === null) {
+      $this->localarena_zombie_runner_ = new LocalArenaZombieTurnRunner(
+        fn() => $this->localarenaActiveZombiePlayerIds(),
+        fn(int $player_id) => $this->localarenaRunOneZombieTurn($player_id),
+        fn() => $this->gamestate->state()['name'],
+        self::LOCALARENA_MAX_ZOMBIE_DEPTH,
+        self::LOCALARENA_MAX_ZOMBIE_TURNS_PER_PASS
+      );
+    }
+
+    $this->localarena_zombie_runner_->run($context);
+  }
+
+  // The zombies the game is waiting on right now, in seating order.
+  private function localarenaActiveZombiePlayerIds(): array
+  {
+    // `getActivePlayerList()` is the single source of truth for "who
+    // may act right now": THE active player in an "activeplayer"
+    // state, the multiactive set in a "multipleactiveplayer" state,
+    // and nobody in a "game"/"manager" state -- where the game is
+    // working rather than waiting, so no zombie has a turn to take.
+    $active_ids = array_map('intval', $this->gamestate->getActivePlayerList());
+    if (count($active_ids) === 0) {
+      return [];
+    }
+
+    // Eliminated players are skipped even when they are also zombies:
+    // the table is not waiting on them to play either way.
+    $rows = $this->getObjectListFromDB(
+      'SELECT `player_id` FROM `player` WHERE `player_zombie` = 1 AND `player_eliminated` = 0 AND `player_id` IN (' .
+        implode(',', $active_ids) .
+        ') ORDER BY `player_no`',
+      /*bUniqueValue=*/ true
+    );
+    return array_map('intval', $rows);
+  }
+
+  // Hands one zombie's turn to the game.
+  private function localarenaRunOneZombieTurn(int $player_id): void
+  {
+    // Read afresh rather than taken from the caller: `zombieTurn()`
+    // transitions, so the state a previous turn was run for is not
+    // necessarily the state this one is being run for.
+    $state = $this->gamestate->state();
+
+    if (!method_exists($this, 'zombieTurn')) {
+      // BGA's game template declares `zombieTurn()` abstract, so a
+      // published game always has one; a game that has dropped it
+      // would hang its table in production, and there is nothing
+      // useful LocalArena could do on its behalf here.
+      throw new \feException(
+        'Player ' .
+          $player_id .
+          ' is a zombie and the game is waiting on them in state "' .
+          $state['name'] .
+          '", but ' .
+          get_class($this) .
+          ' does not implement zombieTurn().'
+      );
+    }
+
+    $this->log('Running zombieTurn() for zombie player ' . $player_id . ' in state "' . $state['name'] . '".');
+
+    // N.B.: `$state` is the state descriptor as it stands NOW, which
+    // is what BGA passes and what a game's `zombieTurn()` switches on.
+    $this->zombieTurn($state, $player_id);
+  }
 
    function isSpectator()
    {
@@ -1576,6 +1726,19 @@
        $prev_last_gamelog_id = $this->getUniqueValueFromDB('SELECT MAX(gamelog_id) FROM `gamelog`');
 
        try {
+         // Before the request's own action, deal with any zombie the
+         // table is already stuck waiting on.  See
+         // `checkStuckedZombiePlayers()`: a player zombified while
+         // active is not covered by the per-state-entry check, because
+         // no state entry happens between their becoming a zombie and
+         // the table's waiting on them.
+         //
+         // This runs BEFORE the action, as on BGA, and so can move the
+         // machine out from under it -- an action submitted for a state
+         // the table has just left will be rejected by `checkAction()`,
+         // exactly as it would be in production.
+         $this->checkStuckedZombiePlayers();
+
          $action = 'action_' . $this->getGameName();
          $act = new $action();
          $act->game = $this;

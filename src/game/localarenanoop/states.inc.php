@@ -37,6 +37,10 @@ $machinestates = [
         ],
         "transitions" => [
             "tEndGame" => 99,
+            // Where this game's `zombieTurn()` sends an abandoned
+            // player: there is nothing for anybody to do here, so
+            // there is nothing for a zombie to do either.
+            "zombiePass" => 99,
         ],
     ],
 

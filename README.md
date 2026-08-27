@@ -137,6 +137,66 @@ from one table into the next) should set
 they share the test's pool.  See `tests/LegacyTest.php` for full
 examples.
 
+#### Zombie players in tests
+
+On BGA, a player who quits a table -- or is expelled from it for
+running out of time -- is marked a "zombie".  The table keeps running
+without them: whenever the game comes to rest waiting on a zombie, the
+framework plays for them by calling the game's own
+`zombieTurn($state, $player_id)`.
+
+Every published game has to implement that method, and it is reliably
+among the least-exercised code any of them contains, since nothing an
+ordinary test drive does ever reaches it.  LocalArena therefore
+reproduces the mechanism, so that a game's zombie handling can be
+tested rather than first exercised in production.  `player_zombie` is
+reported by `loadPlayersBasicInfos()`, so the conventional
+`isPlayerZombie()` helper from BGA's game template works unmodified.
+
+Every player starts out non-zombie; a test that never asks for one
+sees no zombie behavior at all.  To ask for one:
+
+```php
+public function testTheAbandonedPlayerPasses(): void
+{
+    $this->setPlayerZombie($this->playerId(1));
+    // ... or: $this->playerByIndex(1)->setZombie();
+
+    // Whatever makes player 1 active from here on -- an action by
+    // another player, a state transition in the game -- runs the
+    // game's zombieTurn() for them.
+    $this->playerByIndex(0)->act('actPlayCard', ['card_id' => 4]);
+}
+```
+
+Two things about *when* the game's `zombieTurn()` runs are worth
+knowing, because both matter for reproducing real bugs:
+
+- It runs **synchronously**, inside the transition that came to rest
+  on the zombie -- not on some later request.  So a `nextState()` in
+  game code can return having already run the zombie's answer,
+  whatever resumed on the strength of that answer, and the rest of
+  that player's turn, leaving the machine several states further on
+  than the one it was sent to.  Game bugs in this area are bugs in
+  exactly that re-entrancy.
+
+- A player zombified while the game is **already** waiting on them is
+  a case no transition can catch, since no transition happens.  Those
+  are picked up by the equivalent of BGA's
+  `checkStuckedZombiePlayers()`, which runs at the start of each
+  request -- so such a table unsticks itself on the next thing anybody
+  does, rather than hanging.
+
+A `zombieTurn()` that fails to make progress -- most simply, one that
+transitions back into the state it was called from with the same
+zombie still waiting -- would spin or recurse until the request died.
+LocalArena caps both (`Table::LOCALARENA_MAX_ZOMBIE_DEPTH` and
+`Table::LOCALARENA_MAX_ZOMBIE_TURNS_PER_PASS`) and throws when a cap is
+hit, so that a game bug of this kind shows up as a test failure naming
+the state it is stuck in instead of as a hung suite.
+
+See `tests/ZombieTurnTest.php` for worked examples of each of these.
+
 ### LocalArena's own test suite
 
 Everything above is about testing *a game*. LocalArena also has tests
@@ -362,7 +422,12 @@ $ docker volume rm localarena_db-data
 
 - 3D is not supported.
 
-- Zombie players are not supported.
+- Support for zombie players is faithful as far as invoking a
+  game's `zombieTurn()` goes (see "Zombie players in tests"
+  above), but nothing here ever zombifies a player on its own:
+  there is no inactivity timer, no "quit table" button, and no
+  end-of-game handling for a table everyone has left.  Tests set
+  the flag themselves.
 
 - Spectators are not supported.
 

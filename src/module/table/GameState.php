@@ -1,6 +1,64 @@
 <?php
 
 /**
+ * The live main state, as BGA's modern accessors hand it back.
+ *
+ * `gamestate->state()` returned the raw `states.inc.php` descriptor
+ * array.  Its replacement, `getCurrentMainState()`, returns an object
+ * instead: the descriptor's keys are read as properties (`->name`,
+ * `->type`, `->args`, ...), and `toArray()` recovers the old shape --
+ * which the framework's own array-taking entry points, `zombieTurn()`
+ * chief among them, still want.
+ *
+ * A key the descriptor does not carry reads as null, matching what the
+ * array did (a missing optional key such as `args` or `description` was
+ * an undefined index, not an error).  So a state descriptor's optional
+ * keys stay optional.
+ *
+ * The `@property-read` list is the `states.inc.php` vocabulary -- every
+ * key a state descriptor may carry.  Declaring them is what lets static
+ * analysis check a `->name` against something, rather than waving
+ * through any property at all because the class has a `__get()`.
+ *
+ * @property-read string $name
+ * @property-read string $type
+ * @property-read ?string $description
+ * @property-read ?string $descriptionmyturn
+ * @property-read ?string $args
+ * @property-read ?string $action
+ * @property-read ?array $transitions
+ * @property-read ?array $possibleactions
+ * @property-read ?bool $updateGameProgression
+ */
+class CurrentGameState
+{
+  /** @var array<string,mixed> */
+  private array $state_;
+
+  /** @param array<string,mixed> $state */
+  public function __construct(array $state)
+  {
+    $this->state_ = $state;
+  }
+
+  public function __get(string $key)
+  {
+    return $this->state_[$key] ?? null;
+  }
+
+  public function __isset(string $key): bool
+  {
+    return isset($this->state_[$key]);
+  }
+
+  /** @return array<string,mixed> */
+  public function toArray(): array
+  {
+    return $this->state_;
+  }
+}
+
+/**
  * Class GameState
  */
 class GameState
@@ -301,6 +359,22 @@ class GameState
   {
       $state_id = $this->state_id();
     return $this->machinestates[$state_id];
+  }
+
+  /**
+   * The live main state, as the object BGA's modern accessor returns.
+   * Replaces `state()`, which BGA has deprecated; see
+   * `CurrentGameState` for why the return type is not the descriptor
+   * array.
+   *
+   * "Main" means the shared state, ignoring any private parallel
+   * state a player is in -- the distinction BGA draws between this and
+   * `getCurrentState(int $playerId)`.  LocalArena gives a private
+   * state no descriptor of its own, so only this half is modelled.
+   */
+  public function getCurrentMainState(): CurrentGameState
+  {
+    return new CurrentGameState($this->state());
   }
 
     /**

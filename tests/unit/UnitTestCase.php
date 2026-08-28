@@ -50,3 +50,25 @@ function localarenaFrameworkPath(string $relative_path): string
   $root = defined('APP_GAMEMODULE_PATH') ? APP_GAMEMODULE_PATH : dirname(__DIR__, 2) . '/src/';
   return rtrim($root, '/') . '/' . ltrim($relative_path, '/');
 }
+
+/**
+ * Defines the framework's two path constants if nothing has yet.
+ *
+ * `localarenaFrameworkPath()` is enough to *find* a framework file,
+ * but not to load one: the framework's own sources reach for
+ * `APP_GAMEMODULE_PATH` and `APP_BASE_PATH` in their `require_once`
+ * lines, and in the no-Docker layout nothing has defined either.  Call
+ * this before requiring anything under `src/`.
+ *
+ * A no-op inside the container, where the PHPUnit bootstrap has
+ * already defined both -- to the same root this resolves.
+ */
+function localarenaDefineFrameworkPathConstants(): void
+{
+  if (!defined('APP_GAMEMODULE_PATH')) {
+    define('APP_GAMEMODULE_PATH', dirname(__DIR__, 2) . '/src/');
+  }
+  if (!defined('APP_BASE_PATH')) {
+    define('APP_BASE_PATH', APP_GAMEMODULE_PATH);
+  }
+}

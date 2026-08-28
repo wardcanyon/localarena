@@ -26,10 +26,10 @@ require_once LOCALARENA_GAME_PATH . 'localarenanoop/localarenanoop.game.php';
  * override.  BGA's framework no longer calls that method -- its studio
  * linter reports it as obsolete and tells games to delete it -- and a
  * game that took the advice booted against `Table`'s 'noname' default
- * and hunted for its files in a directory that does not exist.  So the
- * override no longer decides anything, which is what this pins: where a
- * game still carries one, it must not be able to contradict the
- * registry.
+ * and hunted for its files in a directory that does not exist.  Hence
+ * the first test: a game class that names nothing has to work.  And
+ * hence the second: the override, where a game still carries one, must
+ * not be able to contradict the registry.
  */
 class GameNameTest extends IntegrationTestCase
 {
@@ -39,6 +39,24 @@ class GameNameTest extends IntegrationTestCase
     // "localarenanoop/states.inc.php" -- and only such a table -- comes
     // to rest in.
     const ST_NOOP = 2;
+
+    /**
+     * `localarenanoop` itself defines no `getGameName()`, which is what
+     * this asserts: the table boots, from the right directory, without
+     * the game having named itself.
+     */
+    public function testBootsAGameClassThatNamesNothing(): void
+    {
+        $this->initTable($this->defaultTableParams());
+
+        $this->assertFalse(
+            method_exists(\localarenanoop::class, 'getGameName'),
+            'The premise of this test is that the harness game defines no getGameName().'
+        );
+
+        $this->assertGameState(self::ST_NOOP);
+        $this->assertEquals(self::LOCALARENA_GAME_NAME, $this->table()->localarenaGetGameName());
+    }
 
     /**
      * A game that still carries the obsolete override gets no say.  The

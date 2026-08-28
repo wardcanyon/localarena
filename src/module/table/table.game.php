@@ -1106,6 +1106,29 @@
      return $this->getLiveStateId();
    }
 
+   // The modern framework's name for the same thing, and the one game
+   // code should call.  BGA deprecated `gamestate->state_id()` in
+   // favour of a pair on the table: `getCurrentStateId(int $playerId)`,
+   // which resolves to a player's private parallel state when they are
+   // in one, and `getCurrentMainStateId()`, which always names the
+   // shared main state.  LocalArena gives a private state no id of its
+   // own, so only the "main" half is modelled here -- and a game with
+   // no private states, which is every game running against LocalArena
+   // today, wants that half anyway.
+   function getCurrentMainStateId(): int
+   {
+     return $this->getLiveStateId();
+   }
+
+   // The live main state, as the object BGA's modern accessor returns
+   // -- NOT the raw descriptor array `gamestate->state()` gave back.
+   // See `CurrentGameState`, and note the migration guide documents
+   // this on `gamestate` as well, which is where it is implemented.
+   function getCurrentMainState(): CurrentGameState
+   {
+     return $this->gamestate->getCurrentMainState();
+   }
+
    // Returns the live current-state id, lazily initializing it from
    // the persisted current-state global (global #1) the first time it
    // is needed in a request.  See the `$liveStateId_` doc comment.
@@ -2029,3 +2052,17 @@
       return '/tmp/undo_' . $this->localarena_table_id . '.sql';
   }
  }
+
+// BGA's modern framework moved the game base class into a namespace:
+// `Bga\GameFramework\Table`, with the global `\Table` kept as a
+// deprecated alias.  Its linter now tells games to extend the
+// namespaced name.
+//
+// LocalArena's whole implementation is the global class above, so the
+// two names are made the same class rather than one being a subclass of
+// the other.  That matters: a subclass would make a game extending the
+// namespaced name fail every `instanceof \Table` and `\Table` type hint
+// in the framework, whereas an alias cannot diverge from what it names.
+//
+// Games may extend either name; nothing here needs to know which.
+class_alias('Table', 'Bga\\GameFramework\\Table');

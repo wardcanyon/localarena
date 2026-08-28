@@ -466,13 +466,13 @@
      $this->currentPlayer = 0;
      $this->replayFrom = 0;
 
-     $this->stats_type = localarenaLoadStatsDescription(LOCALARENA_GAME_PATH . $this->getGameName());
+     $this->stats_type = localarenaLoadStatsDescription(LOCALARENA_GAME_PATH . $this->localarenaGetGameName());
      $this->tableStats = new TableStats($this);
      $this->playerStats = new PlayerStats($this);
      $this->bga = new LocalArenaBgaServices($this);
 
-     $gameoptions_json_path = LOCALARENA_GAME_PATH . $this->getGameName() . '/gameoptions.json';
-     $gamepreferences_json_path = LOCALARENA_GAME_PATH . $this->getGameName() . '/gamepreferences.json';
+     $gameoptions_json_path = LOCALARENA_GAME_PATH . $this->localarenaGetGameName() . '/gameoptions.json';
+     $gamepreferences_json_path = LOCALARENA_GAME_PATH . $this->localarenaGetGameName() . '/gamepreferences.json';
      if (file_exists($gameoptions_json_path)) {
          $this->game_options = json_decode(file_get_contents($gameoptions_json_path), /*associative=*/true);
          if (file_exists($gamepreferences_json_path)) {
@@ -481,7 +481,7 @@
      } else {
          // Load legacy "gameoptions.inc.php" file.  As of
          // ~2024-09-01, this was not working for me on BGA Studio.
-         include LOCALARENA_GAME_PATH . $this->getGameName() . '/gameoptions.inc.php';
+         include LOCALARENA_GAME_PATH . $this->localarenaGetGameName() . '/gameoptions.inc.php';
          $this->game_options = $game_options;
          if (isset($game_preferences)) {
              $this->game_preferences = $game_preferences;
@@ -491,12 +491,12 @@
          }
      }
 
-     include LOCALARENA_GAME_PATH . $this->getGameName() . '/gameinfos.inc.php';
+     include LOCALARENA_GAME_PATH . $this->localarenaGetGameName() . '/gameinfos.inc.php';
      $this->game_infos = $gameinfos;
 
-     include LOCALARENA_GAME_PATH . $this->getGameName() . '/material.inc.php';
-     include LOCALARENA_GAME_PATH . $this->getGameName() . '/states.inc.php';
-     include_once LOCALARENA_GAME_PATH . $this->getGameName() . '/' . $this->getGameName() . '.action.php';
+     include LOCALARENA_GAME_PATH . $this->localarenaGetGameName() . '/material.inc.php';
+     include LOCALARENA_GAME_PATH . $this->localarenaGetGameName() . '/states.inc.php';
+     include_once LOCALARENA_GAME_PATH . $this->localarenaGetGameName() . '/' . $this->localarenaGetGameName() . '.action.php';
 
      $this->gameStateLabels = [
        'currentState' => 1,
@@ -585,14 +585,33 @@
      return $obj;
    }
 
-   public function localarenaGetGameName()
+   // The game this table is running, as LocalArena's table registry
+   // recorded it (`table`.`table_game`) and `TableManager` passed it in
+   // through `LocalArenaContext`.  It is the name of the directory the
+   // game's files are loaded from, and the constructor's every path is
+   // built out of it.
+   //
+   // This used to be answered by the game itself, through a
+   // `getGameName()` that every game had to override.  BGA's framework
+   // no longer calls that method -- the studio linter reports it as
+   // obsolete and tells games to delete it -- and requiring it here was
+   // the one thing stopping them: a game that took the advice booted
+   // against `Table::getGameName()`'s 'noname' default and looked for
+   // its files in a directory that does not exist.  Nothing was ever
+   // learned from asking, either; the answer had to match the registry
+   // row that named the class we had just instantiated.
+   //
+   // A game that still defines `getGameName()` is not affected: the
+   // method is simply never called.
+   public function localarenaGetGameName(): string
    {
-     return $this->getGameName();
-   }
-
-   protected function getGameName()
-   {
-     return 'noname';
+     $game_name = LocalArenaContext::get()->game_name;
+     if ($game_name === null) {
+       throw new \feException(
+         'No game name in the LocalArena context; a Table was constructed outside TableManager::getTable().'
+       );
+     }
+     return $game_name;
    }
 
    protected function setupNewGame($players, $options = [])
@@ -1267,7 +1286,7 @@
 
        $this->loadFile(APP_GAMEMODULE_PATH . '/module/table/empty_database.sql');
        if ($load_schema_file) {
-           $this->loadFile(LOCALARENA_GAME_PATH . '/' . $this->getGameName() . '/dbmodel.sql');
+           $this->loadFile(LOCALARENA_GAME_PATH . '/' . $this->localarenaGetGameName() . '/dbmodel.sql');
        } else {
            if (php_sapi_name() == 'cli') {
                echo "*** Per test configuration, not applying game-specific schema file.\n";
@@ -1576,7 +1595,7 @@
        $prev_last_gamelog_id = $this->getUniqueValueFromDB('SELECT MAX(gamelog_id) FROM `gamelog`');
 
        try {
-         $action = 'action_' . $this->getGameName();
+         $action = 'action_' . $this->localarenaGetGameName();
          $act = new $action();
          $act->game = $this;
          $act->params = $params;

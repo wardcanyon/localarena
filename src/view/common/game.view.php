@@ -53,9 +53,16 @@ class game_view
         return $this->game->_($key);
     }
 
+    // A view names its own game -- every bundled game's view class
+    // overrides this -- and falls back to asking the table, which reads
+    // the name off the registry row rather than off the game class.
+    // Delegating to `$this->game->getGameName()` was what this used to
+    // do, and it broke for a game class that defines no such method,
+    // which is now every game that has taken the studio linter's advice
+    // to delete it (`localarenanoop` here among them).
     function getGameName()
     {
-        return $this->game->getGameName();
+        return $this->game->localarenaGetGameName();
     }
 
     function getFullDatasAsJson()

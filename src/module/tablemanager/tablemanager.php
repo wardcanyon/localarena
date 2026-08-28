@@ -69,8 +69,11 @@ class TableManager
     // XXX: we should do this whenever we enter game code, not
     // here (or at least not only here)
     //
-    // We need to do this before instantiating the game class.
+    // We need to do this before instantiating the game class: `Table`'s
+    // constructor reads both of these, the game name to find the files
+    // it loads the game from.
     LocalArenaContext::get()->table_id = $table_id;
+    LocalArenaContext::get()->game_name = $row['table_game'];
 
     if (array_key_exists($table_id, $this->test_table_classes)) {
         $table_class = $this->test_table_classes[$table_id];

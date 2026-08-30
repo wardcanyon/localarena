@@ -5,7 +5,16 @@ namespace LocalArena;
 class TableParams
 {
     public string $game;
-    public int $playerCount;
+
+    // The number of players to seat at this table.
+    //
+    // Null (the default) means the count configured for interactive
+    // play, `LOCALARENA_PLAYER_COUNT` in
+    // "localarena_config.inc.php".  Tests that exercise
+    // player-count-dependent behavior -- turn order, multiactive sets
+    // -- set it explicitly in their `defaultTableParams()` override;
+    // see `tests/PlayerOrderTest.php`.
+    public ?int $playerCount = null;
 
     // Iff true, the "dbmodel.sql" file will be loaded at table
     // creation.  Setting this false is sometimes useful in test

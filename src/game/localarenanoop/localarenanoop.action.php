@@ -52,4 +52,44 @@ class action_localarenanoop extends APP_GameAction
         $this->game->checkAction($action_name);
         self::ajaxResponse();
     }
+
+    // LocalArena test-support action: announce the given
+    // notifications from inside a real request, so that they pass
+    // through the same transaction, gamelog, and post-commit delivery
+    // that a game's own notifications do.
+    //
+    // "notifs" is a list of objects, each naming a "type" and
+    // optionally carrying a "log", "args", and "player".  Supplying a
+    // "player" announces that one with `notifyPlayer()` rather than
+    // `notifyAllPlayers()`.
+    //
+    // Passing "fail" throws after the notifications have been
+    // announced but before the request commits -- which is how a test
+    // observes that a failed action leaves none of them behind.
+    public function actTestNotify()
+    {
+        self::setAjaxMode();
+        $notifs = self::getArg("notifs", AT_json, /*required=*/ true);
+        $fail = self::getArg("fail", AT_bool, /*required=*/ false, /*default=*/ false);
+
+        foreach ($notifs as $notif) {
+            $type = $notif["type"];
+            $log = $notif["log"] ?? "";
+            $args = $notif["args"] ?? [];
+
+            if (isset($notif["player"])) {
+                $this->game->notifyPlayer($notif["player"], $type, $log, $args);
+            } else {
+                $this->game->notifyAllPlayers($type, $log, $args);
+            }
+        }
+
+        if ($fail) {
+            throw new \BgaUserException(
+                "actTestNotify(): failing deliberately, as the test asked."
+            );
+        }
+
+        self::ajaxResponse();
+    }
 }

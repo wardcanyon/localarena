@@ -388,9 +388,199 @@ class IntegrationTestCase extends \PHPUnit\Framework\TestCase
     return json_decode($json, /*associative=*/ true);
   }
 
-  // XXX: How will we get notifs routed back to the test fix fixtures?
+  // ==================== Notifications ====================
+  //
+  // `notifyAllPlayers()` and `notifyPlayer()` do not send anything
+  // directly: they append to the table's `gamelog`, and the entries
+  // committed by an action are handed to the game server afterwards
+  // (see `Table::sendCommittedNotifs()`).  The gamelog is therefore
+  // where a test observes what a game announced, and the helpers below
+  // read it.
+  //
+  // Delivery -- which players each entry actually reaches, and what
+  // private data each of them sees -- is a separate question, and one
+  // the gamelog alone cannot answer.  For that, install a
+  // `RecordingGameServer` with `recordNotifDelivery()`.
+
+  // Returns every notification recorded at this table, oldest first,
+  // optionally restricted to one notification type.
+  public function notifs(?string $type = null): array
+  {
+    return $this->notifsSince(0, $type);
+  }
+
+  // Returns the notifications recorded after $marker (see
+  // `notifMarker()`), oldest first, optionally restricted to one type.
+  //
+  // This is the usual way to ask "what did this action announce?":
+  // take a marker, act, then read back from it.
+  public function notifsSince(int $marker, ?string $type = null): array
+  {
+    $rows = $this->table()->getObjectListFromDB(
+      'SELECT * FROM `gamelog` WHERE `gamelog_id` > ' . $marker . ' ORDER BY `gamelog_id` ASC'
+    );
+
+    $notifs = [];
+    foreach ($rows as $row) {
+      $notif = new NotifPeer($row);
+      if ($type === null || $notif->type() === $type) {
+        $notifs[] = $notif;
+      }
+    }
+    return $notifs;
+  }
+
+  // A marker for the current end of the notification log, for
+  // `notifsSince()`.
+  public function notifMarker(): int
+  {
+    return intval($this->table()->getUniqueValueFromDB('SELECT MAX(`gamelog_id`) FROM `gamelog`'));
+  }
+
+  // Returns the most recently recorded notification, or null if there
+  // are none.
+  public function lastNotif(?string $type = null): ?NotifPeer
+  {
+    $notifs = $this->notifs($type);
+    return count($notifs) === 0 ? null : $notifs[count($notifs) - 1];
+  }
+
+  // Asserts that $notifs are exactly the given notification types, in
+  // order.
+  public function assertNotifTypes(array $expected, array $notifs, string $message = ''): void
+  {
+    $actual = array_map(fn(NotifPeer $n) => $n->type(), $notifs);
+    $this->assertSame(
+      $expected,
+      $actual,
+      'Unexpected sequence of notification types.' . ($message === '' ? '' : '  ' . $message)
+    );
+  }
+
+  // Installs a `RecordingGameServer` on the table and returns it.
+  //
+  // Without one, `Table::sendCommittedNotifs()` finds no game server
+  // and returns early, so nothing is ever delivered during a test --
+  // the gamelog is written, but the fan-out to individual players (and
+  // with it the per-player rendering of private data) never runs.
+  // Installing this makes that path live and observable.
+  public function recordNotifDelivery(): RecordingGameServer
+  {
+    $server = new RecordingGameServer();
+    $this->table()->gameServer = $server;
+    return $server;
+  }
 
   // TODO: Clean up the table after successful tests.
+}
+
+// One entry in the table's `gamelog`: a notification a game announced.
+class NotifPeer
+{
+  private array $row_;
+  private array $notif_;
+
+  // $row is a row of the `gamelog` table.
+  public function __construct(array $row)
+  {
+    $this->row_ = $row;
+    $this->notif_ = json_decode($row['gamelog_notification'], /*associative=*/ true) ?? [];
+  }
+
+  // The notification type -- what the client dispatches on.
+  public function type(): string
+  {
+    return $this->notif_['notification_type'] ?? '';
+  }
+
+  // The game-log message template (empty for notifications that are
+  // not meant to appear in the log).
+  public function log(): string
+  {
+    return $this->notif_['notification_log'] ?? '';
+  }
+
+  public function args()
+  {
+    return $this->notif_['args'] ?? null;
+  }
+
+  public function moveId(): int
+  {
+    return intval($this->notif_['gamelog_move_id'] ?? 0);
+  }
+
+  // The id of this entry's row, for use as a `notifsSince()` marker.
+  public function gamelogId(): int
+  {
+    return intval($this->row_['gamelog_id']);
+  }
+
+  // The player this notification was addressed to, or null if it went
+  // to every player at the table (BGA's "main channel").
+  //
+  // XXX: Should this be PlayerIdString?
+  public function recipient(): ?string
+  {
+    $player = $this->row_['gamelog_player'];
+    return $player === null ? null : strval($player);
+  }
+
+  // True iff this notification was addressed to a single player,
+  // i.e. it came from `notifyPlayer()` rather than
+  // `notifyAllPlayers()`.
+  public function isPrivate(): bool
+  {
+    return $this->recipient() !== null;
+  }
+
+  // The player whose request produced this notification.
+  public function currentPlayer(): ?string
+  {
+    $player = $this->row_['gamelog_current_player'];
+    return $player === null ? null : strval($player);
+  }
+}
+
+// A stand-in for the websocket game server that records what would
+// have been delivered, instead of sending it.  See
+// `IntegrationTestCase::recordNotifDelivery()`.
+class RecordingGameServer
+{
+  private array $sent_ = [];
+
+  // Called by `Table::sendCommittedNotifs()` once per (player,
+  // notification) pair.  $data is a JSON string that has already had
+  // private data rendered for $player_id.
+  public function notifPlayer($player_id, $data)
+  {
+    $this->sent_[] = [
+      'player_id' => strval($player_id),
+      'notif' => json_decode($data, /*associative=*/ true),
+    ];
+  }
+
+  // Everything delivered so far, in order, optionally restricted to
+  // one recipient.  Each element is ['player_id' => ..., 'notif' =>
+  // ...], where 'notif' is the decoded payload that player received.
+  public function delivered(?string $player_id = null): array
+  {
+    if ($player_id === null) {
+      return $this->sent_;
+    }
+    return array_values(array_filter($this->sent_, fn($sent) => $sent['player_id'] === strval($player_id)));
+  }
+
+  // The notification types delivered to $player_id, in order.
+  public function deliveredTypes(?string $player_id = null): array
+  {
+    return array_map(fn($sent) => $sent['notif']['notification_type'] ?? '', $this->delivered($player_id));
+  }
+
+  public function clear(): void
+  {
+    $this->sent_ = [];
+  }
 }
 
 // class TablePeer {

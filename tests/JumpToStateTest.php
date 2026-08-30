@@ -191,22 +191,9 @@ class JumpToStateTest extends IntegrationTestCase
         // The jump queued a "gameStateChange" notification naming the
         // state we jumped into.
         $notif = $this->lastNotif();
-        $this->assertEquals('gameStateChange', $notif['notification_type']);
-        $this->assertEquals(self::ST_INERT, $notif['args']['id']);
-        $this->assertEquals('stInert', $notif['args']['name']);
-    }
-
-    // Returns the most recently queued notification (notifications are
-    // written to the game log and sent once the request's transaction
-    // commits; see `Table::notifyAllPlayers()`).
-    private function lastNotif(): array
-    {
-        return json_decode(
-            $this->table()->getUniqueValueFromDB(
-                'SELECT `gamelog_notification` FROM `gamelog` ORDER BY `gamelog_id` DESC LIMIT 1'
-            ),
-            /*associative=*/ true
-        );
+        $this->assertEquals('gameStateChange', $notif->type());
+        $this->assertEquals(self::ST_INERT, $notif->args()['id']);
+        $this->assertEquals('stInert', $notif->args()['name']);
     }
 
     /**
@@ -226,9 +213,9 @@ class JumpToStateTest extends IntegrationTestCase
         // `getStateForNotif()` (and hence the arrival notification)
         // calls the args method.
         $notif = $this->lastNotif();
-        $this->assertEquals('gameStateChange', $notif['notification_type']);
-        $this->assertEquals(self::ST_ARGS, $notif['args']['id']);
-        $this->assertEquals(['jumped' => true], $notif['args']['args']);
+        $this->assertEquals('gameStateChange', $notif->type());
+        $this->assertEquals(self::ST_ARGS, $notif->args()['id']);
+        $this->assertEquals(['jumped' => true], $notif->args()['args']);
         $this->assertEquals(['jumped' => true], $this->state()->args());
     }
 

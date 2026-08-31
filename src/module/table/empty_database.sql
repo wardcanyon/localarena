@@ -16,7 +16,7 @@ Drop table if exists `logbook`;
 --
 
 CREATE TABLE `gamelog` (
-  `gamelog_id` int(10) UNSIGNED NOT NULL,
+  `gamelog_packet_id` int(10) UNSIGNED NOT NULL,
   `gamelog_move_id` int(10) UNSIGNED DEFAULT NULL,
   `gamelog_private` tinyint(1) NOT NULL,
   `gamelog_time` datetime NOT NULL,
@@ -103,7 +103,7 @@ CREATE TABLE `stats` (
 -- Index pour la table `gamelog`
 --
 ALTER TABLE `gamelog`
-  ADD PRIMARY KEY (`gamelog_id`);
+  ADD PRIMARY KEY (`gamelog_packet_id`);
 
 --
 -- Index pour la table `global`
@@ -140,7 +140,7 @@ ALTER TABLE `stats`
 -- AUTO_INCREMENT pour la table `gamelog`
 --
 ALTER TABLE `gamelog`
-  MODIFY `gamelog_id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+  MODIFY `gamelog_packet_id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 --
 -- AUTO_INCREMENT pour la table `player`
 --

@@ -631,7 +631,7 @@
        $this->replayFrom .
        ' and (gamelog_player IS NULL or gamelog_player = ' .
        $this->getCurrentPlayerId() .
-       ') order by gamelog_id';
+       ') order by gamelog_packet_id';
      $logs = $this->getObjectListFromDB($sql);
      return $logs;
    }
@@ -655,7 +655,7 @@
      if ($this->replayFrom > 0) {
        $sql .= ' and gamelog_move_id < ' . $this->replayFrom;
      }
-     $sql .= '  order by gamelog_id';
+     $sql .= '  order by gamelog_packet_id';
      $logs = $this->getObjectListFromDB($sql);
 
      // Render private data in the logs we're about to show the client.
@@ -1615,7 +1615,7 @@
          // XXX: Error type
          throw new \feException('Unable to begin transaction.');
        }
-       $prev_last_gamelog_id = $this->getUniqueValueFromDB('SELECT MAX(gamelog_id) FROM `gamelog`');
+       $prev_last_gamelog_id = $this->getUniqueValueFromDB('SELECT MAX(gamelog_packet_id) FROM `gamelog`');
 
        try {
          $action = 'action_' . $this->localarenaGetGameName();
@@ -1677,7 +1677,7 @@
 
      $players = $this->loadPlayersBasicInfos();
      $entries = $this->getCollectionFromDB(
-       'SELECT * FROM `gamelog` WHERE `gamelog_id` > ' . $prev_last_gamelog_id . ' ORDER BY `gamelog_id` ASC'
+       'SELECT * FROM `gamelog` WHERE `gamelog_packet_id` > ' . $prev_last_gamelog_id . ' ORDER BY `gamelog_packet_id` ASC'
      );
 
      $sendNotif = function ($player_id, $data) {
@@ -1713,7 +1713,10 @@
      // player(s).
 
      $notif = [];
-     $notif['gamelog_id'] = $this->getUniqueValueFromDB('select max(gamelog_id)+1 from gamelog');
+     // N.B.: This key is the notif blob's own field, not the
+     // `gamelog_packet_id` column; the client reads it off the parsed
+     // JSON, so it does not follow the column's name.
+     $notif['gamelog_id'] = $this->getUniqueValueFromDB('select max(gamelog_packet_id)+1 from gamelog');
      $notif['args'] = $notification_args;
      $notif['notification_type'] = $notification_type;
      $notif['notification_log'] = $notification_log;
@@ -1746,7 +1749,10 @@
    function notifyPlayer($player_id, $notification_type, $notification_log, $notification_args)
    {
      $notif = [];
-     $notif['gamelog_id'] = $this->getUniqueValueFromDB('select max(gamelog_id)+1 from gamelog');
+     // N.B.: This key is the notif blob's own field, not the
+     // `gamelog_packet_id` column; the client reads it off the parsed
+     // JSON, so it does not follow the column's name.
+     $notif['gamelog_id'] = $this->getUniqueValueFromDB('select max(gamelog_packet_id)+1 from gamelog');
      $notif['gamelog_move_id'] = $this->getGameStateValue('moveId');
      $notif['args'] = $notification_args;
      $notif['notification_type'] = $notification_type;

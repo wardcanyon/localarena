@@ -203,7 +203,7 @@ class JumpToStateTest extends IntegrationTestCase
     {
         return json_decode(
             $this->table()->getUniqueValueFromDB(
-                'SELECT `gamelog_notification` FROM `gamelog` ORDER BY `gamelog_id` DESC LIMIT 1'
+                'SELECT `gamelog_notification` FROM `gamelog` ORDER BY `gamelog_packet_id` DESC LIMIT 1'
             ),
             /*associative=*/ true
         );

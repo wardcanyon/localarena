@@ -118,6 +118,131 @@ class GetArgTest extends UnitTestCase
     }
 
     //////////////////////////////////////////////////////////////////
+    // Reserved argument names.
+    //
+    // A game action's arguments share one namespace with the request
+    // machinery that carries them.  On BGA the machinery wins, and
+    // silently: an argument named `action` never arrives, because
+    // that is the parameter the front controller routes on.
+    // LocalArena keeps its own dispatch fields in a `bgg_` namespace
+    // and so would happily deliver such an argument, which is exactly
+    // how a game passes its whole suite here and fails there -- so
+    // these names are refused instead.  See
+    // `APP_GameAction::RESERVED_ARG_NAMES`.
+
+    public function testRejectsReadingAReservedArgumentName(): void
+    {
+        $this->expectException(\feException::class);
+        $this->expectExceptionMessage('"action" is reserved by the framework, so a game may not read it');
+        $this->getArg(['action' => '{"key":"hammer:52"}'], 'action', AT_json, /*required=*/ true);
+    }
+
+    /**
+     * The value being present changes nothing: it is the NAME that is
+     * refused, so a game cannot get at one by supplying it either.
+     */
+    public static function reservedNameProvider(): array
+    {
+        return [
+            'action' => ['action'],
+            'bgg_actionName' => ['bgg_actionName'],
+            'bgg_player_id' => ['bgg_player_id'],
+        ];
+    }
+
+    #[DataProvider('reservedNameProvider')]
+    public function testRejectsReadingEachReservedName(string $name): void
+    {
+        $this->assertRejects([$name => '1'], $name, AT_alphanum);
+    }
+
+    #[DataProvider('reservedNameProvider')]
+    public function testIsArgRejectsAReservedName(string $name): void
+    {
+        $this->expectException(\feException::class);
+        $this->action([$name => '1'])->isArg($name);
+    }
+
+    /**
+     * `table` and `notifwindow` are the framework's too, but reading
+     * one is what a game is SUPPOSED to do with them: BGA supplies
+     * both, and the stock `__default()` that every game's action file
+     * ships reads them back out.
+     */
+    public function testAllowsReadingAReservedNameTheFrameworkSupplies(): void
+    {
+        $this->assertSame(42, $this->getArg(['table' => '42'], 'table', AT_posint, /*required=*/ true));
+        $this->assertTrue($this->action(['notifwindow' => '1'])->isArg('notifwindow'));
+    }
+
+    public function testAnOrdinaryNameIsNotReserved(): void
+    {
+        $this->assertNull(\APP_GameAction::reservedArgReason('contributedAction'));
+    }
+
+    public function testEveryReservedNameCarriesItsReason(): void
+    {
+        $this->assertNotEmpty(\APP_GameAction::RESERVED_ARG_NAMES);
+        foreach (\APP_GameAction::RESERVED_ARG_NAMES as $name => $reason) {
+            $this->assertIsString($reason, "Reserved name '{$name}' has no reason.");
+            $this->assertNotSame('', $reason, "Reserved name '{$name}' has an empty reason.");
+        }
+    }
+
+    /**
+     * Every readable exception has to BE a reserved name, or the list
+     * is exempting something nothing refuses.
+     */
+    public function testEveryReadableExceptionIsAReservedName(): void
+    {
+        foreach (\APP_GameAction::READABLE_RESERVED_ARG_NAMES as $name) {
+            $this->assertNotNull(\APP_GameAction::reservedArgReason($name));
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////
+    // Reserved names in an outgoing request.
+    //
+    // The other half of the rule, checked where a caller's own
+    // arguments are still separate from the dispatch fields (see
+    // `Player::act()` in the integration harness).  Here even the
+    // readable names are refused: reading the framework's `table` is
+    // fine, sending your own is not.
+
+    #[DataProvider('reservedNameProvider')]
+    public function testRejectsSendingAReservedName(string $name): void
+    {
+        $this->expectException(\feException::class);
+        $this->expectExceptionMessage('is reserved by the framework, so a game may not send one');
+        \APP_GameAction::assertNoReservedArgNames([$name => 'whatever']);
+    }
+
+    public function testRejectsSendingAReadableReservedName(): void
+    {
+        $this->expectException(\feException::class);
+        $this->expectExceptionMessage('"table" is reserved by the framework');
+        \APP_GameAction::assertNoReservedArgNames(['table' => '42']);
+    }
+
+    /**
+     * The mistake this was written for: Wastelandia named the payload
+     * of `actUseContributedAction` after the parameter BGA routes on,
+     * and every test passed.
+     */
+    public function testRejectsSendingAReservedNameAlongsideOrdinaryOnes(): void
+    {
+        $this->expectException(\feException::class);
+        $this->expectExceptionMessage('"action" is reserved by the framework');
+        \APP_GameAction::assertNoReservedArgNames(['dieIds' => '[1,2]', 'action' => '{"key":"hammer:52"}']);
+    }
+
+    public function testAcceptsArgumentsThatNameNothingOfTheFrameworks(): void
+    {
+        \APP_GameAction::assertNoReservedArgNames(['contributedAction' => '{"key":"hammer:52"}', 'extent' => 'step']);
+        $this->expectNotToPerformAssertions();
+    }
+
+    //////////////////////////////////////////////////////////////////
     // AT_int / AT_posint
 
     public static function validIntProvider(): array

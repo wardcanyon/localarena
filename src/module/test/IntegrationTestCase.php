@@ -434,6 +434,14 @@ class PlayerPeer
   {
     echo 'Player ' . $this->id() . ' performing action "' . $action_name . '"...' . "\n";
 
+    // Before anything else: a game argument named after a framework
+    // one is a bug that only shows up on BGA, where the request
+    // machinery owns the name and takes it.  Here is the one place
+    // that sees the game's OWN arguments -- the dispatch fields are
+    // merged in below -- so here is where that mistake is refused.
+    // See `APP_GameAction::RESERVED_ARG_NAMES`.
+    \APP_GameAction::assertNoReservedArgNames($action_args);
+
     // For AT_json args.
     foreach ($action_args as $k => $v) {
       if (is_array($action_args[$k])) {

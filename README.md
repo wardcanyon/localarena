@@ -398,3 +398,18 @@ $ docker volume rm localarena_db-data
 - `PHP Fatal error: Uncaught mysqli_sql_exception: Field 'card_order'
   doesn't have a default value` -- and it's NOT NULL; I wonder why
   this works on BGA Studio.
+
+- **Reserved request-argument names are refused rather than
+  eaten.** A game action's arguments share one namespace with the
+  request machinery that carries them, and on BGA the machinery wins:
+  an argument named `action` never arrives, because that is the
+  parameter BGA's front controller routes on, and the player gets a
+  framework error instead of their move. LocalArena keeps its own
+  dispatch fields in a `bgg_` namespace, so it would otherwise deliver
+  such an argument quite happily -- which is how a game passes its
+  whole suite here and fails on BGA. So a game that sends or reads one
+  of the names in `APP_GameAction::RESERVED_ARG_NAMES` gets an
+  exception saying which name and why. The names BGA *supplies* for a
+  game to read (`table`, `notifwindow`, both read by the stock
+  `__default()`) may still be read; what is refused there is sending
+  your own value under one.

@@ -112,13 +112,22 @@ class deck
     }
   }
 
+  // Puts a card at a specific position, making room for it: any cards
+  // already at or after $location_arg shift up by one.
+  //
+  // N.B.: this used to compare `DbQuery(...)` -- which returns a
+  // mysqli_result, not a count -- against 0, so the condition was
+  // never true and the shift never happened; and the sense was
+  // inverted besides, asking to shift when the slot was EMPTY.  The
+  // net effect was that an inserted card silently collided with
+  // whatever already held its position.
   function insertCard($card_id, $location, $location_arg)
   {
-    if (
-      $this->game->DbQuery(
-        "select count(*) from {$this->tableName} where {$this->column_prefix_}_location = '{$location}' and {$this->column_prefix_}_location_arg={$location_arg}"
-      ) == 0
-    ) {
+    $occupied = $this->game->getUniqueValueFromDB(
+      "select count(*) from {$this->tableName} where {$this->column_prefix_}_location = '{$location}' and {$this->column_prefix_}_location_arg={$location_arg}"
+    );
+
+    if ($occupied > 0) {
       $sql = "update {$this->tableName} set {$this->column_prefix_}_location_arg = {$this->column_prefix_}_location_arg + 1  where {$this->column_prefix_}_location  = '{$location}' and {$this->column_prefix_}_location_arg>={$location_arg}";
       $this->game->DbQuery($sql);
     }
@@ -206,7 +215,10 @@ class deck
 
   function countCardsByLocationArgs($location)
   {
-    $sql = "select {$this->column_prefix_}_location_arg location, count(*) nb from {$this->tableName} where {$this->column_prefix_}_location={$location} group by {$this->column_prefix_}_location_arg";
+    // N.B.: $location is quoted here.  It was not, so any string
+    // location -- which is all of them in practice -- was an SQL
+    // error rather than a count.
+    $sql = "select {$this->column_prefix_}_location_arg location, count(*) nb from {$this->tableName} where {$this->column_prefix_}_location='{$location}' group by {$this->column_prefix_}_location_arg";
     $list = $this->game->getObjectListFromDB($sql);
     $ret = [];
     foreach ($list as $row) {

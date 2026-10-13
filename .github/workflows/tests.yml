@@ -37,8 +37,23 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # The saved image is ~220MB compressed, and every shard downloads
+      # and unpacks its own copy, so both ends of this transfer are on the
+      # critical path.  `gzip` is single-threaded and was taking ~34s here
+      # (see the commit message for the measurements); zstd at the same
+      # default level saturates the runner's cores and decompresses several
+      # times faster on the other side.
+      #
+      # `docker load` only sniffs gzip/bzip2/xz, so the shards decompress
+      # explicitly through a pipe rather than passing the file directly.
+      #
+      # `shell: bash` is load-bearing on both ends: the default step shell
+      # is `bash -e`, without pipefail, so a `docker save` that died would
+      # be masked by zstd's clean exit and leave a truncated archive to
+      # fail confusingly in a shard.  Naming the shell gets `-eo pipefail`.
       - name: Save testenv image
-        run: docker save localarena-testenv:ci | gzip > testenv-image.tar.gz
+        shell: bash
+        run: docker save localarena-testenv:ci | zstd -T0 > testenv-image.tar.zst
 
       # Discover every *Test.php file, shard by file, and generate a
       # per-shard phpunit.xml so that ALL test classes in every file are
@@ -102,12 +117,17 @@ jobs:
           PYEOF
           echo "shards=$(cat /tmp/shards.json)" >> "$GITHUB_OUTPUT"
 
+      # `compression-level: 0`: the payload here is almost entirely the
+      # already-compressed image, so the default Deflate pass burns CPU on
+      # both upload and download to save essentially nothing.  The `tests/`
+      # files that do compress are a few tens of KB.
       - uses: actions/upload-artifact@v4
         with:
           name: server-build
+          compression-level: 0
           path: |
             tests/
-            testenv-image.tar.gz
+            testenv-image.tar.zst
 
   # ------------------------------------------------------------------ #
   # Run test shards in parallel.                                        #
@@ -139,7 +159,8 @@ jobs:
           name: server-build
 
       - name: Load testenv image
-        run: docker load < testenv-image.tar.gz
+        shell: bash
+        run: zstd -dc testenv-image.tar.zst | docker load
 
       - name: "Run tests (shard ${{ matrix.shard.index }})"
         run: |
